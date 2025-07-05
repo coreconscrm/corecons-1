@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, FileText, CalendarDays, Camera, Upload, MoreVertical, Pencil, Trash2, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Schemas
 const projectSchema = z.object({
@@ -24,12 +25,13 @@ const projectSchema = z.object({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   budget: z.coerce.number().min(0, "El presupuesto debe ser un número positivo."),
   status: z.string().min(1, "El estado es requerido."),
+  providerIds: z.array(z.string()).optional(),
 });
 const uploadSchema = z.object({ file: z.any().refine((files) => files?.length === 1, 'Se requiere un archivo.') });
 const ganttTaskSchema = z.object({ name: z.string().min(1, "Nombre de tarea requerido"), days: z.coerce.number().min(1, "Duración debe ser al menos 1 día") });
 
 // Tipos
-type Project = z.infer<typeof projectSchema> & { id: string; documentation: any[]; photos: string[]; ganttData: any[] };
+type Project = z.infer<typeof projectSchema> & { id: string; documentation: any[]; photos: string[]; ganttData: any[], providerIds?: string[] };
 
 // --- Sub-componentes de Diálogos ---
 
@@ -171,10 +173,10 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
     );
 }
 
-function ProjectForm({ project, clients, onSubmit, open, onOpenChange }: { project?: Project, clients: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange }: { project?: Project, clients: any[], providers: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof projectSchema>>({
         resolver: zodResolver(projectSchema),
-        defaultValues: project || { name: "", clientId: "", budget: 0, status: "Planificado" },
+        defaultValues: project || { name: "", clientId: "", budget: 0, status: "Planificado", providerIds: [] },
     });
     
     const handleSubmit = (values: z.infer<typeof projectSchema>) => {
@@ -216,6 +218,51 @@ function ProjectForm({ project, clients, onSubmit, open, onOpenChange }: { proje
                                 </Select><FormMessage />
                             </FormItem>
                         )} />
+                        <FormField
+                            control={form.control}
+                            name="providerIds"
+                            render={() => (
+                                <FormItem>
+                                    <FormLabel>Proveedores</FormLabel>
+                                    <div className="max-h-40 overflow-y-auto space-y-2 rounded-md border p-2">
+                                    {providers.map((provider) => (
+                                    <FormField
+                                        key={provider.id}
+                                        control={form.control}
+                                        name="providerIds"
+                                        render={({ field }) => {
+                                        return (
+                                            <FormItem
+                                            key={provider.id}
+                                            className="flex flex-row items-center space-x-3 space-y-0"
+                                            >
+                                            <FormControl>
+                                                <Checkbox
+                                                checked={field.value?.includes(provider.id)}
+                                                onCheckedChange={(checked) => {
+                                                    return checked
+                                                    ? field.onChange([...(field.value || []), provider.id])
+                                                    : field.onChange(
+                                                        field.value?.filter(
+                                                            (value) => value !== provider.id
+                                                        )
+                                                        );
+                                                }}
+                                                />
+                                            </FormControl>
+                                            <FormLabel className="font-normal text-sm">
+                                                {provider.name} <span className="text-xs text-muted-foreground">({provider.specialization})</span>
+                                            </FormLabel>
+                                            </FormItem>
+                                        );
+                                        }}
+                                    />
+                                    ))}
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">{project ? 'Guardar Cambios' : 'Guardar Proyecto'}</Button>
@@ -229,7 +276,7 @@ function ProjectForm({ project, clients, onSubmit, open, onOpenChange }: { proje
 
 // --- Componente Principal ---
 
-export function ProjectListCard({ projects, clients, onAddProject, onUpdateProject, onDeleteProject }: { projects: Project[], clients: any[], onAddProject: (p: any) => void, onUpdateProject: (p: any) => void, onDeleteProject: (id: string) => void }) {
+export function ProjectListCard({ projects, clients, providers, onAddProject, onUpdateProject, onDeleteProject }: { projects: Project[], clients: any[], providers: any[], onAddProject: (p: any) => void, onUpdateProject: (p: any) => void, onDeleteProject: (id: string) => void }) {
     const [isAddProjectOpen, setAddProjectOpen] = useState(false);
     const [activeDialog, setActiveDialog] = useState<{type: 'edit'|'docs'|'plan'|'photos'|null, project: Project|null}>({type: null, project: null});
     const { toast } = useToast();
@@ -257,8 +304,8 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
     return (
         <div>
             {/* Diálogos */}
-            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
-            <ProjectForm clients={clients} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
+            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} providers={providers} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
+            <ProjectForm clients={clients} providers={providers} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
             {activeDialog.type === 'plan' && activeDialog.project && <GanttChartDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
             {activeDialog.type === 'photos' && activeDialog.project && <PhotoManagerDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
             
@@ -315,6 +362,17 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
                         </CardHeader>
                         <CardContent className="flex-grow space-y-4">
                             <div><h4 className="font-semibold text-sm mb-2">Presupuesto</h4><p>€{project.budget.toLocaleString('es-ES')}</p></div>
+                             <div>
+                                <h4 className="font-semibold text-sm mb-2">Proveedores Asignados</h4>
+                                {project.providerIds && project.providerIds.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                    {project.providerIds.map(id => {
+                                        const provider = providers.find(p => p.id === id);
+                                        return provider ? <Badge key={id} variant="outline">{provider.name}</Badge> : null;
+                                    })}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground">Ninguno asignado.</p>}
+                            </div>
                             <div>
                                 <h4 className="font-semibold text-sm mb-2">Documentación</h4>
                                 {project.documentation.length > 0 ? (

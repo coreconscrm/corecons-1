@@ -1,24 +1,76 @@
+"use client"
+
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Trash2, Link, RefreshCw } from "lucide-react";
 
 export function FormsResponsesCard({ forms, onUpdateForm, onDeleteForm }: { forms: any[], onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void }) {
-  
+  const [formUrl, setFormUrl] = useState('');
+  const [sheetUrl, setSheetUrl] = useState('');
+  const { toast } = useToast();
+
   const handleStatusChange = (form: any, newStatus: string) => {
     onUpdateForm({ ...form, status: newStatus });
   };
+  
+  const handleSync = () => {
+    if (!formUrl || !sheetUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'Faltan URLs',
+        description: 'Por favor, introduce las URLs del formulario y de la hoja de cálculo.',
+      });
+      return;
+    }
+    toast({
+      title: 'Sincronización iniciada',
+      description: 'Los datos se están actualizando desde Google Sheets. (Esto es una simulación)',
+    });
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Respuestas de Formularios</CardTitle>
-        <CardDescription>Nuevos prospectos desde el formulario de Google Forms.</CardDescription>
+        <CardDescription>Conecta tu Google Form y Google Sheet para ver las respuestas aquí.</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="p-4 border rounded-lg bg-muted/50 space-y-4 mb-6">
+          <h3 className="text-lg font-semibold">Conexión con Google</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="form-url">URL del Formulario de Google</Label>
+              <div className="flex items-center gap-2">
+                <Link className="text-muted-foreground" />
+                <Input id="form-url" placeholder="https://docs.google.com/forms/..." value={formUrl} onChange={(e) => setFormUrl(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sheet-url">URL de la Hoja de Google</Label>
+              <div className="flex items-center gap-2">
+                <Link className="text-muted-foreground" />
+                <Input id="sheet-url" placeholder="https://docs.google.com/spreadsheets/..." value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <Button onClick={handleSync}>
+            <RefreshCw className="mr-2 h-4 w-4"/>
+            Sincronizar Respuestas
+          </Button>
+          <p className="text-xs text-muted-foreground italic">
+            Nota: La sincronización es simulada. En una aplicación real, esto requeriría autenticación con Google y acceso a sus APIs.
+          </p>
+        </div>
+
+        <h3 className="text-lg font-semibold mb-2">Respuestas Recibidas</h3>
         <Table>
           <TableHeader>
             <TableRow>

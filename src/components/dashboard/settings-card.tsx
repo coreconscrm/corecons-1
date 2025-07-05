@@ -46,7 +46,7 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
         <CardDescription className="pt-6 text-xs italic text-center">
-            * La funcionalidad para añadir y personalizar campos en cada sección estará disponible en futuras versiones.
+           La personalización de campos en cada sección es una funcionalidad avanzada. Estamos trabajando para incluirla en futuras versiones y ofrecerte la máxima flexibilidad.
         </CardDescription>
       </CardContent>
     </Card>

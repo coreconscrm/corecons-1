@@ -13,13 +13,13 @@ const initialClients = [
 ];
 
 const initialProjects = [
-  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [] },
-  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}] },
+  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [], providerIds: ['prov-1'] },
+  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}], providerIds: ['prov-1', 'prov-2'] },
 ];
 
 const initialProviders = [
-  { id: 'prov-1', name: 'Cementos Fortaleza', contact: 'Carlos Ruiz', phone: '555-8765', discount: '10%' },
-  { id: 'prov-2', name: 'Aceros del Norte', contact: 'Luisa Fernández', phone: '555-4321', discount: '15%' },
+  { id: 'prov-1', name: 'Cementos Fortaleza', contact: 'Carlos Ruiz', phone: '555-8765', discount: '10%', specialization: 'Materiales de obra' },
+  { id: 'prov-2', name: 'Aceros del Norte', contact: 'Luisa Fernández', phone: '555-4321', discount: '15%', specialization: 'Estructuras metálicas' },
 ];
 
 const initialTeamMembers = [
@@ -83,7 +83,7 @@ export default function CrmPage() {
             onDeleteClient={(id) => handleDelete(setClients, id, 'Cliente')}
 
             projects={projects}
-            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: []}, 'Proyecto')}
+            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: [], providerIds: []}, 'Proyecto')}
             onUpdateProject={(project) => handleUpdate(setProjects, project, 'Proyecto')}
             onDeleteProject={(id) => handleDelete(setProjects, id, 'Proyecto')}
 

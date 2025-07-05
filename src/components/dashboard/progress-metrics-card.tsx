@@ -37,7 +37,7 @@ export function DashboardTabs({
       </TabsList>
 
       {visibleTabs.projects && <TabsContent value="projects">
-        <ProjectListCard projects={projects} clients={clients} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
+        <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
       </TabsContent>}
       
       {visibleTabs.clients && <TabsContent value="clients">

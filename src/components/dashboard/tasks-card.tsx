@@ -19,6 +19,7 @@ const providerSchema = z.object({
   contact: z.string().min(1, "El contacto es requerido."),
   phone: z.string().min(1, "El teléfono es requerido."),
   discount: z.string().min(1, "El descuento es requerido."),
+  specialization: z.string().min(1, "La especialidad es requerida."),
 });
 
 type Provider = z.infer<typeof providerSchema> & { id: string };
@@ -26,7 +27,7 @@ type Provider = z.infer<typeof providerSchema> & { id: string };
 function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: Provider, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof providerSchema>>({
         resolver: zodResolver(providerSchema),
-        defaultValues: provider || { name: "", contact: "", phone: "", discount: "" },
+        defaultValues: provider || { name: "", contact: "", phone: "", discount: "", specialization: "" },
     });
 
     const handleSubmit = (values: z.infer<typeof providerSchema>) => {
@@ -51,6 +52,9 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
                         )} />
                         <FormField control={form.control} name="phone" render={({ field }) => (
                             <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-876-5432" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="specialization" render={({ field }) => (
+                            <FormItem><FormLabel>Especialidad</FormLabel><FormControl><Input placeholder="Estructuras, fontanería..." {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="discount" render={({ field }) => (
                             <FormItem><FormLabel>Descuento Acordado</FormLabel><FormControl><Input placeholder="10%" {...field} /></FormControl><FormMessage /></FormItem>
@@ -90,6 +94,7 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                     <TableHeader>
                         <TableRow>
                             <TableHead>Proveedor</TableHead>
+                            <TableHead>Especialidad</TableHead>
                             <TableHead>Contacto</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Descuento</TableHead>
@@ -100,6 +105,7 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                         {providers.map(provider => (
                             <TableRow key={provider.id}>
                                 <TableCell className="font-medium">{provider.name}</TableCell>
+                                <TableCell>{provider.specialization}</TableCell>
                                 <TableCell>{provider.contact}</TableCell>
                                 <TableCell>{provider.phone}</TableCell>
                                 <TableCell>{provider.discount}</TableCell>
