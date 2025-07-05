@@ -10,11 +10,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Link, RefreshCw } from "lucide-react";
+import { Trash2, Link, RefreshCw, ExternalLink } from "lucide-react";
 
 export function FormsResponsesCard({ forms, onUpdateForm, onDeleteForm }: { forms: any[], onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void }) {
-  const [formUrl, setFormUrl] = useState('');
-  const [sheetUrl, setSheetUrl] = useState('');
+  const [formUrl, setFormUrl] = useState('https://forms.gle/22PyvAxk8hAxGDTVA');
+  const [sheetUrl, setSheetUrl] = useState('https://docs.google.com/spreadsheets/d/1VYIpDkCWpklWogOIKXzf0VnB_zWO_JKBl7zI2rSsRL8/edit?usp=sharing');
   const { toast } = useToast();
 
   const handleStatusChange = (form: any, newStatus: string) => {
@@ -61,12 +61,20 @@ export function FormsResponsesCard({ forms, onUpdateForm, onDeleteForm }: { form
               </div>
             </div>
           </div>
-          <Button onClick={handleSync}>
-            <RefreshCw className="mr-2 h-4 w-4"/>
-            Sincronizar Respuestas
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSync}>
+              <RefreshCw className="mr-2 h-4 w-4"/>
+              Sincronizar Respuestas
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={formUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Abrir Formulario
+              </a>
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground italic">
-            Nota: La sincronización es simulada. En una aplicación real, esto requeriría autenticación con Google y acceso a sus APIs.
+            Nota: La sincronización es simulada y los datos que se muestran son de ejemplo. En una aplicación real, esto requeriría autenticación con Google y acceso a sus APIs.
           </p>
         </div>
 
@@ -76,6 +84,7 @@ export function FormsResponsesCard({ forms, onUpdateForm, onDeleteForm }: { form
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Teléfono</TableHead>
               <TableHead>Fecha</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -86,6 +95,7 @@ export function FormsResponsesCard({ forms, onUpdateForm, onDeleteForm }: { form
               <TableRow key={sub.id}>
                 <TableCell className="font-medium">{sub.name}</TableCell>
                 <TableCell>{sub.email}</TableCell>
+                <TableCell>{sub.phone}</TableCell>
                 <TableCell>{sub.date}</TableCell>
                 <TableCell>
                   <Select value={sub.status} onValueChange={(newStatus) => handleStatusChange(sub, newStatus)}>

@@ -29,9 +29,9 @@ const initialTeamMembers = [
 ];
 
 const initialFormSubmissions = [
-  { id: 1, name: 'Pedro Jiménez', email: 'pedro.j@example.com', date: '2024-07-20', status: 'Contactado' },
-  { id: 2, name: 'Laura Martín', email: 'laura.m@example.com', date: '2024-07-19', status: 'Pendiente' },
-  { id: 3, name: 'Carlos Sánchez', email: 'carlos.s@example.com', date: '2024-07-18', status: 'Contactado' },
+  { id: 1, name: 'Pedro Perez', email: 'p.perez@email.com', phone: '123-456-789', date: '2024-07-21', status: 'Contactado' },
+  { id: 2, name: 'Ana García', email: 'a.garcia@email.com', phone: '987-654-321', date: '2024-07-20', status: 'Pendiente' },
+  { id: 3, name: 'Laura Martín', email: 'laura.m@example.com', phone: '555-555-555', date: '2024-07-19', status: 'Pendiente' },
 ];
 
 

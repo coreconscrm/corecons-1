@@ -46,7 +46,10 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
         <CardDescription className="pt-6 text-xs italic text-center">
-           La personalización de campos en cada sección es una funcionalidad avanzada. Estamos trabajando para incluirla en futuras versiones y ofrecerte la máxima flexibilidad.
+           <b>Nota sobre la personalización de campos:</b><br />
+            Crear una herramienta para añadir, eliminar y modificar campos dinámicamente es una funcionalidad muy compleja, similar a construir una aplicación completamente nueva dentro de este CRM. Requiere cambios profundos en cómo se guardan y muestran los datos.
+            <br/><br/>
+            Por ahora, puedo ayudarte a realizar personalizaciones específicas directamente en el código. ¡Solo tienes que pedírmelo!
         </CardDescription>
       </CardContent>
     </Card>
