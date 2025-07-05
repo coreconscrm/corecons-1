@@ -71,16 +71,6 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      boxShadow: {
-        '2xs': '2px 2px 4px 0px hsl(255 86% 66% / 0.10)',
-        'xs': '2px 2px 4px 0px hsl(255 86% 66% / 0.10)',
-        'sm': '2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 1px 2px -1px hsl(255 86% 66% / 0.20)',
-        'DEFAULT': '2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 1px 2px -1px hsl(255 86% 66% / 0.20)',
-        'md': '2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 2px 4px -1px hsl(255 86% 66% / 0.20)',
-        'lg': '2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 4px 6px -1px hsl(255 86% 66% / 0.20)',
-        'xl': '2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 8px 10px -1px hsl(255 86% 66% / 0.20)',
-        '2xl': '2px 2px 4px 0px hsl(255 86% 66% / 0.50)',
-      },
       keyframes: {
         'accordion-down': {
           from: {
