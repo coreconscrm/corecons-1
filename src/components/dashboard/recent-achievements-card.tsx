@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import Papa from 'papaparse';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,8 +9,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Upload, ExternalLink, FileText } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
-export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms: any[], onLoadForms: (data: any[]) => void, onDeleteForm: (id: any) => void }) {
+export function FormsResponsesCard({ forms, onLoadForms, onUpdateForm, onDeleteForm }: { forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -62,7 +64,8 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
         });
         return keys;
     }, [] as string[]);
-    return allKeys.filter(h => h !== 'id');
+    // Exclude my custom state fields
+    return allKeys.filter(h => h !== 'id' && h !== 'called' && h !== 'status');
   }
 
   const headers = getHeaders();
@@ -100,6 +103,8 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>Llamado</TableHead>
+                            <TableHead>Estado</TableHead>
                             {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
@@ -107,6 +112,28 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
                     <TableBody>
                         {forms.map(sub => (
                         <TableRow key={sub.id}>
+                             <TableCell>
+                                <Checkbox
+                                    checked={sub.called}
+                                    onCheckedChange={(checked) => onUpdateForm({ ...sub, called: !!checked })}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Select
+                                    value={sub.status}
+                                    onValueChange={(status) => onUpdateForm({ ...sub, status })}
+                                >
+                                    <SelectTrigger className="w-[150px]">
+                                        <SelectValue placeholder="Seleccionar..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                        <SelectItem value="Contactado">Contactado</SelectItem>
+                                        <SelectItem value="En proceso">En proceso</SelectItem>
+                                        <SelectItem value="Firmado">Firmado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
                             {headers.map(header => (
                                 <TableCell key={`${sub.id}-${header}`} className="max-w-[200px] truncate" title={sub[header]}>
                                     {sub[header]}

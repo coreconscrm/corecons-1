@@ -63,10 +63,25 @@ export default function CrmPage() {
   };
 
   const handleLoadForms = (data: any[]) => {
-    const dataWithIds = data.map((item, index) => ({ ...item, id: `form-${Date.now()}-${index}` }));
-    setForms(dataWithIds);
+    const dataWithIdsAndStatus = data.map((item, index) => ({
+      ...item,
+      id: `form-${Date.now()}-${index}`,
+      called: false,
+      status: 'Pendiente',
+    }));
+    setForms(dataWithIdsAndStatus);
     toast({ title: "Datos cargados", description: "El archivo CSV ha sido procesado correctamente." });
   };
+  
+  const handleUpdateForm = (updatedForm: any) => {
+    setForms((prev: any[]) => prev.map(form => form.id === updatedForm.id ? updatedForm : form));
+  };
+  
+  const projectsInProgress = projects.filter(p => p.status === 'En progreso').length;
+  const projectsCompleted = projects.filter(p => p.status === 'Completado').length;
+  const contactsCalled = forms.filter(f => f.called).length;
+  const contactsInProcess = forms.filter(f => f.status === 'En proceso').length;
+  const contactsSigned = forms.filter(f => f.status === 'Firmado').length;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -74,7 +89,13 @@ export default function CrmPage() {
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
           <h1 className="text-3xl font-bold">Panel de Control</h1>
-          <OverviewCard projects={projects.length} clients={clients.length} providers={providers.length} />
+          <OverviewCard
+            projectsInProgress={projectsInProgress}
+            projectsCompleted={projectsCompleted}
+            contactsCalled={contactsCalled}
+            contactsInProcess={contactsInProcess}
+            contactsSigned={contactsSigned}
+          />
           <DashboardTabs
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -101,6 +122,7 @@ export default function CrmPage() {
 
             forms={forms}
             onLoadForms={handleLoadForms}
+            onUpdateForm={handleUpdateForm}
             onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
 
             visibleTabs={visibleTabs}

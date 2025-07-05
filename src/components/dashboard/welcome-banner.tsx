@@ -1,16 +1,30 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Briefcase, Truck } from "lucide-react";
+import { Construction, CheckCircle, PhoneCall, FileClock, FileSignature } from "lucide-react";
 
-export function OverviewCard({ projects, clients, providers }: { projects: number, clients: number, providers: number }) {
+export function OverviewCard({ 
+    projectsInProgress, 
+    projectsCompleted, 
+    contactsCalled, 
+    contactsInProcess, 
+    contactsSigned 
+}: { 
+    projectsInProgress: number, 
+    projectsCompleted: number, 
+    contactsCalled: number, 
+    contactsInProcess: number, 
+    contactsSigned: number 
+}) {
   const metrics = [
-    { icon: Briefcase, label: "Proyectos Activos", value: projects },
-    { icon: Users, label: "Total Clientes", value: clients },
-    { icon: Truck, label: "Proveedores Clave", value: providers },
+    { icon: Construction, label: "Proyectos en Progreso", value: projectsInProgress },
+    { icon: CheckCircle, label: "Proyectos Completados", value: projectsCompleted },
+    { icon: PhoneCall, label: "Contactos Llamados", value: contactsCalled },
+    { icon: FileClock, label: "En Proceso", value: contactsInProcess },
+    { icon: FileSignature, label: "Firmados", value: contactsSigned },
   ];
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
           {metrics.map((metric, index) => (
             <div
               key={index}
