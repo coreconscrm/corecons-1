@@ -1,17 +1,22 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientList } from "@/components/dashboard/active-courses-card";
-import { ProjectList } from "@/components/dashboard/performance-chart";
-import { ProviderList } from "@/components/dashboard/tasks-card";
-import { TeamList } from "@/components/dashboard/study-time-analysis-card";
-import { FormsResponses } from "@/components/dashboard/recent-achievements-card";
+import { ClientListCard } from "@/components/dashboard/active-courses-card";
+import { ProjectListCard } from "@/components/dashboard/performance-chart";
+import { ProviderListCard } from "@/components/dashboard/tasks-card";
+import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
+import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
 
-export function DashboardTabs({ clients, projects, providers, onAddClient, onAddProject, onAddProvider }: {
-    clients: any[],
-    projects: any[],
-    providers: any[],
-    onAddClient: (client: any) => void,
-    onAddProject: (project: any) => void,
-    onAddProvider: (provider: any) => void,
+export function DashboardTabs({ 
+    clients, onAddClient, onUpdateClient, onDeleteClient,
+    projects, onAddProject, onUpdateProject, onDeleteProject,
+    providers, onAddProvider, onUpdateProvider, onDeleteProvider,
+    team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
+    forms, onUpdateForm, onDeleteForm
+}: {
+    clients: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void,
+    projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
+    providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
+    team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
+    forms: any[], onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
 }) {
   return (
     <Tabs defaultValue="projects" className="w-full">
@@ -23,19 +28,19 @@ export function DashboardTabs({ clients, projects, providers, onAddClient, onAdd
         <TabsTrigger value="forms">Formularios</TabsTrigger>
       </TabsList>
       <TabsContent value="projects">
-        <ProjectList projects={projects} clients={clients} onAddProject={onAddProject} />
+        <ProjectListCard projects={projects} clients={clients} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
       </TabsContent>
       <TabsContent value="clients">
-        <ClientList clients={clients} onAddClient={onAddClient} />
+        <ClientListCard clients={clients} onAddClient={onAddClient} onUpdateClient={onUpdateClient} onDeleteClient={onDeleteClient} />
       </TabsContent>
       <TabsContent value="providers">
-        <ProviderList providers={providers} onAddProvider={onAddProvider} />
+        <ProviderListCard providers={providers} onAddProvider={onAddProvider} onUpdateProvider={onUpdateProvider} onDeleteProvider={onDeleteProvider} />
       </TabsContent>
       <TabsContent value="team">
-        <TeamList />
+        <TeamListCard team={team} onAddTeamMember={onAddTeamMember} onUpdateTeamMember={onUpdateTeamMember} onDeleteTeamMember={onDeleteTeamMember} />
       </TabsContent>
       <TabsContent value="forms">
-        <FormsResponses />
+        <FormsResponsesCard forms={forms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm} />
       </TabsContent>
     </Tabs>
   );

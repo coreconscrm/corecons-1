@@ -1,203 +1,300 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import Image from "next/image";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, FileText, CalendarDays, Camera, Upload } from "lucide-react";
+import { PlusCircle, FileText, CalendarDays, Camera, Upload, MoreVertical, Pencil, Trash2, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
 
+// Schemas
 const projectSchema = z.object({
   name: z.string().min(1, "El nombre del proyecto es requerido."),
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   budget: z.coerce.number().min(0, "El presupuesto debe ser un número positivo."),
   status: z.string().min(1, "El estado es requerido."),
 });
+const uploadSchema = z.object({ file: z.any().refine((files) => files?.length === 1, 'Se requiere un archivo.') });
+const ganttTaskSchema = z.object({ name: z.string().min(1, "Nombre de tarea requerido"), days: z.coerce.number().min(1, "Duración debe ser al menos 1 día") });
 
-const uploadSchema = z.object({
-    file: z.any().refine((files) => files?.length === 1, 'Se requiere un archivo.'),
-});
+// Tipos
+type Project = z.infer<typeof projectSchema> & { id: string; documentation: any[]; photos: string[]; ganttData: any[] };
 
+// --- Sub-componentes de Diálogos ---
 
-export function ProjectList({ projects, clients, onAddProject }: { projects: any[], clients: any[], onAddProject: (project: any) => void }) {
-  const [open, setOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  
-  const form = useForm<z.infer<typeof projectSchema>>({
-    resolver: zodResolver(projectSchema),
-    defaultValues: { name: "", clientId: "", budget: 0, status: "Planificado" },
-  });
+function GanttChartDialog({ project, onSave, open, onOpenChange }: { project: Project, onSave: (p: Project) => void, open: boolean, onOpenChange: (o: boolean) => void }) {
+    const [tasks, setTasks] = useState(project.ganttData || []);
+    const form = useForm({ resolver: zodResolver(ganttTaskSchema), defaultValues: { name: "", days: 1 }});
 
-  const uploadForm = useForm({
-      resolver: zodResolver(uploadSchema),
-  });
+    const addTask = (values: z.infer<typeof ganttTaskSchema>) => {
+        setTasks([...tasks, values]);
+        form.reset();
+    };
 
-  const onSubmit = (values: z.infer<typeof projectSchema>) => {
-    onAddProject(values);
-    form.reset();
-    setOpen(false);
-  };
-  
-  const onUploadSubmit = (values: z.infer<typeof uploadSchema>) => {
-    console.log('Uploading file:', values.file[0].name);
-    // Aquí se gestionaría la subida del archivo
-    setUploadDialogOpen(false);
-    uploadForm.reset();
-  };
+    const removeTask = (index: number) => {
+        setTasks(tasks.filter((_, i) => i !== index));
+    };
 
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Proyectos</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Proyecto
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre del Proyecto</FormLabel>
-                    <FormControl><Input placeholder="Residencial Los Robles" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="clientId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map(client => (
-                          <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                 <FormField control={form.control} name="budget" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Presupuesto (€)</FormLabel>
-                    <FormControl><Input type="number" placeholder="500000" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                 <FormField control={form.control} name="status" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Planificado">Planificado</SelectItem>
-                        <SelectItem value="En progreso">En progreso</SelectItem>
-                        <SelectItem value="Completado">Completado</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <DialogFooter>
-                  <Button type="submit">Guardar Proyecto</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+    const handleSave = () => {
+        onSave({ ...project, ganttData: tasks });
+        onOpenChange(false);
+    };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map(project => (
-          <Card key={project.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                  <div>
-                      <CardTitle>{project.name}</CardTitle>
-                      <CardDescription>{clients.find(c => c.id === project.clientId)?.name}</CardDescription>
-                  </div>
-                  <Badge variant={project.status === 'Completado' ? 'default' : 'secondary'}>{project.status}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-               <div>
-                <h4 className="font-semibold text-sm mb-2">Presupuesto</h4>
-                <p>€{project.budget.toLocaleString('es-ES')}</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Documentación</h4>
-                {project.documentation.length > 0 ? (
-                    <ul className="list-disc list-inside text-sm text-muted-foreground">
-                        {project.documentation.map((doc:any) => <li key={doc.name}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-muted-foreground">No hay documentos.</p>
-                )}
-              </div>
-               <div>
-                <h4 className="font-semibold text-sm mb-2">Fotos del Proyecto</h4>
-                 {project.photos.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-2">
-                        {project.photos.map((photo: string, index: number) => (
-                           <Image key={index} src={photo} alt={`${project.name} photo ${index + 1}`} width={100} height={100} className="rounded-md object-cover" data-ai-hint="construction building" />
-                        ))}
+    const chartData = useMemo(() => {
+        let accumulatedDays = 0;
+        return tasks.map(task => {
+            const range = [accumulatedDays, accumulatedDays + task.days];
+            accumulatedDays += task.days;
+            return { name: task.name, range };
+        });
+    }, [tasks]);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl">
+                <DialogHeader><DialogTitle>Planificación del Proyecto: {project.name}</DialogTitle></DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                        <h3 className="font-semibold mb-2">Diagrama de Gantt</h3>
+                        {tasks.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" />
+                                    <YAxis dataKey="name" type="category" width={100} />
+                                    <Tooltip formatter={(value: any, name: any, props: any) => `${props.payload.range[1] - props.payload.range[0]} días`} />
+                                    <Bar dataKey="range[1]" stackId="a" fill="hsl(var(--primary))" name="Días" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-muted-foreground text-sm">Añade tareas para ver el diagrama.</p>}
                     </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">No hay fotos.</p>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="grid grid-cols-3 gap-2">
-                <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm"><FileText className="mr-1 h-4 w-4" /> Docs</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Subir Documentación</DialogTitle>
-                    </DialogHeader>
-                     <Form {...uploadForm}>
-                        <form onSubmit={uploadForm.handleSubmit(onUploadSubmit)} className="space-y-4">
-                           <FormField control={uploadForm.control} name="file" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Archivo</FormLabel>
-                                    <FormControl>
-                                        <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                           )} />
-                           <DialogFooter>
-                                <Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir</Button>
-                           </DialogFooter>
-                        </form>
-                     </Form>
-                  </DialogContent>
-                </Dialog>
-              <Button variant="outline" size="sm"><CalendarDays className="mr-1 h-4 w-4" /> Plan</Button>
-              <Button variant="outline" size="sm"><Camera className="mr-1 h-4 w-4" /> Fotos</Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+                    <div>
+                        <h3 className="font-semibold mb-2">Tareas</h3>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(addTask)} className="flex gap-2 mb-4">
+                                <FormField control={form.control} name="name" render={({ field }) => <FormItem className="flex-grow"><FormControl><Input placeholder="Nombre de tarea" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="days" render={({ field }) => <FormItem><FormControl><Input type="number" className="w-20" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <Button type="submit" size="sm">Añadir</Button>
+                            </form>
+                        </Form>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {tasks.map((task, i) => (
+                                <div key={i} className="flex justify-between items-center text-sm bg-muted p-2 rounded-md">
+                                    <span>{task.name} ({task.days} días)</span>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeTask(i)}><XIcon size={14} /></Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">Cerrar</Button></DialogClose>
+                    <Button onClick={handleSave}>Guardar Planificación</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: Project, onSave: (p: Project) => void, open: boolean, onOpenChange: (o: boolean) => void }) {
+    const [photos, setPhotos] = useState(project.photos || []);
+
+    const addPhoto = () => { // Simulación de subida
+        const newPhoto = `https://placehold.co/600x400.png?t=${Date.now()}`;
+        setPhotos([...photos, newPhoto]);
+    };
+
+    const removePhoto = (index: number) => {
+        setPhotos(photos.filter((_, i) => i !== index));
+    };
+    
+    const handleSave = () => {
+        onSave({ ...project, photos });
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader><DialogTitle>Fotos del Proyecto: {project.name}</DialogTitle></DialogHeader>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
+                    {photos.map((photo, i) => (
+                        <div key={i} className="relative group">
+                            <Image src={photo} alt={`Foto ${i+1}`} width={200} height={200} className="rounded-md object-cover" data-ai-hint="construction building" />
+                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(i)}><Trash2 size={14}/></Button>
+                        </div>
+                    ))}
+                </div>
+                <DialogFooter className="sm:justify-between">
+                    <Button variant="outline" onClick={addPhoto}><Camera className="mr-2" /> Añadir Foto (Sim)</Button>
+                    <div>
+                        <DialogClose asChild><Button variant="secondary" className="mr-2">Cerrar</Button></DialogClose>
+                        <Button onClick={handleSave}>Guardar Fotos</Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ProjectForm({ project, clients, onSubmit, open, onOpenChange }: { project?: Project, clients: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const form = useForm<z.infer<typeof projectSchema>>({
+        resolver: zodResolver(projectSchema),
+        defaultValues: project || { name: "", clientId: "", budget: 0, status: "Planificado" },
+    });
+    
+    const handleSubmit = (values: z.infer<typeof projectSchema>) => {
+        onSubmit({ ...project, ...values });
+        form.reset();
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader><DialogTitle>{project ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}</DialogTitle></DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Nombre del Proyecto</FormLabel><FormControl><Input placeholder="Residencial Los Robles" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="clientId" render={({ field }) => (
+                            <FormItem><FormLabel>Cliente</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger></FormControl>
+                                    <SelectContent>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent>
+                                </Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="budget" render={({ field }) => (
+                            <FormItem><FormLabel>Presupuesto (€)</FormLabel><FormControl><Input type="number" placeholder="500000" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="status" render={({ field }) => (
+                            <FormItem><FormLabel>Estado</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Planificado">Planificado</SelectItem>
+                                        <SelectItem value="En progreso">En progreso</SelectItem>
+                                        <SelectItem value="Completado">Completado</SelectItem>
+                                        <SelectItem value="Cancelado">Cancelado</SelectItem>
+                                    </SelectContent>
+                                </Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">{project ? 'Guardar Cambios' : 'Guardar Proyecto'}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
+// --- Componente Principal ---
+
+export function ProjectListCard({ projects, clients, onAddProject, onUpdateProject, onDeleteProject }: { projects: Project[], clients: any[], onAddProject: (p: any) => void, onUpdateProject: (p: any) => void, onDeleteProject: (id: string) => void }) {
+    const [isAddProjectOpen, setAddProjectOpen] = useState(false);
+    const [activeDialog, setActiveDialog] = useState<{type: 'edit'|'docs'|'plan'|'photos'|null, project: Project|null}>({type: null, project: null});
+    
+    const closeDialogs = () => setActiveDialog({type: null, project: null});
+
+    const uploadForm = useForm({ resolver: zodResolver(uploadSchema) });
+    const onUploadSubmit = (values: z.infer<typeof uploadSchema>) => {
+        console.log('Uploading file:', values.file[0].name);
+        // Aquí se gestionaría la subida del archivo
+        closeDialogs();
+        uploadForm.reset();
+    };
+
+    return (
+        <div>
+            {/* Diálogos */}
+            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={closeDialogs} />
+            <ProjectForm clients={clients} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
+            {activeDialog.type === 'plan' && <GanttChartDialog project={activeDialog.project!} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
+            {activeDialog.type === 'photos' && <PhotoManagerDialog project={activeDialog.project!} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
+
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Proyectos</h2>
+                <Button onClick={() => setAddProjectOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Añadir Proyecto</Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                    <Card key={project.id} className="flex flex-col">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle>{project.name}</CardTitle>
+                                    <CardDescription>{clients.find(c => c.id === project.clientId)?.name}</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                <Badge variant={project.status === 'Completado' ? 'default' : 'secondary'}>{project.status}</Badge>
+                                 <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onSelect={() => setActiveDialog({type: 'edit', project})}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el proyecto y todos sus datos.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onDeleteProject(project.id)}>Eliminar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-4">
+                            <div><h4 className="font-semibold text-sm mb-2">Presupuesto</h4><p>€{project.budget.toLocaleString('es-ES')}</p></div>
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2">Documentación</h4>
+                                {project.documentation.length > 0 ? (
+                                    <ul className="list-disc list-inside text-sm text-muted-foreground">{project.documentation.map((doc: any) => <li key={doc.name}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                                ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2">Fotos del Proyecto</h4>
+                                {project.photos.length > 0 ? (
+                                    <div className="grid grid-cols-3 gap-2">{project.photos.slice(0,3).map((photo: string, index: number) => (<Image key={index} src={photo} alt={`${project.name} foto ${index + 1}`} width={100} height={100} className="rounded-md object-cover" data-ai-hint="construction building" />))}</div>
+                                ) : <p className="text-sm text-muted-foreground">No hay fotos.</p>}
+                            </div>
+                        </CardContent>
+                        <CardFooter className="grid grid-cols-3 gap-2">
+                             <Dialog open={activeDialog.type === 'docs' && activeDialog.project?.id === project.id} onOpenChange={closeDialogs}>
+                                <DialogTrigger asChild><Button variant="outline" size="sm"><FileText className="mr-1 h-4 w-4" /> Docs</Button></DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader><DialogTitle>Subir Documentación</DialogTitle></DialogHeader>
+                                    <Form {...uploadForm}><form onSubmit={uploadForm.handleSubmit(onUploadSubmit)} className="space-y-4">
+                                        <FormField control={uploadForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>)} />
+                                        <DialogFooter><Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir</Button></DialogFooter>
+                                    </form></Form>
+                                </DialogContent>
+                            </Dialog>
+                            <Button variant="outline" size="sm" onClick={() => setActiveDialog({type: 'plan', project})}><CalendarDays className="mr-1 h-4 w-4" /> Plan</Button>
+                            <Button variant="outline" size="sm" onClick={() => setActiveDialog({type: 'photos', project})}><Camera className="mr-1 h-4 w-4" /> Fotos</Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
 }

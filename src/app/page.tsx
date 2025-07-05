@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Header } from "@/components/dashboard/header";
 import { OverviewCard } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
+import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 
 const initialClients = [
   { id: 'cli-1', name: 'Constructora Central', contact: 'Juan Pérez', email: 'juan.perez@constructora.com', phone: '555-1234' },
@@ -11,8 +13,8 @@ const initialClients = [
 ];
 
 const initialProjects = [
-  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [] },
-  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'] },
+  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [] },
+  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}] },
 ];
 
 const initialProviders = [
@@ -20,21 +22,40 @@ const initialProviders = [
   { id: 'prov-2', name: 'Aceros del Norte', contact: 'Luisa Fernández', phone: '555-4321', discount: '15%' },
 ];
 
+const initialTeamMembers = [
+  { id: 'team-1', name: 'Elena García', role: 'Jefa de Proyecto', avatar: 'https://placehold.co/40x40.png', hint: 'woman portrait' },
+  { id: 'team-2', name: 'Miguel Torres', role: 'Arquitecto Principal', avatar: 'https://placehold.co/40x40.png', hint: 'man portrait' },
+  { id: 'team-3', name: 'Sofía Romero', role: 'Administración', avatar: 'https://placehold.co/40x40.png', hint: 'person glasses' },
+];
+
+const initialFormSubmissions = [
+  { id: 1, name: 'Pedro Jiménez', email: 'pedro.j@example.com', date: '2024-07-20', status: 'Contactado' },
+  { id: 2, name: 'Laura Martín', email: 'laura.m@example.com', date: '2024-07-19', status: 'Pendiente' },
+  { id: 3, name: 'Carlos Sánchez', email: 'carlos.s@example.com', date: '2024-07-18', status: 'Contactado' },
+];
+
+
 export default function CrmPage() {
   const [clients, setClients] = useState(initialClients);
   const [projects, setProjects] = useState(initialProjects);
   const [providers, setProviders] = useState(initialProviders);
+  const [team, setTeam] = useState(initialTeamMembers);
+  const [forms, setForms] = useState(initialFormSubmissions);
+  const { toast } = useToast();
 
-  const addClient = (client: any) => {
-    setClients(prev => [...prev, { ...client, id: `cli-${Date.now()}` }]);
+  const handleCreate = (setter: Function, item: any, type: string) => {
+    setter((prev: any[]) => [...prev, { ...item, id: `${type.slice(0,4)}-${Date.now()}` }]);
+    toast({ title: `${type} añadido`, description: `El ${type.toLowerCase()} ha sido creado con éxito.` });
   };
 
-  const addProject = (project: any) => {
-    setProjects(prev => [...prev, { ...project, id: `pro-${Date.now()}`, documentation: [], plan: null, photos: [] }]);
+  const handleUpdate = (setter: Function, updatedItem: any, type: string) => {
+    setter((prev: any[]) => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    toast({ title: `${type} actualizado`, description: `El ${type.toLowerCase()} ha sido actualizado.` });
   };
-
-  const addProvider = (provider: any) => {
-    setProviders(prev => [...prev, { ...provider, id: `prov-${Date.now()}` }]);
+  
+  const handleDelete = (setter: Function, id: any, type: string) => {
+    setter((prev: any[]) => prev.filter(item => item.id !== id));
+    toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
   };
 
   return (
@@ -46,14 +67,32 @@ export default function CrmPage() {
           <OverviewCard projects={projects.length} clients={clients.length} providers={providers.length} />
           <DashboardTabs
             clients={clients}
+            onAddClient={(client) => handleCreate(setClients, client, 'Cliente')}
+            onUpdateClient={(client) => handleUpdate(setClients, client, 'Cliente')}
+            onDeleteClient={(id) => handleDelete(setClients, id, 'Cliente')}
+
             projects={projects}
+            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: []}, 'Proyecto')}
+            onUpdateProject={(project) => handleUpdate(setProjects, project, 'Proyecto')}
+            onDeleteProject={(id) => handleDelete(setProjects, id, 'Proyecto')}
+
             providers={providers}
-            onAddClient={addClient}
-            onAddProject={addProject}
-            onAddProvider={addProvider}
+            onAddProvider={(provider) => handleCreate(setProviders, provider, 'Proveedor')}
+            onUpdateProvider={(provider) => handleUpdate(setProviders, provider, 'Proveedor')}
+            onDeleteProvider={(id) => handleDelete(setProviders, id, 'Proveedor')}
+
+            team={team}
+            onAddTeamMember={(member) => handleCreate(setTeam, member, 'Miembro')}
+            onUpdateTeamMember={(member) => handleUpdate(setTeam, member, 'Miembro')}
+            onDeleteTeamMember={(id) => handleDelete(setTeam, id, 'Miembro')}
+
+            forms={forms}
+            onUpdateForm={(form) => handleUpdate(setForms, form, 'Formulario')}
+            onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
           />
         </div>
       </main>
+      <Toaster />
     </div>
   );
 }
