@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Papa from 'papaparse';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,23 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Upload, ExternalLink, FileText } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
-// Define expected headers for clarity, matching user's CSV
-const CSV_HEADERS = [
-    "Marca temporal",
-    "Puntuación",
-    "¿Que Tipo de Proyecto Necesitas?",
-    "¿Que tipo de Reforma necesitas?",
-    "¿Cuales son los procesos que ya tienes hechos?",
-    "Explícanos tu proyecto!",
-    "Nombre completo",
-    "Teléfono",
-    "Email",
-    "Ubicación del proyecto",
-    "Información adicional",
-    "Dirección de correo electrónico",
-    "Adjunta documentos!!!",
-];
-
 export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms: any[], onLoadForms: (data: any[]) => void, onDeleteForm: (id: any) => void }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +18,6 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
-      toast({ variant: 'destructive', title: "No se seleccionó archivo", description: "Por favor, selecciona un archivo CSV." });
       return;
     }
 
@@ -44,9 +26,13 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length) {
-          toast({ variant: 'destructive', title: "Error al leer el CSV", description: "Hubo un problema al procesar el archivo. Revisa el formato." });
+          toast({ variant: 'destructive', title: "Error al leer el CSV", description: results.errors.map(e => e.message).join(', ') });
           console.error("CSV Parsing Errors:", results.errors);
           return;
+        }
+        if (results.data.length === 0) {
+             toast({ variant: 'destructive', title: "Archivo vacío o inválido", description: "El CSV no contiene datos o tiene un formato incorrecto." });
+             return;
         }
         onLoadForms(results.data as any[]);
       },
@@ -56,16 +42,30 @@ export function FormsResponsesCard({ forms, onLoadForms, onDeleteForm }: { forms
       }
     });
 
-    if(event.target) {
-        event.target.value = "";
+    if (event.target) {
+      event.target.value = "";
     }
   };
 
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
+  
+  const getHeaders = () => {
+    if (forms.length === 0) return [];
+    // Combine keys from all objects to handle rows with missing columns
+    const allKeys = forms.reduce((keys, form) => {
+        Object.keys(form).forEach(key => {
+            if (!keys.includes(key)) {
+                keys.push(key);
+            }
+        });
+        return keys;
+    }, [] as string[]);
+    return allKeys.filter(h => h !== 'id');
+  }
 
-  const headers = forms.length > 0 ? Object.keys(forms[0]).filter(h => h !== 'id') : [];
+  const headers = getHeaders();
 
   return (
     <Card>

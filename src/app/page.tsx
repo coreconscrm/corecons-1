@@ -13,8 +13,8 @@ const initialClients = [
 ];
 
 const initialProjects = [
-  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [], providerIds: ['prov-1'] },
-  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}], providerIds: ['prov-1', 'prov-2'] },
+  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [], assignedProviders: [{ id: 'prov-1', cost: 150000 }] },
+  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}], assignedProviders: [{id: 'prov-1', cost: 300000}, {id: 'prov-2', cost: 450000}] },
 ];
 
 const initialProviders = [
@@ -85,7 +85,7 @@ export default function CrmPage() {
             onDeleteClient={(id) => handleDelete(setClients, id, 'Cliente')}
 
             projects={projects}
-            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: [], providerIds: []}, 'Proyecto')}
+            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
             onUpdateProject={(project) => handleUpdate(setProjects, project, 'Proyecto')}
             onDeleteProject={(id) => handleDelete(setProjects, id, 'Proyecto')}
 
