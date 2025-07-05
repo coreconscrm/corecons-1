@@ -78,7 +78,7 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
         <Card>
             {editingProvider && <ProviderForm provider={editingProvider} onSubmit={onUpdateProvider} open={!!editingProvider} onOpenChange={() => setEditingProvider(undefined)} />}
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Proveedores</CardTitle>
                         <CardDescription>Gestiona los proveedores y sus acuerdos.</CardDescription>

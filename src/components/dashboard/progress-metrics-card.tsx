@@ -23,11 +23,10 @@ export function DashboardTabs({
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
 }) {
-  const gridCols = `grid-cols-${Object.values(visibleTabs).filter(Boolean).length + 1}`;
   
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className={`grid w-full ${gridCols} sm:grid-cols-3 lg:grid-cols-6`}>
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}

@@ -28,7 +28,7 @@ export function OverviewCard({
           {metrics.map((metric, index) => (
             <div
               key={index}
-              className="p-4 rounded-lg bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:bg-card/60"
+              className="p-4 rounded-lg bg-secondary/50 dark:bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:shadow-md"
             >
               <metric.icon className="h-8 w-8 text-primary mx-auto" />
               <p className="text-3xl font-bold text-foreground">

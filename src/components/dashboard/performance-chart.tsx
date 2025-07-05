@@ -173,13 +173,14 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
                             <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(i)}><Trash2 size={14}/></Button>
                         </div>
                     ))}
+                     <button onClick={handlePhotoUpload} className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:bg-muted aspect-square">
+                        <Camera className="h-8 w-8" />
+                        <span>Subir Foto</span>
+                    </button>
                 </div>
-                <DialogFooter className="sm:justify-between">
-                    <Button variant="outline" onClick={handlePhotoUpload}><Camera className="mr-2" /> Subir Foto</Button>
-                    <div>
-                        <DialogClose asChild><Button variant="secondary" className="mr-2">Cerrar</Button></DialogClose>
-                        <Button onClick={handleSave}>Guardar Fotos</Button>
-                    </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary" className="mr-2">Cerrar</Button></DialogClose>
+                    <Button onClick={handleSave}>Guardar Fotos</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -215,7 +216,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                 costs: {}
             });
         }
-    }, [project, form.reset]);
+    }, [project, form.reset, open]); // Added open to dependency array
     
      const watchedProviderIds = useWatch({ control: form.control, name: 'providerIds', defaultValue: [] });
     
@@ -243,10 +244,10 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem><FormLabel>Nombre del Proyecto</FormLabel><FormControl><Input placeholder="Residencial Los Robles" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField control={form.control} name="clientId" render={({ field }) => (
                                 <FormItem><FormLabel>Cliente</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger></FormControl>
                                         <SelectContent>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent>
                                     </Select><FormMessage />
@@ -254,7 +255,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                             )} />
                             <FormField control={form.control} name="status" render={({ field }) => (
                                 <FormItem><FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="Planificado">Planificado</SelectItem>
@@ -278,12 +279,12 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                                     <FormLabel>Proveedores y Costes</FormLabel>
                                     <div className="max-h-60 overflow-y-auto space-y-2 rounded-md border p-4">
                                     {providers.map((provider) => (
-                                        <div key={provider.id} className="flex items-center gap-4">
+                                        <div key={provider.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                                             <FormField
                                                 control={form.control}
                                                 name="providerIds"
                                                 render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 w-full sm:w-auto">
                                                         <FormControl>
                                                             <Checkbox
                                                                 checked={field.value?.includes(provider.id)}
@@ -306,7 +307,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                                                     name={`costs.${provider.id}`}
                                                     defaultValue={0}
                                                     render={({ field }) => (
-                                                        <FormItem className="flex-grow">
+                                                        <FormItem className="flex-grow w-full sm:w-auto">
                                                             <FormControl>
                                                                 <div className="relative">
                                                                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
@@ -344,6 +345,15 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
     const [activeDialog, setActiveDialog] = useState<{type: 'edit'|'docs'|'plan'|'photos'|null, project: Project|null}>({type: null, project: null});
     const { toast } = useToast();
     
+    const openEditDialog = (project: Project) => {
+        setActiveDialog({ type: 'edit', project });
+    };
+    
+    const handleUpdate = (project: Project) => {
+        onUpdateProject(project);
+        closeDialogs();
+    };
+    
     const closeDialogs = () => setActiveDialog({type: null, project: null});
 
     const uploadForm = useForm({ resolver: zodResolver(uploadSchema) });
@@ -367,7 +377,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
     return (
         <div>
             {/* Diálogos */}
-            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} providers={providers} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
+            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} providers={providers} onSubmit={activeDialog.type === 'edit' ? handleUpdate : onAddProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
             <ProjectForm clients={clients} providers={providers} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
             {activeDialog.type === 'plan' && activeDialog.project && <GanttChartDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
             {activeDialog.type === 'photos' && activeDialog.project && <PhotoManagerDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
@@ -388,7 +398,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
             </Dialog>
 
 
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h2 className="text-2xl font-bold">Proyectos</h2>
                 <Button onClick={() => setAddProjectOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Añadir Proyecto</Button>
             </div>
@@ -413,7 +423,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setActiveDialog({type: 'edit', project})}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => openEditDialog(project)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

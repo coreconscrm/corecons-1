@@ -74,7 +74,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     <Card>
       {editingClient && <ClientForm client={editingClient} onSubmit={onUpdateClient} open={!!editingClient} onOpenChange={() => setEditingClient(undefined)} />}
       <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>Clientes</CardTitle>
             <CardDescription>Gestiona los clientes de WinnBuilders.</CardDescription>

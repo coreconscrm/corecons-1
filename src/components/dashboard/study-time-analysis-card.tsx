@@ -71,7 +71,7 @@ export function TeamListCard({ team, onAddTeamMember, onUpdateTeamMember, onDele
         <Card>
             {editingMember && <TeamMemberForm member={editingMember} onSubmit={onUpdateTeamMember} open={!!editingMember} onOpenChange={() => setEditingMember(undefined)} />}
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Equipo de Administración</CardTitle>
                         <CardDescription>Personal clave en la gestión de WinnBuilders.</CardDescription>
