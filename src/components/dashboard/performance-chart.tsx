@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -188,17 +188,35 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
 
 function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange }: { project?: Project, clients: any[], providers: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     
-    const defaultValues = useMemo(() => {
-        if (!project) return { name: "", clientId: "", budget: 0, status: "Planificado", providerIds: [], costs: {} };
-        const costs = project.assignedProviders.reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
-        const providerIds = project.assignedProviders.map(p => p.id);
-        return { ...project, providerIds, costs };
-    }, [project]);
-
     const form = useForm<z.infer<typeof projectSchema>>({
         resolver: zodResolver(projectSchema),
-        defaultValues,
+        defaultValues: {
+            name: "",
+            clientId: "",
+            budget: 0,
+            status: "Planificado",
+            providerIds: [],
+            costs: {}
+        },
     });
+
+    useEffect(() => {
+        if (project) {
+            const costs = project.assignedProviders.reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
+            const providerIds = project.assignedProviders.map(p => p.id);
+            form.reset({ ...project, providerIds, costs });
+        } else {
+            form.reset({
+                name: "",
+                clientId: "",
+                budget: 0,
+                status: "Planificado",
+                providerIds: [],
+                costs: {}
+            });
+        }
+    }, [project, form.reset]);
+    
      const watchedProviderIds = useWatch({ control: form.control, name: 'providerIds', defaultValue: [] });
     
     const handleSubmit = (values: z.infer<typeof projectSchema>) => {
