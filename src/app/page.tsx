@@ -41,6 +41,13 @@ export default function CrmPage() {
   const [providers, setProviders] = useState(initialProviders);
   const [team, setTeam] = useState(initialTeamMembers);
   const [forms, setForms] = useState(initialFormSubmissions);
+  const [visibleTabs, setVisibleTabs] = useState({
+    projects: true,
+    clients: true,
+    providers: true,
+    team: true,
+    forms: true,
+  });
   const { toast } = useToast();
 
   const handleCreate = (setter: Function, item: any, type: string) => {
@@ -89,6 +96,9 @@ export default function CrmPage() {
             forms={forms}
             onUpdateForm={(form) => handleUpdate(setForms, form, 'Formulario')}
             onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
+
+            visibleTabs={visibleTabs}
+            onTabVisibilityChange={setVisibleTabs}
           />
         </div>
       </main>

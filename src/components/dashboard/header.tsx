@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, Building2, User } from "lucide-react";
+import { Bell, Building2, User, Settings } from "lucide-react";
 
 export function Header() {
   return (
@@ -15,6 +15,10 @@ export function Header() {
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
+        </Button>
+        <Button variant="ghost" size="icon">
+          <Settings className="h-5 w-5" />
+          <span className="sr-only">Configuración</span>
         </Button>
         <Avatar className="h-9 w-9">
           <AvatarImage

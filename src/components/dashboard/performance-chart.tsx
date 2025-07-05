@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, FileText, CalendarDays, Camera, Upload, MoreVertical, Pencil, Trash2, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 // Schemas
 const projectSchema = z.object({
@@ -203,30 +204,56 @@ function ProjectForm({ project, clients, onSubmit, open, onOpenChange }: { proje
     );
 }
 
-
 // --- Componente Principal ---
 
 export function ProjectListCard({ projects, clients, onAddProject, onUpdateProject, onDeleteProject }: { projects: Project[], clients: any[], onAddProject: (p: any) => void, onUpdateProject: (p: any) => void, onDeleteProject: (id: string) => void }) {
     const [isAddProjectOpen, setAddProjectOpen] = useState(false);
     const [activeDialog, setActiveDialog] = useState<{type: 'edit'|'docs'|'plan'|'photos'|null, project: Project|null}>({type: null, project: null});
+    const { toast } = useToast();
     
     const closeDialogs = () => setActiveDialog({type: null, project: null});
 
     const uploadForm = useForm({ resolver: zodResolver(uploadSchema) });
-    const onUploadSubmit = (values: z.infer<typeof uploadSchema>) => {
-        console.log('Uploading file:', values.file[0].name);
-        // Aquí se gestionaría la subida del archivo
+    const handleDocUpload = (values: z.infer<typeof uploadSchema>) => {
+        if (!activeDialog.project) return;
+        
+        // Simulación de subida de archivo
+        const newDoc = { name: values.file[0].name, url: '#' };
+        const updatedProject = {
+            ...activeDialog.project,
+            documentation: [...activeDialog.project.documentation, newDoc],
+        };
+
+        onUpdateProject(updatedProject);
+        toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
         closeDialogs();
         uploadForm.reset();
     };
 
+
     return (
         <div>
             {/* Diálogos */}
-            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={closeDialogs} />
+            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} onSubmit={onUpdateProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
             <ProjectForm clients={clients} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
-            {activeDialog.type === 'plan' && <GanttChartDialog project={activeDialog.project!} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
-            {activeDialog.type === 'photos' && <PhotoManagerDialog project={activeDialog.project!} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
+            {activeDialog.type === 'plan' && activeDialog.project && <GanttChartDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
+            {activeDialog.type === 'photos' && activeDialog.project && <PhotoManagerDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
+            
+            <Dialog open={activeDialog.type === 'docs'} onOpenChange={(isOpen) => !isOpen && closeDialogs()}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Subir Documentación para {activeDialog.project?.name}</DialogTitle></DialogHeader>
+                    <Form {...uploadForm}>
+                        <form onSubmit={uploadForm.handleSubmit(handleDocUpload)} className="space-y-4">
+                            <FormField control={uploadForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>)} />
+                            <DialogFooter>
+                                <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                                <Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir Archivo</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
 
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Proyectos</h2>
@@ -268,7 +295,7 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
                             <div>
                                 <h4 className="font-semibold text-sm mb-2">Documentación</h4>
                                 {project.documentation.length > 0 ? (
-                                    <ul className="list-disc list-inside text-sm text-muted-foreground">{project.documentation.map((doc: any) => <li key={doc.name}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                                    <ul className="list-disc list-inside text-sm text-muted-foreground">{project.documentation.map((doc: any, i: number) => <li key={i}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
                                 ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
                             </div>
                             <div>
@@ -279,16 +306,7 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
                             </div>
                         </CardContent>
                         <CardFooter className="grid grid-cols-3 gap-2">
-                             <Dialog open={activeDialog.type === 'docs' && activeDialog.project?.id === project.id} onOpenChange={closeDialogs}>
-                                <DialogTrigger asChild><Button variant="outline" size="sm"><FileText className="mr-1 h-4 w-4" /> Docs</Button></DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader><DialogTitle>Subir Documentación</DialogTitle></DialogHeader>
-                                    <Form {...uploadForm}><form onSubmit={uploadForm.handleSubmit(onUploadSubmit)} className="space-y-4">
-                                        <FormField control={uploadForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>)} />
-                                        <DialogFooter><Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir</Button></DialogFooter>
-                                    </form></Form>
-                                </DialogContent>
-                            </Dialog>
+                            <Button variant="outline" size="sm" onClick={() => setActiveDialog({type: 'docs', project})}><FileText className="mr-1 h-4 w-4" /> Docs</Button>
                             <Button variant="outline" size="sm" onClick={() => setActiveDialog({type: 'plan', project})}><CalendarDays className="mr-1 h-4 w-4" /> Plan</Button>
                             <Button variant="outline" size="sm" onClick={() => setActiveDialog({type: 'photos', project})}><Camera className="mr-1 h-4 w-4" /> Fotos</Button>
                         </CardFooter>
