@@ -202,11 +202,11 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
     });
 
     useEffect(() => {
-        if (project) {
+        if (project && open) { // Check for `open` ensures this runs only when dialog becomes visible
             const costs = project.assignedProviders.reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
             const providerIds = project.assignedProviders.map(p => p.id);
             form.reset({ ...project, providerIds, costs });
-        } else {
+        } else if (!project) { // Reset for new project form
             form.reset({
                 name: "",
                 clientId: "",
@@ -216,7 +216,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                 costs: {}
             });
         }
-    }, [project, form.reset, open]); // Added open to dependency array
+    }, [project, open, form]);
     
      const watchedProviderIds = useWatch({ control: form.control, name: 'providerIds', defaultValue: [] });
     
@@ -226,7 +226,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
             cost: values.costs?.[id] || 0
         }));
         
-        const finalProject = { ...project, ...values, assignedProviders };
+        const finalProject = { ...(project || {}), ...values, assignedProviders, id: project?.id || `pro-${Date.now()}`};
         delete (finalProject as any).providerIds;
         delete (finalProject as any).costs;
 
@@ -398,19 +398,19 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
             </Dialog>
 
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 mt-12 lg:mt-0">
                 <h2 className="text-2xl font-bold">Proyectos</h2>
                 <Button onClick={() => setAddProjectOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Añadir Proyecto</Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {projects.map(project => {
                     const totalProviderCost = project.assignedProviders.reduce((sum, p) => sum + p.cost, 0);
                     const margin = project.budget - totalProviderCost;
                     const progress = project.budget > 0 ? (totalProviderCost / project.budget) * 100 : 0;
 
                     return (
-                        <Card key={project.id} className="flex flex-col">
+                        <Card key={project.id} className="flex flex-col shadow-md border-border/50">
                             <CardHeader>
                                 <div className="flex justify-between items-start">
                                     <div>
@@ -418,7 +418,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                                         <CardDescription>{clients.find(c => c.id === project.clientId)?.name}</CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                    <Badge variant={project.status === 'Completado' ? 'default' : 'secondary'}>{project.status}</Badge>
+                                    <Badge variant={project.status === 'Completado' ? 'default' : (project.status === 'En progreso' ? 'secondary' : 'outline')}>{project.status}</Badge>
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
