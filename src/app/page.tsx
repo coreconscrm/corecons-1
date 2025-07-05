@@ -48,6 +48,7 @@ export default function CrmPage() {
     team: true,
     forms: true,
   });
+  const [activeTab, setActiveTab] = useState("projects");
   const { toast } = useToast();
 
   const handleCreate = (setter: Function, item: any, type: string) => {
@@ -67,12 +68,15 @@ export default function CrmPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header />
+      <Header onSettingsClick={() => setActiveTab("settings")} />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
           <h1 className="text-3xl font-bold">Panel de Control</h1>
           <OverviewCard projects={projects.length} clients={clients.length} providers={providers.length} />
           <DashboardTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+
             clients={clients}
             onAddClient={(client) => handleCreate(setClients, client, 'Cliente')}
             onUpdateClient={(client) => handleUpdate(setClients, client, 'Cliente')}

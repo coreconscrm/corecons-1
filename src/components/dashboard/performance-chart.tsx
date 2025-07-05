@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -109,10 +109,26 @@ function GanttChartDialog({ project, onSave, open, onOpenChange }: { project: Pr
 
 function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: Project, onSave: (p: Project) => void, open: boolean, onOpenChange: (o: boolean) => void }) {
     const [photos, setPhotos] = useState(project.photos || []);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
-    const addPhoto = () => { // Simulación de subida
-        const newPhoto = `https://placehold.co/600x400.png?t=${Date.now()}`;
-        setPhotos([...photos, newPhoto]);
+    const handlePhotoUpload = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.size > 4 * 1024 * 1024) { // 4MB limit
+                toast({ variant: 'destructive', title: "Archivo demasiado grande", description: "Por favor, sube imágenes de menos de 4MB." });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotos(prevPhotos => [...prevPhotos, reader.result as string]);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const removePhoto = (index: number) => {
@@ -128,16 +144,23 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader><DialogTitle>Fotos del Proyecto: {project.name}</DialogTitle></DialogHeader>
+                 <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                />
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
                     {photos.map((photo, i) => (
                         <div key={i} className="relative group">
-                            <Image src={photo} alt={`Foto ${i+1}`} width={200} height={200} className="rounded-md object-cover" data-ai-hint="construction building" />
+                            <Image src={photo} alt={`Foto ${i+1}`} width={200} height={200} className="rounded-md object-cover aspect-square" data-ai-hint="construction building" />
                             <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(i)}><Trash2 size={14}/></Button>
                         </div>
                     ))}
                 </div>
                 <DialogFooter className="sm:justify-between">
-                    <Button variant="outline" onClick={addPhoto}><Camera className="mr-2" /> Añadir Foto (Sim)</Button>
+                    <Button variant="outline" onClick={handlePhotoUpload}><Camera className="mr-2" /> Subir Foto</Button>
                     <div>
                         <DialogClose asChild><Button variant="secondary" className="mr-2">Cerrar</Button></DialogClose>
                         <Button onClick={handleSave}>Guardar Fotos</Button>
@@ -215,10 +238,10 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
 
     const uploadForm = useForm({ resolver: zodResolver(uploadSchema) });
     const handleDocUpload = (values: z.infer<typeof uploadSchema>) => {
-        if (!activeDialog.project) return;
+        if (!activeDialog.project || !values.file?.[0]) return;
         
-        // Simulación de subida de archivo
-        const newDoc = { name: values.file[0].name, url: '#' };
+        const file = values.file[0];
+        const newDoc = { name: file.name, url: '#' }; // Simulación de subida
         const updatedProject = {
             ...activeDialog.project,
             documentation: [...activeDialog.project.documentation, newDoc],
@@ -244,7 +267,7 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
                     <DialogHeader><DialogTitle>Subir Documentación para {activeDialog.project?.name}</DialogTitle></DialogHeader>
                     <Form {...uploadForm}>
                         <form onSubmit={uploadForm.handleSubmit(handleDocUpload)} className="space-y-4">
-                            <FormField control={uploadForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={uploadForm.control} name="file" render={({ field: { onChange, value, ...rest } }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => onChange(e.target.files)} {...rest} /></FormControl><FormMessage /></FormItem>)} />
                             <DialogFooter>
                                 <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                                 <Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir Archivo</Button>
@@ -301,7 +324,7 @@ export function ProjectListCard({ projects, clients, onAddProject, onUpdateProje
                             <div>
                                 <h4 className="font-semibold text-sm mb-2">Fotos del Proyecto</h4>
                                 {project.photos.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2">{project.photos.slice(0,3).map((photo: string, index: number) => (<Image key={index} src={photo} alt={`${project.name} foto ${index + 1}`} width={100} height={100} className="rounded-md object-cover" data-ai-hint="construction building" />))}</div>
+                                    <div className="grid grid-cols-3 gap-2">{project.photos.slice(0,3).map((photo: string, index: number) => (<Image key={index} src={photo} alt={`${project.name} foto ${index + 1}`} width={100} height={100} className="rounded-md object-cover aspect-square" data-ai-hint="construction building" />))}</div>
                                 ) : <p className="text-sm text-muted-foreground">No hay fotos.</p>}
                             </div>
                         </CardContent>

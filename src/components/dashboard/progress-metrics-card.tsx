@@ -6,7 +6,8 @@ import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
 
-export function DashboardTabs({ 
+export function DashboardTabs({
+    activeTab, onTabChange,
     clients, onAddClient, onUpdateClient, onDeleteClient,
     projects, onAddProject, onUpdateProject, onDeleteProject,
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
@@ -14,6 +15,7 @@ export function DashboardTabs({
     forms, onUpdateForm, onDeleteForm,
     visibleTabs, onTabVisibilityChange
 }: {
+    activeTab: string, onTabChange: (tab: string) => void,
     clients: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void,
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
@@ -24,7 +26,7 @@ export function DashboardTabs({
   const gridCols = `grid-cols-${Object.values(visibleTabs).filter(Boolean).length + 1}`;
   
   return (
-    <Tabs defaultValue="projects" className="w-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className={`grid w-full ${gridCols} sm:grid-cols-3 lg:grid-cols-6`}>
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}

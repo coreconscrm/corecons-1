@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Bell, Building2, User, Settings } from "lucide-react";
 
-export function Header() {
+export function Header({ onSettingsClick }: { onSettingsClick: () => void }) {
   return (
     <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-border bg-secondary/50 px-4 sm:px-6 lg:px-8 backdrop-blur-sm">
       <div className="flex items-center gap-4">
@@ -16,7 +16,7 @@ export function Header() {
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
         </Button>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={onSettingsClick}>
           <Settings className="h-5 w-5" />
           <span className="sr-only">Configuración</span>
         </Button>
