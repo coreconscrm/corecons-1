@@ -3,8 +3,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Study Hub Dashboard",
-  description: "Tu centro de control para el éxito académico.",
+  title: "WinnBuilders CRM",
+  description: "CRM para la gestión de proyectos de construcción de WinnBuilders.",
 };
 
 export default function RootLayout({

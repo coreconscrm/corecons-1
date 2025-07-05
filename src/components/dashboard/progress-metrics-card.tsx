@@ -1,32 +1,42 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Award, BookOpenCheck, Trophy, Target } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClientList } from "@/components/dashboard/active-courses-card";
+import { ProjectList } from "@/components/dashboard/performance-chart";
+import { ProviderList } from "@/components/dashboard/tasks-card";
+import { TeamList } from "@/components/dashboard/study-time-analysis-card";
+import { FormsResponses } from "@/components/dashboard/recent-achievements-card";
 
-const metrics = [
-  { icon: BookOpenCheck, label: "Cursos Completados", value: "12" },
-  { icon: Target, label: "Promedio General", value: "92.5%" },
-  { icon: Trophy, label: "Logros Desbloqueados", value: "25" },
-  { icon: Award, label: "Rango Actual", value: "Maestro" },
-];
-
-export function ProgressMetricsCard() {
+export function DashboardTabs({ clients, projects, providers, onAddClient, onAddProject, onAddProvider }: {
+    clients: any[],
+    projects: any[],
+    providers: any[],
+    onAddClient: (client: any) => void,
+    onAddProject: (project: any) => void,
+    onAddProvider: (provider: any) => void,
+}) {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          {metrics.map((metric, index) => (
-            <div
-              key={index}
-              className="p-4 rounded-lg bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:bg-card/60"
-            >
-              <metric.icon className="h-8 w-8 text-primary mx-auto" />
-              <p className="text-3xl font-bold text-foreground">
-                {metric.value}
-              </p>
-              <p className="text-sm text-muted-foreground">{metric.label}</p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <Tabs defaultValue="projects" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <TabsTrigger value="projects">Proyectos</TabsTrigger>
+        <TabsTrigger value="clients">Clientes</TabsTrigger>
+        <TabsTrigger value="providers">Proveedores</TabsTrigger>
+        <TabsTrigger value="team">Equipo</TabsTrigger>
+        <TabsTrigger value="forms">Formularios</TabsTrigger>
+      </TabsList>
+      <TabsContent value="projects">
+        <ProjectList projects={projects} clients={clients} onAddProject={onAddProject} />
+      </TabsContent>
+      <TabsContent value="clients">
+        <ClientList clients={clients} onAddClient={onAddClient} />
+      </TabsContent>
+      <TabsContent value="providers">
+        <ProviderList providers={providers} onAddProvider={onAddProvider} />
+      </TabsContent>
+      <TabsContent value="team">
+        <TeamList />
+      </TabsContent>
+      <TabsContent value="forms">
+        <FormsResponses />
+      </TabsContent>
+    </Tabs>
   );
 }

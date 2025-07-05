@@ -1,14 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, GraduationCap, User } from "lucide-react";
+import { Bell, Building2, User } from "lucide-react";
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-border bg-secondary/50 px-4 sm:px-6 lg:px-8 backdrop-blur-sm">
       <div className="flex items-center gap-4">
-        <GraduationCap className="h-8 w-8 text-primary" />
+        <Building2 className="h-8 w-8 text-primary" />
         <h1 className="text-xl font-bold text-foreground hidden sm:block">
-          Study Hub
+          WinnBuilders CRM
         </h1>
       </div>
       <div className="flex items-center gap-4">

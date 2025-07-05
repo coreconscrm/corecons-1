@@ -1,25 +1,30 @@
-import { Button } from "@/components/ui/button";
-import { Book, CheckSquare } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Users, Briefcase, Truck } from "lucide-react";
 
-export function WelcomeBanner() {
+export function OverviewCard({ projects, clients, providers }: { projects: number, clients: number, providers: number }) {
+  const metrics = [
+    { icon: Briefcase, label: "Proyectos Activos", value: projects },
+    { icon: Users, label: "Total Clientes", value: clients },
+    { icon: Truck, label: "Proveedores Clave", value: providers },
+  ];
   return (
-    <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-bold">¡Hola de nuevo, Alex!</h1>
-        <p className="text-muted-foreground">
-          Es un buen día para aprender algo nuevo. ¡Vamos a ello!
-        </p>
-      </div>
-      <div className="flex-shrink-0 flex items-center gap-2">
-        <Button>
-          <Book className="mr-2 h-4 w-4" />
-          Ir a clases
-        </Button>
-        <Button variant="secondary">
-          <CheckSquare className="mr-2 h-4 w-4" />
-          Ver Tareas
-        </Button>
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          {metrics.map((metric, index) => (
+            <div
+              key={index}
+              className="p-4 rounded-lg bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:bg-card/60"
+            >
+              <metric.icon className="h-8 w-8 text-primary mx-auto" />
+              <p className="text-3xl font-bold text-foreground">
+                {metric.value}
+              </p>
+              <p className="text-sm text-muted-foreground">{metric.label}</p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
