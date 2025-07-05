@@ -28,11 +28,7 @@ const initialTeamMembers = [
   { id: 'team-3', name: 'Sofía Romero', role: 'Administración', avatar: 'https://placehold.co/40x40.png', hint: 'person glasses' },
 ];
 
-const initialFormSubmissions = [
-  { id: 1, name: 'Pedro Perez', email: 'p.perez@email.com', phone: '123-456-789', date: '2024-07-21', status: 'Contactado' },
-  { id: 2, name: 'Ana García', email: 'a.garcia@email.com', phone: '987-654-321', date: '2024-07-20', status: 'Pendiente' },
-  { id: 3, name: 'Laura Martín', email: 'laura.m@example.com', phone: '555-555-555', date: '2024-07-19', status: 'Pendiente' },
-];
+const initialFormSubmissions: any[] = [];
 
 
 export default function CrmPage() {
@@ -64,6 +60,12 @@ export default function CrmPage() {
   const handleDelete = (setter: Function, id: any, type: string) => {
     setter((prev: any[]) => prev.filter(item => item.id !== id));
     toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
+  };
+
+  const handleLoadForms = (data: any[]) => {
+    const dataWithIds = data.map((item, index) => ({ ...item, id: `form-${Date.now()}-${index}` }));
+    setForms(dataWithIds);
+    toast({ title: "Datos cargados", description: "El archivo CSV ha sido procesado correctamente." });
   };
 
   return (
@@ -98,7 +100,7 @@ export default function CrmPage() {
             onDeleteTeamMember={(id) => handleDelete(setTeam, id, 'Miembro')}
 
             forms={forms}
-            onUpdateForm={(form) => handleUpdate(setForms, form, 'Formulario')}
+            onLoadForms={handleLoadForms}
             onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
 
             visibleTabs={visibleTabs}

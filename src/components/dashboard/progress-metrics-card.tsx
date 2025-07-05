@@ -12,7 +12,7 @@ export function DashboardTabs({
     projects, onAddProject, onUpdateProject, onDeleteProject,
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
-    forms, onUpdateForm, onDeleteForm,
+    forms, onLoadForms, onDeleteForm,
     visibleTabs, onTabVisibilityChange
 }: {
     activeTab: string, onTabChange: (tab: string) => void,
@@ -20,7 +20,7 @@ export function DashboardTabs({
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
-    forms: any[], onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
+    forms: any[], onLoadForms: (data: any[]) => void, onDeleteForm: (id: any) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
 }) {
   const gridCols = `grid-cols-${Object.values(visibleTabs).filter(Boolean).length + 1}`;
@@ -53,7 +53,7 @@ export function DashboardTabs({
       </TabsContent>}
       
       {visibleTabs.forms && <TabsContent value="forms">
-        <FormsResponsesCard forms={forms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm} />
+        <FormsResponsesCard forms={forms} onLoadForms={onLoadForms} onDeleteForm={onDeleteForm} />
       </TabsContent>}
 
       <TabsContent value="settings">
