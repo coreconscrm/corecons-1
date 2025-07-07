@@ -16,6 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
+import type { Company } from "./company-card";
+
 
 // Schemas
 const lineItemSchema = z.object({
@@ -28,6 +30,7 @@ const lineItemSchema = z.object({
 const budgetSchema = z.object({
   name: z.string().min(1, "El nombre del presupuesto es requerido."),
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
+  companyId: z.string().min(1, "Debe seleccionar una empresa."),
   status: z.string().min(1, "El estado es requerido."),
   lineItems: z.array(lineItemSchema).min(1, "Debe añadir al menos una línea."),
 });
@@ -42,12 +45,13 @@ export type Budget = z.infer<typeof budgetSchema> & {
 
 
 // --- Componente de Formulario de Presupuesto ---
-function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?: Budget, clients: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }: { budget?: Budget, clients: any[], companies: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
   const form = useForm<z.infer<typeof budgetSchema>>({
     resolver: zodResolver(budgetSchema),
     defaultValues: {
       name: "",
       clientId: "",
+      companyId: "",
       status: "Pendiente",
       lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
     },
@@ -77,6 +81,7 @@ function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?
       form.reset({
         name: "",
         clientId: "",
+        companyId: "",
         status: "Pendiente",
         lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
       });
@@ -98,10 +103,10 @@ function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="name" render={({ field }) => (
+            <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Nombre del Presupuesto</FormLabel><FormControl><Input placeholder="Reforma integral vivienda" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+            )} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="clientId" render={({ field }) => (
                 <FormItem><FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
@@ -110,7 +115,16 @@ function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?
                   </Select><FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="status" render={({ field }) => (
+              <FormField control={form.control} name="companyId" render={({ field }) => (
+                <FormItem><FormLabel>Empresa Emisora</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una empresa" /></SelectTrigger></FormControl>
+                    <SelectContent>{companies.map(company => (<SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )} />
+            </div>
+             <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem><FormLabel>Estado</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
@@ -122,7 +136,7 @@ function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?
                   </Select><FormMessage />
                 </FormItem>
               )} />
-            </div>
+
 
             <Card>
               <CardHeader><CardTitle>Líneas del Presupuesto</CardTitle></CardHeader>
@@ -202,7 +216,7 @@ function BudgetForm({ budget, clients, onSubmit, open, onOpenChange }: { budget?
 
 
 // --- Componente Principal ---
-export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
+export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
   const [isAddBudgetOpen, setAddBudgetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
@@ -241,12 +255,13 @@ export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, 
         <BudgetPrintLayout 
           budget={printingBudget}
           client={printingBudget ? clients.find(c => c.id === printingBudget.clientId) : null}
+          company={printingBudget ? companies.find(c => c.id === printingBudget.companyId) : null}
         />
       </div>
 
       {/* Diálogos */}
-      <BudgetForm budget={editingBudget} clients={clients} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} />
-      <BudgetForm clients={clients} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} />
+      <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} />
+      <BudgetForm clients={clients} companies={companies} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} />
       
       {viewingBudget && (
           <Dialog open={!!viewingBudget} onOpenChange={() => setViewingBudget(undefined)}>
@@ -304,6 +319,7 @@ export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, 
                   <div>
                       <CardTitle className="mb-1">{budget.name}</CardTitle>
                       <CardDescription>{clients.find(c => c.id === budget.clientId)?.name}</CardDescription>
+                      <CardDescription className="text-xs pt-1">Emitido por: {companies.find(c => c.id === budget.companyId)?.name}</CardDescription>
                   </div>
                   <AlertDialog>
                       <DropdownMenu>

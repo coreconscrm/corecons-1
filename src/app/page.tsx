@@ -31,13 +31,28 @@ const initialTeamMembers = [
 const initialFormSubmissions: any[] = [];
 
 const initialBudgets = [
-  { id: 'bud-1', name: 'Reforma Baño Principal', clientId: 'cli-1', status: 'Aceptado', documents: [{name: 'Planos Baño.pdf', url: '#'}], 
+  { id: 'bud-1', name: 'Reforma Baño Principal', clientId: 'cli-1', companyId: 'comp-1', status: 'Aceptado', documents: [{name: 'Planos Baño.pdf', url: '#'}], 
     lineItems: [
       { description: 'Alicatado paredes', quantity: 25, unit: 'm2', unitPrice: 45 },
       { description: 'Instalación plato de ducha', quantity: 1, unit: 'ud', unitPrice: 600 },
       { description: 'Mueble lavabo y espejo', quantity: 1, unit: 'ud', unitPrice: 750 },
     ], 
     total: (25*45 + 600 + 750) 
+  },
+];
+
+const initialCompanies = [
+  { 
+    id: 'comp-1', 
+    name: 'WinnBuilders', 
+    address: 'Parque Tecnológico de Barcelona, C/ Marie Curie, 8, 08042 Barcelona', 
+    cif: 'B-12345678', 
+    phone: '+34 930 000 000', 
+    email: 'info@winnbuilders.com',
+    web: 'https://www.winnbuilders.com',
+    logo: '',
+    validity: 'Validez del presupuesto: 30 días.', 
+    paymentMethods: 'Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización.'
   },
 ];
 
@@ -49,6 +64,7 @@ export default function CrmPage() {
   const [team, setTeam] = useState(initialTeamMembers);
   const [forms, setForms] = useState(initialFormSubmissions);
   const [budgets, setBudgets] = useState(initialBudgets);
+  const [companies, setCompanies] = useState(initialCompanies);
   const [visibleTabs, setVisibleTabs] = useState({
     projects: true,
     clients: true,
@@ -56,6 +72,7 @@ export default function CrmPage() {
     team: true,
     forms: true,
     budgets: true,
+    companies: true,
   });
   const [activeTab, setActiveTab] = useState("projects");
   const { toast } = useToast();
@@ -142,6 +159,11 @@ export default function CrmPage() {
             onAddBudget={(budget) => handleCreate(setBudgets, {...budget, documents: []}, 'Presupuesto')}
             onUpdateBudget={(budget) => handleUpdate(setBudgets, budget, 'Presupuesto')}
             onDeleteBudget={(id) => handleDelete(setBudgets, id, 'Presupuesto')}
+
+            companies={companies}
+            onAddCompany={(company) => handleCreate(setCompanies, company, 'Empresa')}
+            onUpdateCompany={(company) => handleUpdate(setCompanies, company, 'Empresa')}
+            onDeleteCompany={(id) => handleDelete(setCompanies, id, 'Empresa')}
 
             visibleTabs={visibleTabs}
             onTabVisibilityChange={setVisibleTabs}

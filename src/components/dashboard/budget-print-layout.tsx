@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import type { Budget } from './budgets-card';
-import { Building2 } from "lucide-react";
+import type { Company } from './company-card';
+import { Building2, Globe, Mail, Phone } from "lucide-react";
 
-export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, client: any }) {
-  if (!budget || !client) {
+export function BudgetPrintLayout({ budget, client, company }: { budget: Budget | null, client: any, company: Company | null }) {
+  if (!budget || !client || !company) {
     return null;
   }
 
@@ -14,37 +16,25 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
     day: 'numeric'
   });
 
-  // --- Hardcoded Company Details ---
-  // In a real application, these would come from a settings page/database.
-  const companyDetails = {
-    name: "WinnBuilders",
-    logo: <Building2 className="h-16 w-16 text-gray-800" />, // Placeholder logo
-    address: "Parque Tecnológico de Barcelona, C/ Marie Curie, 8",
-    city: "08042 Barcelona",
-    cif: "B-12345678",
-    phone: "+34 930 000 000",
-    email: "info@winnbuilders.com",
-    web: "www.winnbuilders.com",
-  };
-  
-  // --- Hardcoded Footer Details ---
-  const footerDetails = {
-    validity: "Validez del presupuesto: 30 días.",
-    notes: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización."
-  }
-
   return (
     <div className="bg-white text-black p-8 font-sans">
       {/* Header */}
       <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200">
         <div className="flex items-center gap-6">
-            {companyDetails.logo}
+            {company.logo ? (
+                <Image src={company.logo} alt={`${company.name} logo`} width={120} height={50} className="object-contain" data-ai-hint="logo" />
+            ) : (
+                <Building2 className="h-16 w-16 text-gray-800" />
+            )}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">{companyDetails.name}</h1>
-                <p className="text-sm text-gray-600">{companyDetails.address}, {companyDetails.city}</p>
-                <p className="text-sm text-gray-600">CIF: {companyDetails.cif}</p>
-                <p className="text-sm text-gray-600">Tel: {companyDetails.phone} | Email: {companyDetails.email}</p>
-                <p className="text-sm text-gray-600">Web: {companyDetails.web}</p>
+                <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
+                <p className="text-sm text-gray-600">{company.address}</p>
+                <p className="text-sm text-gray-600">CIF: {company.cif}</p>
+                 <div className="text-sm text-gray-600 flex flex-col mt-1">
+                    <span className="flex items-center gap-2"><Phone size={12} /> {company.phone}</span>
+                    <span className="flex items-center gap-2"><Mail size={12} /> {company.email}</span>
+                    {company.web && <a href={company.web} className="flex items-center gap-2 hover:underline"><Globe size={12} /> {company.web}</a>}
+                </div>
             </div>
         </div>
         <div className="text-right">
@@ -97,10 +87,10 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
 
       {/* Totals & Notes */}
       <section className="mt-8 flex justify-between items-end">
-        <div className="text-xs text-gray-500 w-1/2">
+        <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
             <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
-            <p>{footerDetails.validity}</p>
-            <p>{footerDetails.notes}</p>
+            <p>{company.validity}</p>
+            <p>{company.paymentMethods}</p>
         </div>
         <div className="w-full max-w-sm">
             <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
@@ -117,8 +107,8 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
 
       {/* Footer */}
       <footer className="mt-16 text-center text-xs text-gray-400 border-t pt-4">
-        <p>Gracias por confiar en {companyDetails.name}.</p>
-        <p>{companyDetails.address}, {companyDetails.city} | {companyDetails.email} | {companyDetails.phone}</p>
+        <p>Gracias por confiar en {company.name}.</p>
+        <p>{company.address} | {company.email} | {company.phone}</p>
       </footer>
     </div>
   );

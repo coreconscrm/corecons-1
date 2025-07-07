@@ -11,6 +11,7 @@ type VisibleTabs = {
     team: boolean;
     forms: boolean;
     budgets: boolean;
+    companies: boolean;
 }
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
@@ -20,6 +21,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     providers: "Proveedores",
     team: "Equipo",
     forms: "Formularios",
+    companies: "Empresas",
 };
 
 export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs: VisibleTabs, onVisibilityChange: (fn: (prev: VisibleTabs) => VisibleTabs) => void }) {
@@ -47,12 +49,6 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
                 />
             </div>
         ))}
-        <CardDescription className="pt-6 text-xs italic text-center">
-           <b>Nota sobre la personalización:</b><br />
-            Crear herramientas para añadir campos dinámicamente o para guardar configuraciones globales (como los datos de la empresa para los presupuestos) es una funcionalidad compleja que requiere una base de datos.
-            <br/><br/>
-            Por ahora, he añadido los datos de tu empresa directamente en el diseño del presupuesto impreso. Si necesitas cambiar el logo, la dirección o las notas al pie, ¡solo tienes que pedírmelo y lo haré por ti en el código!
-        </CardDescription>
       </CardContent>
     </Card>
   );
