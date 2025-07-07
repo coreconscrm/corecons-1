@@ -13,8 +13,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BudgetPrintLayout } from "./budget-print-layout";
 
 // Schemas
 const lineItemSchema = z.object({
@@ -206,7 +207,18 @@ export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, 
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
   const [uploadTargetBudget, setUploadTargetBudget] = useState<Budget | null>(null);
+  const [printingBudget, setPrintingBudget] = useState<Budget | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (printingBudget) {
+      const timer = setTimeout(() => {
+        window.print();
+        setPrintingBudget(null);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [printingBudget]);
 
   const handleDocUpload = (file: File) => {
     if (!uploadTargetBudget) return;
@@ -225,6 +237,13 @@ export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, 
 
   return (
     <div>
+      <div className="printable-area">
+        <BudgetPrintLayout 
+          budget={printingBudget}
+          client={printingBudget ? clients.find(c => c.id === printingBudget.clientId) : null}
+        />
+      </div>
+
       {/* Diálogos */}
       <BudgetForm budget={editingBudget} clients={clients} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} />
       <BudgetForm clients={clients} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} />
@@ -292,6 +311,7 @@ export function BudgetListCard({ budgets, clients, onAddBudget, onUpdateBudget, 
                           <DropdownMenuContent>
                               <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => setEditingBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
                               <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
