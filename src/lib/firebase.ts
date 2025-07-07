@@ -21,7 +21,9 @@ const firebaseConfig = {
 function initializeFirebase(): { app: FirebaseApp; db: Firestore } {
   const apps = getApps();
   const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  // Conectamos a tu base de datos específica "wb-data".
+  // Si no se especifica, Firestore intenta conectar a la base de datos "(default)".
+  const db = getFirestore(app, 'wb-data');
   return { app, db };
 }
 
