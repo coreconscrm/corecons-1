@@ -1,13 +1,11 @@
 "use client";
 
-import { initializeApp, getApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApp, getApps, type FirebaseApp } from "firebase/app";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
-// He rellenado la configuración con los datos de tu captura de pantalla.
-// Para completarlo, copia el objeto de configuración COMPLETO de tu consola
-// (Configuración del proyecto -> Tus Apps -> Configuración del SDK -> Config) 
-// y reemplaza este objeto.
-// Your web app's Firebase configuration
+// PEGA AQUÍ TU OBJETO DE CONFIGURACIÓN DE FIREBASE
+// Lo encontrarás en tu consola de Firebase:
+// Configuración del proyecto -> Tus Apps -> Configuración del SDK -> Config
 const firebaseConfig = {
   apiKey: "AIzaSyCzeGtW-b-CI-_CPjth_fRXbLE62Smio2A",
   authDomain: "study-hub-dashboard.firebaseapp.com",
@@ -20,16 +18,13 @@ const firebaseConfig = {
 
 // --- No es necesario modificar el código debajo de esta línea ---
 
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
+function initializeFirebase(): { app: FirebaseApp; db: Firestore } {
+  const apps = getApps();
+  const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  return { app, db };
 }
 
-const db = getFirestore(app);
-
-// ¡RECUERDA! Asegúrate de haber habilitado Firestore Database
-// en tu consola de Firebase para que la aplicación funcione correctamente.
+const { app, db } = initializeFirebase();
 
 export { app, db };

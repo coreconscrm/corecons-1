@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+        console.log("Attempting to fetch data from Firestore...");
         const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
@@ -49,13 +50,14 @@ export default function DashboardPage() {
         setTeam(mapSnapToState(snapshots[3]));
         setBudgets(mapSnapToState(snapshots[4]));
         setCompanies(mapSnapToState(snapshots[5]));
+        console.log("Data fetched successfully.");
 
     } catch (error) {
         console.error("Error fetching data: ", error);
         toast({
             variant: "destructive",
             title: "Error al cargar los datos",
-            description: `Hubo un problema al conectar con Firestore. Error: ${(error as Error).message}`,
+            description: `Hubo un problema al conectar con Firestore. Revisa la consola del navegador para más detalles. Error: ${(error as Error).message}`,
         });
     } finally {
         setIsLoading(false);
@@ -75,7 +77,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar el elemento. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar el elemento. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
     }
   };
 
@@ -91,7 +93,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar los cambios. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar los cambios. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
     }
   };
   
@@ -106,7 +108,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar el elemento. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar el elemento. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
     }
   };
 
