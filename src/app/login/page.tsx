@@ -81,8 +81,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async () => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -95,8 +94,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async () => {
     setIsLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
@@ -122,6 +120,12 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isLoading) {
+      handleSignIn();
+    }
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-secondary p-4">
@@ -149,7 +153,7 @@ export default function LoginPage() {
               <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
             </div>
           </div>
-          <form onSubmit={handleSignIn} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -160,6 +164,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
+                onKeyDown={handleKeyPress}
               />
             </div>
             <div className="space-y-2">
@@ -172,10 +177,11 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
+                onKeyDown={handleKeyPress}
               />
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="button" onClick={handleSignIn} className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Iniciar Sesión
               </Button>
@@ -184,7 +190,7 @@ export default function LoginPage() {
                 Registrarse
               </Button>
             </div>
-          </form>
+          </div>
         </CardContent>
         <CardFooter className="text-center text-xs text-muted-foreground">
           <p>Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad.</p>
