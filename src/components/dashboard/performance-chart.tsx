@@ -448,7 +448,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {projects.map(project => {
-                    const totalProviderCost = project.assignedProviders.reduce((sum, p) => sum + p.cost, 0);
+                    const totalProviderCost = (project.assignedProviders || []).reduce((sum, p) => sum + (p.cost || 0), 0);
                     const margin = project.budget - totalProviderCost;
                     const progress = project.budget > 0 ? (totalProviderCost / project.budget) * 100 : 0;
 
