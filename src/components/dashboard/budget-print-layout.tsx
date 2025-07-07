@@ -14,15 +14,37 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
     day: 'numeric'
   });
 
+  // --- Hardcoded Company Details ---
+  // In a real application, these would come from a settings page/database.
+  const companyDetails = {
+    name: "WinnBuilders",
+    logo: <Building2 className="h-16 w-16 text-gray-800" />, // Placeholder logo
+    address: "Parque Tecnológico de Barcelona, C/ Marie Curie, 8",
+    city: "08042 Barcelona",
+    cif: "B-12345678",
+    phone: "+34 930 000 000",
+    email: "info@winnbuilders.com",
+    web: "www.winnbuilders.com",
+  };
+  
+  // --- Hardcoded Footer Details ---
+  const footerDetails = {
+    validity: "Validez del presupuesto: 30 días.",
+    notes: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización."
+  }
+
   return (
     <div className="bg-white text-black p-8 font-sans">
       {/* Header */}
       <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200">
-        <div className="flex items-center gap-4">
-            <Building2 className="h-12 w-12 text-gray-800" />
+        <div className="flex items-center gap-6">
+            {companyDetails.logo}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">WinnBuilders</h1>
-                <p className="text-sm text-gray-600">Soluciones Integrales de Construcción</p>
+                <h1 className="text-3xl font-bold text-gray-900">{companyDetails.name}</h1>
+                <p className="text-sm text-gray-600">{companyDetails.address}, {companyDetails.city}</p>
+                <p className="text-sm text-gray-600">CIF: {companyDetails.cif}</p>
+                <p className="text-sm text-gray-600">Tel: {companyDetails.phone} | Email: {companyDetails.email}</p>
+                <p className="text-sm text-gray-600">Web: {companyDetails.web}</p>
             </div>
         </div>
         <div className="text-right">
@@ -73,8 +95,13 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
         </table>
       </section>
 
-      {/* Totals */}
-      <section className="mt-8 flex justify-end">
+      {/* Totals & Notes */}
+      <section className="mt-8 flex justify-between items-end">
+        <div className="text-xs text-gray-500 w-1/2">
+            <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
+            <p>{footerDetails.validity}</p>
+            <p>{footerDetails.notes}</p>
+        </div>
         <div className="w-full max-w-sm">
             <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
                 <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
@@ -83,15 +110,15 @@ export function BudgetPrintLayout({ budget, client }: { budget: Budget | null, c
                 </span>
             </div>
             <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
-                <p className="text-xs text-gray-500">Precios sin IVA. Validez del presupuesto: 30 días.</p>
+                <p className="text-xs text-gray-500">Este es un documento informativo y no contractual hasta su firma.</p>
             </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="mt-16 text-center text-xs text-gray-400 border-t pt-4">
-        <p>Gracias por confiar en WinnBuilders.</p>
-        <p>C/ Falsa 123, 08001 Barcelona | info@winnbuilders.com | +34 930 000 000</p>
+        <p>Gracias por confiar en {companyDetails.name}.</p>
+        <p>{companyDetails.address}, {companyDetails.city} | {companyDetails.email} | {companyDetails.phone}</p>
       </footer>
     </div>
   );

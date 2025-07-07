@@ -48,10 +48,10 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
         <CardDescription className="pt-6 text-xs italic text-center">
-           <b>Nota sobre la personalización de campos:</b><br />
-            Crear una herramienta para añadir, eliminar y modificar campos dinámicamente es una funcionalidad muy compleja, similar a construir una aplicación completamente nueva dentro de este CRM. Requiere cambios profundos en cómo se guardan y muestran los datos.
+           <b>Nota sobre la personalización:</b><br />
+            Crear herramientas para añadir campos dinámicamente o para guardar configuraciones globales (como los datos de la empresa para los presupuestos) es una funcionalidad compleja que requiere una base de datos.
             <br/><br/>
-            Por ahora, puedo ayudarte a realizar personalizaciones específicas directamente en el código. ¡Solo tienes que pedírmelo!
+            Por ahora, he añadido los datos de tu empresa directamente en el diseño del presupuesto impreso. Si necesitas cambiar el logo, la dirección o las notas al pie, ¡solo tienes que pedírmelo y lo haré por ti en el código!
         </CardDescription>
       </CardContent>
     </Card>
