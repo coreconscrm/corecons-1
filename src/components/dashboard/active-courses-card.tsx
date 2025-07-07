@@ -90,8 +90,8 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
           <TableHeader>
             <TableRow>
               <TableHead>Empresa</TableHead>
-              <TableHead>Contacto</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -100,8 +100,8 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
             {clients.map(client => (
               <TableRow key={client.id}>
                 <TableCell className="font-medium">{client.name}</TableCell>
-                <TableCell>{client.contact}</TableCell>
-                <TableCell>{client.email}</TableCell>
+                <TableCell className="hidden sm:table-cell">{client.contact}</TableCell>
+                <TableCell className="hidden md:table-cell">{client.email}</TableCell>
                 <TableCell>{client.phone}</TableCell>
                 <TableCell className="text-right">
                   <AlertDialog>

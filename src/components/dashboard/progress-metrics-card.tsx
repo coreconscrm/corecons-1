@@ -34,40 +34,42 @@ export function DashboardTabs({
   
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-8">
-        {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
-        {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
-        {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
-        {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
-        {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
-        {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-        {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
-        <TabsTrigger value="settings">Configuración</TabsTrigger>
-      </TabsList>
+      <div className="w-full overflow-x-auto pb-2">
+        <TabsList className="inline-flex h-auto">
+          {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
+          {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
+          {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
+          {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
+          {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
+          {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
+          {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
+          <TabsTrigger value="settings">Configuración</TabsTrigger>
+        </TabsList>
+      </div>
 
       {visibleTabs.projects && <TabsContent value="projects">
-        <div className="mt-12 md:mt-0">
+        <div className="mt-6 md:mt-0">
          <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
         </div>
       </TabsContent>}
 
-      {visibleTabs.budgets && <TabsContent value="budgets">
+      {visibleTabs.budgets && <TabsContent value="budgets" className="mt-6">
         <BudgetListCard budgets={budgets} clients={clients} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
       </TabsContent>}
       
-      {visibleTabs.clients && <TabsContent value="clients">
+      {visibleTabs.clients && <TabsContent value="clients" className="mt-6">
         <ClientListCard clients={clients} onAddClient={onAddClient} onUpdateClient={onUpdateClient} onDeleteClient={onDeleteClient} />
       </TabsContent>}
 
-      {visibleTabs.providers && <TabsContent value="providers">
+      {visibleTabs.providers && <TabsContent value="providers" className="mt-6">
         <ProviderListCard providers={providers} onAddProvider={onAddProvider} onUpdateProvider={onUpdateProvider} onDeleteProvider={onDeleteProvider} />
       </TabsContent>}
 
-      {visibleTabs.team && <TabsContent value="team">
+      {visibleTabs.team && <TabsContent value="team" className="mt-6">
         <TeamListCard team={team} onAddTeamMember={onAddTeamMember} onUpdateTeamMember={onUpdateTeamMember} onDeleteTeamMember={onDeleteTeamMember} />
       </TabsContent>}
       
-      {visibleTabs.forms && <TabsContent value="forms">
+      {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
         <FormsResponsesCard 
           contacts={contacts}
           onAddContact={onAddContact}
@@ -80,11 +82,11 @@ export function DashboardTabs({
         />
       </TabsContent>}
 
-      {visibleTabs.companies && <TabsContent value="companies">
+      {visibleTabs.companies && <TabsContent value="companies" className="mt-6">
         <CompanyListCard companies={companies} onAddCompany={onAddCompany} onUpdateCompany={onUpdateCompany} onDeleteCompany={onDeleteCompany} />
       </TabsContent>}
 
-      <TabsContent value="settings">
+      <TabsContent value="settings" className="mt-6">
         <SettingsCard visibleTabs={visibleTabs} onVisibilityChange={onTabVisibilityChange} />
       </TabsContent>
     </Tabs>

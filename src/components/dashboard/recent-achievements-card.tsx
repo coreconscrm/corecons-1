@@ -176,9 +176,9 @@ export function FormsResponsesCard({
       <CardContent className="space-y-8">
         {/* Manual Contacts Section */}
         <div>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:items-center mb-4">
             <h3 className="text-lg font-semibold">Contactos Manuales</h3>
-            <Button onClick={() => setIsFormOpen(true)}><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
+            <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
             <Table>
@@ -186,8 +186,8 @@ export function FormsResponsesCard({
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Teléfono</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead className="hidden sm:table-cell">Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Tipo</TableHead>
                   <TableHead>Llamado</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -198,8 +198,8 @@ export function FormsResponsesCard({
                   <TableRow key={contact.id}>
                     <TableCell className="font-medium">{contact.name}</TableCell>
                     <TableCell>{contact.phone}</TableCell>
-                    <TableCell>{contact.email}</TableCell>
-                    <TableCell><span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{contact.type}</span></TableCell>
+                    <TableCell className="hidden sm:table-cell">{contact.email}</TableCell>
+                    <TableCell className="hidden md:table-cell"><span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{contact.type}</span></TableCell>
                     <TableCell><Checkbox checked={contact.called} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} /></TableCell>
                     <TableCell>
                       <Select value={contact.status} onValueChange={(status) => onUpdateContact({ ...contact, status })}>

@@ -95,9 +95,9 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                         <TableRow>
                             <TableHead>Proveedor</TableHead>
                             <TableHead>Especialidad</TableHead>
-                            <TableHead>Contacto</TableHead>
+                            <TableHead className="hidden sm:table-cell">Contacto</TableHead>
                             <TableHead>Teléfono</TableHead>
-                            <TableHead>Descuento</TableHead>
+                            <TableHead className="hidden md:table-cell">Descuento</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -106,9 +106,9 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                             <TableRow key={provider.id}>
                                 <TableCell className="font-medium">{provider.name}</TableCell>
                                 <TableCell>{provider.specialization}</TableCell>
-                                <TableCell>{provider.contact}</TableCell>
+                                <TableCell className="hidden sm:table-cell">{provider.contact}</TableCell>
                                 <TableCell>{provider.phone}</TableCell>
-                                <TableCell>{provider.discount}</TableCell>
+                                <TableCell className="hidden md:table-cell">{provider.discount}</TableCell>
                                 <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
