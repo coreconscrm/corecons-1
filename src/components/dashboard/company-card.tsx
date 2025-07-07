@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Building, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 const companySchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -34,15 +38,55 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
         resolver: zodResolver(companySchema),
         defaultValues: company || { name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." },
     });
+    
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(company?.logo || null);
+    const { toast } = useToast();
 
-    const handleSubmit = (values: z.infer<typeof companySchema>) => {
-        onSubmit({ ...company, ...values });
-        form.reset();
-        onOpenChange(false);
+    const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setLogoFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    }
+
+    const handleSubmit = async (values: z.infer<typeof companySchema>) => {
+        setIsUploading(true);
+        const companyId = company?.id || `comp-${Date.now()}`;
+        let submissionData = { ...values, id: companyId };
+
+        try {
+            if (logoFile) {
+                const storageRef = ref(storage, `companies/${companyId}/logo/${logoFile.name}`);
+                const snapshot = await uploadBytesResumable(storageRef, logoFile);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                submissionData.logo = downloadURL;
+            }
+
+            onSubmit({ ...company, ...submissionData });
+            form.reset();
+            setLogoFile(null);
+            setPreviewUrl(null);
+            onOpenChange(false);
+
+        } catch (error) {
+             console.error("Error processing form: ", error);
+             toast({ variant: 'destructive', title: "Error al guardar", description: `No se pudo guardar la empresa. Error: ${(error as Error).message}` });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setLogoFile(null);
+                setPreviewUrl(company?.logo || null);
+            }
+            onOpenChange(isOpen);
+        }}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{company ? "Editar Empresa" : "Añadir Nueva Empresa"}</DialogTitle>
@@ -68,14 +112,18 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="info@winnbuilders.com" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="web" render={({ field }) => (
-                                <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="https://www.winnbuilders.com" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="logo" render={({ field }) => (
-                                <FormItem><FormLabel>URL del Logo (Opcional)</FormLabel><FormControl><Input placeholder="https://placehold.co/100x40.png" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
+                        <FormField control={form.control} name="web" render={({ field }) => (
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="https://www.winnbuilders.com" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormItem>
+                            <FormLabel>Logo de la Empresa</FormLabel>
+                            <div className="flex items-center gap-4">
+                                {previewUrl && <Image src={previewUrl} alt="Vista previa del logo" width={100} height={40} className="object-contain rounded border p-1" data-ai-hint="logo" />}
+                                <FormControl>
+                                    <Input type="file" accept="image/*" onChange={handleLogoChange} className="flex-1" />
+                                </FormControl>
+                            </div>
+                        </FormItem>
                         <FormField control={form.control} name="validity" render={({ field }) => (
                             <FormItem><FormLabel>Validez del Presupuesto</FormLabel><FormControl><Textarea placeholder="Validez del presupuesto: 30 días." {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -84,7 +132,10 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                            <Button type="submit">{company ? "Guardar Cambios" : "Guardar Empresa"}</Button>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {company ? "Guardar Cambios" : "Guardar Empresa"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>

@@ -14,11 +14,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, useFormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, FileText, CalendarDays, Camera, Upload, MoreVertical, Pencil, Trash2, XIcon, TrendingUp, Wallet, HandCoins } from "lucide-react";
+import { PlusCircle, FileText, CalendarDays, Camera, Upload, MoreVertical, Pencil, Trash2, XIcon, TrendingUp, Wallet, HandCoins, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+
 
 // Schemas
 const projectSchema = z.object({
@@ -124,6 +127,7 @@ function GanttChartDialog({ project, onSave, open, onOpenChange }: { project: Pr
 
 function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: Project, onSave: (p: Project) => void, open: boolean, onOpenChange: (o: boolean) => void }) {
     const [photos, setPhotos] = useState(project.photos || []);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
@@ -131,23 +135,44 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             if (file.size > 4 * 1024 * 1024) { // 4MB limit
                 toast({ variant: 'destructive', title: "Archivo demasiado grande", description: "Por favor, sube imágenes de menos de 4MB." });
                 return;
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotos(prevPhotos => [...prevPhotos, reader.result as string]);
-            };
-            reader.readAsDataURL(file);
+            setIsUploading(true);
+            const storageRef = ref(storage, `projects/${project.id}/photos/${Date.now()}_${file.name}`);
+            try {
+                const snapshot = await uploadBytesResumable(storageRef, file);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                setPhotos(prevPhotos => [...prevPhotos, downloadURL]);
+                toast({ title: "Foto subida", description: "La foto se ha guardado correctamente." });
+            } catch (error) {
+                console.error("Error uploading photo: ", error);
+                toast({ variant: 'destructive', title: "Error al subir foto", description: `No se pudo subir la foto. Error: ${(error as Error).message}` });
+            } finally {
+                setIsUploading(false);
+            }
         }
     };
 
-    const removePhoto = (index: number) => {
-        setPhotos(photos.filter((_, i) => i !== index));
+    const removePhoto = async (photoUrl: string, index: number) => {
+        try {
+            const photoRef = ref(storage, photoUrl);
+            await deleteObject(photoRef);
+            setPhotos(photos.filter((_, i) => i !== index));
+            toast({ title: "Foto eliminada", description: "La foto ha sido eliminada correctamente." });
+        } catch (error) {
+            console.error("Error deleting photo: ", error);
+            if ((error as any).code === 'storage/object-not-found') {
+                 setPhotos(photos.filter((_, i) => i !== index));
+                 toast({ variant: 'default', title: "Foto eliminada del registro", description: "La foto ya no existía en el almacenamiento." });
+            } else {
+                toast({ variant: 'destructive', title: "Error al eliminar", description: `No se pudo eliminar la foto. Error: ${(error as Error).message}` });
+            }
+        }
     };
     
     const handleSave = () => {
@@ -170,12 +195,12 @@ function PhotoManagerDialog({ project, onSave, open, onOpenChange }: { project: 
                     {photos.map((photo, i) => (
                         <div key={i} className="relative group">
                             <Image src={photo} alt={`Foto ${i+1}`} width={200} height={200} className="rounded-md object-cover aspect-square" data-ai-hint="construction building" />
-                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(i)}><Trash2 size={14}/></Button>
+                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(photo, i)}><Trash2 size={14}/></Button>
                         </div>
                     ))}
-                     <button onClick={handlePhotoUpload} className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:bg-muted aspect-square">
-                        <Camera className="h-8 w-8" />
-                        <span>Subir Foto</span>
+                     <button onClick={handlePhotoUpload} className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:bg-muted aspect-square" disabled={isUploading}>
+                        {isUploading ? <Loader2 className="h-8 w-8 animate-spin"/> : <Camera className="h-8 w-8" />}
+                        <span>{isUploading ? "Subiendo..." : "Subir Foto"}</span>
                     </button>
                 </div>
                 <DialogFooter>
@@ -344,6 +369,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
     const [isAddProjectOpen, setAddProjectOpen] = useState(false);
     const [activeDialog, setActiveDialog] = useState<{type: 'edit'|'docs'|'plan'|'photos'|null, project: Project|null}>({type: null, project: null});
     const { toast } = useToast();
+    const [isUploading, setIsUploading] = useState(false);
     
     const openEditDialog = (project: Project) => {
         setActiveDialog({ type: 'edit', project });
@@ -357,20 +383,35 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
     const closeDialogs = () => setActiveDialog({type: null, project: null});
 
     const uploadForm = useForm({ resolver: zodResolver(uploadSchema) });
-    const handleDocUpload = (values: z.infer<typeof uploadSchema>) => {
+    
+    const handleDocUpload = async (values: z.infer<typeof uploadSchema>) => {
         if (!activeDialog.project || !values.file?.[0]) return;
         
+        setIsUploading(true);
         const file = values.file[0];
-        const newDoc = { name: file.name, url: '#' }; // Simulación de subida
-        const updatedProject = {
-            ...activeDialog.project,
-            documentation: [...activeDialog.project.documentation, newDoc],
-        };
+        const project = activeDialog.project;
+        const storageRef = ref(storage, `projects/${project.id}/docs/${file.name}`);
 
-        onUpdateProject(updatedProject);
-        toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
-        closeDialogs();
-        uploadForm.reset();
+        try {
+            const snapshot = await uploadBytesResumable(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            const newDoc = { name: file.name, url: downloadURL };
+            const updatedProject = {
+                ...project,
+                documentation: [...project.documentation, newDoc],
+            };
+
+            onUpdateProject(updatedProject);
+            toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
+        } catch (error) {
+            console.error("Error uploading document: ", error);
+            toast({ variant: 'destructive', title: "Error al subir", description: `No se pudo subir el archivo. Error: ${(error as Error).message}` });
+        } finally {
+            setIsUploading(false);
+            closeDialogs();
+            uploadForm.reset();
+        }
     };
 
 
@@ -390,7 +431,9 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                             <FormField control={uploadForm.control} name="file" render={({ field: { onChange, value, ...rest } }) => (<FormItem><FormLabel>Archivo</FormLabel><FormControl><Input type="file" onChange={(e) => onChange(e.target.files)} {...rest} /></FormControl><FormMessage /></FormItem>)} />
                             <DialogFooter>
                                 <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                                <Button type="submit"><Upload className="mr-2 h-4 w-4" /> Subir Archivo</Button>
+                                <Button type="submit" disabled={isUploading}>
+                                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />} Subir Archivo
+                                </Button>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -467,7 +510,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                                 <div>
                                     <h4 className="font-semibold text-sm mb-2">Documentación</h4>
                                     {project.documentation.length > 0 ? (
-                                        <ul className="list-disc list-inside text-sm text-muted-foreground">{project.documentation.map((doc: any, i: number) => <li key={i}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                                        <ul className="list-disc list-inside text-sm text-muted-foreground">{project.documentation.map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
                                     ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
                                 </div>
                                 <div>

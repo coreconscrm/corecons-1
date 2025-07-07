@@ -2,6 +2,7 @@
 
 import { initializeApp, getApp, getApps, type FirebaseApp } from "firebase/app";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // PEGA AQUÍ TU OBJETO DE CONFIGURACIÓN DE FIREBASE
 // Lo encontrarás en tu consola de Firebase:
@@ -18,15 +19,16 @@ const firebaseConfig = {
 
 // --- No es necesario modificar el código debajo de esta línea ---
 
-function initializeFirebase(): { app: FirebaseApp; db: Firestore } {
+function initializeFirebase(): { app: FirebaseApp; db: Firestore; storage: FirebaseStorage; } {
   const apps = getApps();
   const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
   // Conectamos a tu base de datos específica "wb-data".
   // Si no se especifica, Firestore intenta conectar a la base de datos "(default)".
   const db = getFirestore(app, 'wb-data');
-  return { app, db };
+  const storage = getStorage(app);
+  return { app, db, storage };
 }
 
-const { app, db } = initializeFirebase();
+const { app, db, storage } = initializeFirebase();
 
-export { app, db };
+export { app, db, storage };

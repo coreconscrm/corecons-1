@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
 import { OverviewCard } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
@@ -70,11 +70,15 @@ export default function DashboardPage() {
 
 
   const handleCreate = async (collectionName: string, item: any, type: string) => {
-    const { id, ...data } = item;
     try {
-        await addDoc(collection(db, collectionName), data);
-        toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente en tu base de datos.` });
-        fetchData();
+      if (item.id) {
+        const { id, ...data } = item;
+        await setDoc(doc(db, collectionName, id), data);
+      } else {
+        await addDoc(collection(db, collectionName), item);
+      }
+      toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente en tu base de datos.` });
+      fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
         toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar el elemento. Revisa la consola para más detalles. Error: ${(error as Error).message}`});

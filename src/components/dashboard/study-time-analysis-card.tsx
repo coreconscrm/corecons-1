@@ -12,7 +12,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
 
 const teamMemberSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -28,15 +32,55 @@ function TeamMemberForm({ member, onSubmit, open, onOpenChange }: { member?: Tea
         defaultValues: member ? { ...member, avatar: member.avatar || '' } : { name: "", role: "", avatar: "" },
     });
 
-    const handleSubmit = (values: z.infer<typeof teamMemberSchema>) => {
-        const avatar = values.avatar || 'https://placehold.co/40x40.png';
-        onSubmit({ ...member, ...values, avatar, hint: 'person portrait' });
-        form.reset();
-        onOpenChange(false);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(member?.avatar || null);
+    const { toast } = useToast();
+
+    const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    }
+
+    const handleSubmit = async (values: z.infer<typeof teamMemberSchema>) => {
+        setIsUploading(true);
+        const memberId = member?.id || `team-${Date.now()}`;
+        let submissionData = { ...values, id: memberId, hint: 'person portrait' };
+
+        try {
+            if (avatarFile) {
+                const storageRef = ref(storage, `team/${memberId}/avatar/${avatarFile.name}`);
+                const snapshot = await uploadBytesResumable(storageRef, avatarFile);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                submissionData.avatar = downloadURL;
+            } else if (!submissionData.avatar) {
+                 submissionData.avatar = 'https://placehold.co/40x40.png';
+            }
+
+            onSubmit({ ...member, ...submissionData });
+            form.reset();
+            setAvatarFile(null);
+            setPreviewUrl(null);
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Error processing form: ", error);
+            toast({ variant: 'destructive', title: "Error al guardar", description: `No se pudo guardar el miembro. Error: ${(error as Error).message}` });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setAvatarFile(null);
+                setPreviewUrl(member?.avatar || null);
+            }
+            onOpenChange(isOpen);
+        }}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{member ? "Editar Miembro" : "Añadir Nuevo Miembro"}</DialogTitle>
@@ -49,12 +93,21 @@ function TeamMemberForm({ member, onSubmit, open, onOpenChange }: { member?: Tea
                         <FormField control={form.control} name="role" render={({ field }) => (
                             <FormItem><FormLabel>Rol</FormLabel><FormControl><Input placeholder="Jefa de Proyecto" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <FormField control={form.control} name="avatar" render={({ field }) => (
-                            <FormItem><FormLabel>URL del Avatar (Opcional)</FormLabel><FormControl><Input placeholder="https://placehold.co/40x40.png" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
+                        <FormItem>
+                            <FormLabel>Avatar</FormLabel>
+                            <div className="flex items-center gap-4">
+                                {previewUrl && <Avatar><AvatarImage src={previewUrl} data-ai-hint="person portrait" /><AvatarFallback>{form.getValues("name")?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>}
+                                <FormControl>
+                                    <Input type="file" accept="image/*" onChange={handleAvatarChange} className="flex-1" />
+                                </FormControl>
+                            </div>
+                        </FormItem>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                            <Button type="submit">{member ? "Guardar Cambios" : "Guardar Miembro"}</Button>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {member ? "Guardar Cambios" : "Guardar Miembro"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>

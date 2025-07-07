@@ -13,10 +13,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 
 // Schemas
@@ -220,8 +222,8 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
   const [isAddBudgetOpen, setAddBudgetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
-  const [uploadTargetBudget, setUploadTargetBudget] = useState<Budget | null>(null);
   const [printingBudget, setPrintingBudget] = useState<Budget | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -234,18 +236,30 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
     }
   }, [printingBudget]);
 
-  const handleDocUpload = (file: File) => {
-    if (!uploadTargetBudget) return;
-    
-    const newDoc = { name: file.name, url: '#' }; // Simulación de subida
-    const updatedBudget = {
-        ...uploadTargetBudget,
-        documents: [...uploadTargetBudget.documents, newDoc],
-    };
+  const handleDocUpload = async (file: File, budget: Budget) => {
+    if (!budget) return;
+    setIsUploading(true);
 
-    onUpdateBudget(updatedBudget);
-    toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
-    setUploadTargetBudget(null);
+    const storageRef = ref(storage, `budgets/${budget.id}/documents/${file.name}`);
+    
+    try {
+        const snapshot = await uploadBytesResumable(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        const newDoc = { name: file.name, url: downloadURL };
+        const updatedBudget = {
+            ...budget,
+            documents: [...budget.documents, newDoc],
+        };
+
+        onUpdateBudget(updatedBudget);
+        toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
+    } catch (error) {
+        console.error("Error uploading document: ", error);
+        toast({ variant: 'destructive', title: "Error al subir", description: `No se pudo subir el archivo. Error: ${(error as Error).message}` });
+    } finally {
+        setIsUploading(false);
+    }
   };
 
 
@@ -349,7 +363,7 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                  <div>
                     <h4 className="font-semibold text-sm mb-2">Documentos</h4>
                     {budget.documents.length > 0 ? (
-                        <ul className="list-disc list-inside text-sm text-muted-foreground">{budget.documents.map((doc: any, i: number) => <li key={i}><a href={doc.url} className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground">{budget.documents.map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
                     ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
                 </div>
                  <Button variant="outline" size="sm" onClick={() => {
@@ -358,13 +372,12 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                      fileInput.onchange = (e) => {
                          const file = (e.target as HTMLInputElement).files?.[0];
                          if (file) {
-                            setUploadTargetBudget(budget); // Set context for upload
-                            handleDocUpload(file);
+                            handleDocUpload(file, budget);
                          }
                      }
                      fileInput.click();
-                 }}>
-                     <Upload className="mr-1 h-4 w-4" /> Subir
+                 }} disabled={isUploading}>
+                     {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
                  </Button>
             </CardFooter>
           </Card>
