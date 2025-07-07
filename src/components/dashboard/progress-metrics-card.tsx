@@ -34,21 +34,19 @@ export function DashboardTabs({
   
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <div className="w-full overflow-x-auto pb-2">
-        <TabsList className="h-auto w-full justify-start">
-          {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
-          {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
-          {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
-          {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
-          {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
-          {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-          {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
-          <TabsTrigger value="settings">Configuración</TabsTrigger>
-        </TabsList>
-      </div>
+      <TabsList className="h-auto w-full justify-start overflow-x-auto">
+        {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
+        {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
+        {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
+        {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
+        {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
+        {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
+        {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
+        <TabsTrigger value="settings">Configuración</TabsTrigger>
+      </TabsList>
 
       {visibleTabs.projects && <TabsContent value="projects">
-        <div className="mt-6 md:mt-0">
+        <div className="mt-6">
          <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
         </div>
       </TabsContent>}
