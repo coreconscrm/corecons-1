@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { db, auth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
 import { OverviewCard } from "@/components/dashboard/welcome-banner";
@@ -64,14 +63,7 @@ export default function DashboardPage() {
   }, [toast]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-            fetchData();
-        } else {
-            setIsLoading(false);
-        }
-    });
-    return () => unsubscribe();
+    fetchData();
   }, [fetchData]);
 
 
