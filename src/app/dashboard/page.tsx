@@ -71,7 +71,7 @@ export default function DashboardPage() {
     const { id, ...data } = item;
     try {
         await addDoc(collection(db, collectionName), data);
-        toast({ title: `${type} añadido`, description: `El ${type.toLowerCase()} ha sido creado con éxito.` });
+        toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente en tu base de datos.` });
         fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     }
     try {
         await updateDoc(doc(db, collectionName, id), data);
-        toast({ title: `${type} actualizado`, description: `El ${type.toLowerCase()} ha sido actualizado.` });
+        toast({ title: `${type} actualizado`, description: `Los cambios en el ${type.toLowerCase()} se han guardado en tu base de datos.` });
         fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
@@ -102,7 +102,7 @@ export default function DashboardPage() {
     }
     try {
         await deleteDoc(doc(db, collectionName, id));
-        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
+        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado de tu base de datos.`, variant: 'destructive' });
         fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
