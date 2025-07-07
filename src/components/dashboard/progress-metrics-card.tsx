@@ -14,6 +14,7 @@ export function DashboardTabs({
     projects, onAddProject, onUpdateProject, onDeleteProject,
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
+    contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
@@ -24,6 +25,7 @@ export function DashboardTabs({
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
+    contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
@@ -66,7 +68,16 @@ export function DashboardTabs({
       </TabsContent>}
       
       {visibleTabs.forms && <TabsContent value="forms">
-        <FormsResponsesCard forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm} />
+        <FormsResponsesCard 
+          contacts={contacts}
+          onAddContact={onAddContact}
+          onUpdateContact={onUpdateContact}
+          onDeleteContact={onDeleteContact}
+          forms={forms} 
+          onLoadForms={onLoadForms} 
+          onUpdateForm={onUpdateForm} 
+          onDeleteForm={onDeleteForm} 
+        />
       </TabsContent>}
 
       {visibleTabs.companies && <TabsContent value="companies">

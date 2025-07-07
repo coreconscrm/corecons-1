@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [forms, setForms] = useState(initialFormSubmissions);
+  const [contacts, setContacts] = useState<any[]>([]);
+
 
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -39,7 +41,7 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -50,6 +52,7 @@ export default function DashboardPage() {
         setTeam(mapSnapToState(snapshots[3]));
         setBudgets(mapSnapToState(snapshots[4]));
         setCompanies(mapSnapToState(snapshots[5]));
+        setContacts(mapSnapToState(snapshots[6]));
         console.log("Data fetched successfully.");
 
     } catch (error) {
@@ -103,7 +106,7 @@ export default function DashboardPage() {
   
   const handleDelete = async (collectionName: string, id: string, type: string) => {
      if (!id) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionado un ID para eliminar.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionionado un ID para eliminar.' });
         return;
     }
     try {
@@ -179,6 +182,11 @@ export default function DashboardPage() {
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
               onUpdateTeamMember={(member) => handleUpdate('team', member, 'Miembro')}
               onDeleteTeamMember={(id) => handleDelete('team', id, 'Miembro')}
+
+              contacts={contacts}
+              onAddContact={(contact) => handleCreate('contacts', contact, 'Contacto')}
+              onUpdateContact={(contact) => handleUpdate('contacts', contact, 'Contacto')}
+              onDeleteContact={(id) => handleDelete('contacts', id, 'Contacto')}
 
               forms={forms}
               onLoadForms={handleLoadForms}
