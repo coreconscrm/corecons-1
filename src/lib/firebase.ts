@@ -1,7 +1,6 @@
 "use client";
 
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // PASO 1: Ve a la configuración de tu proyecto en Firebase.
@@ -27,10 +26,9 @@ if (!getApps().length) {
   app = getApp();
 }
 
-const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ¡RECUERDA! Asegúrate de haber habilitado Authentication y Firestore Database
+// ¡RECUERDA! Asegúrate de haber habilitado Firestore Database
 // en tu consola de Firebase para que la aplicación funcione correctamente.
 
-export { app, auth, db };
+export { app, db };
