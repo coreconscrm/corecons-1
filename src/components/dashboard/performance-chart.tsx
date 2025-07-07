@@ -220,7 +220,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
             name: "",
             clientId: "",
             budget: 0,
-            status: "Planificado",
+            status: "Firmados",
             providerIds: [],
             costs: {}
         },
@@ -236,7 +236,7 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                 name: "",
                 clientId: "",
                 budget: 0,
-                status: "Planificado",
+                status: "Firmados",
                 providerIds: [],
                 costs: {}
             });
@@ -283,10 +283,9 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
                                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Planificado">Planificado</SelectItem>
-                                            <SelectItem value="En progreso">En progreso</SelectItem>
-                                            <SelectItem value="Completado">Completado</SelectItem>
-                                            <SelectItem value="Cancelado">Cancelado</SelectItem>
+                                            <SelectItem value="Firmados">Firmados</SelectItem>
+                                            <SelectItem value="En proceso">En proceso</SelectItem>
+                                            <SelectItem value="Finalizados">Finalizados</SelectItem>
                                         </SelectContent>
                                     </Select><FormMessage />
                                 </FormItem>
@@ -461,7 +460,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                                         <CardDescription>{clients.find(c => c.id === project.clientId)?.name}</CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                    <Badge variant={project.status === 'Completado' ? 'default' : (project.status === 'En progreso' ? 'secondary' : 'outline')}>{project.status}</Badge>
+                                    <Badge variant={project.status === 'Finalizados' ? 'default' : (project.status === 'En proceso' ? 'secondary' : 'outline')}>{project.status}</Badge>
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>

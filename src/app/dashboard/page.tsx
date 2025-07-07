@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
-import { OverviewCard } from "@/components/dashboard/welcome-banner";
+import { ProjectOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
@@ -134,11 +134,17 @@ export default function DashboardPage() {
     setForms((prev: any[]) => prev.map(form => form.id === updatedForm.id ? updatedForm : form));
   };
   
-  const projectsInProgress = projects.filter(p => p.status === 'En progreso').length;
-  const projectsCompleted = projects.filter(p => p.status === 'Completado').length;
-  const contactsCalled = forms.filter(f => f.called).length;
-  const contactsInProcess = forms.filter(f => f.status === 'En proceso').length;
-  const contactsSigned = forms.filter(f => f.status === 'Firmado').length;
+  const projectsSigned = projects.filter(p => p.status === 'Firmados').length;
+  const projectsInProgress = projects.filter(p => p.status === 'En proceso').length;
+  const projectsCompleted = projects.filter(p => p.status === 'Finalizados').length;
+
+  const budgetsPending = budgets.filter(b => b.status === 'Pendiente').length;
+  const budgetsAccepted = budgets.filter(b => b.status === 'Aceptado').length;
+  const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
+
+  const formsTotal = forms.length + contacts.length;
+  const formsCalled = forms.filter(f => f.called).length + contacts.filter(c => c.called).length;
+  const formsPending = formsTotal - formsCalled;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -152,13 +158,25 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold">Panel de Control</h1>
-            <OverviewCard
-              projectsInProgress={projectsInProgress}
-              projectsCompleted={projectsCompleted}
-              contactsCalled={contactsCalled}
-              contactsInProcess={contactsInProcess}
-              contactsSigned={contactsSigned}
-            />
+            
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <ProjectOverview
+                signed={projectsSigned}
+                inProgress={projectsInProgress}
+                completed={projectsCompleted}
+              />
+              <BudgetOverview
+                pending={budgetsPending}
+                accepted={budgetsAccepted}
+                rejected={budgetsRejected}
+              />
+              <FormOverview
+                total={formsTotal}
+                called={formsCalled}
+                pending={formsPending}
+              />
+            </div>
+            
             <DashboardTabs
               activeTab={activeTab}
               onTabChange={setActiveTab}
