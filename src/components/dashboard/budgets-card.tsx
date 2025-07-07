@@ -99,12 +99,12 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{budget ? 'Editar Presupuesto' : 'Crear Nuevo Presupuesto'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Nombre del Presupuesto</FormLabel><FormControl><Input placeholder="Reforma integral vivienda" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
@@ -205,7 +205,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
               </CardFooter>
             </Card>
 
-            <DialogFooter>
+            <DialogFooter className="pt-4 mt-auto border-t">
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
               <Button type="submit">{budget ? 'Guardar Cambios' : 'Crear Presupuesto'}</Button>
             </DialogFooter>
@@ -279,12 +279,12 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
       
       {viewingBudget && (
           <Dialog open={!!viewingBudget} onOpenChange={() => setViewingBudget(undefined)}>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-4xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
                   <DialogHeader>
                       <DialogTitle>Detalle del Presupuesto: {viewingBudget.name}</DialogTitle>
                       <DialogDescription>Cliente: {clients.find(c => c.id === viewingBudget.clientId)?.name || 'N/A'}</DialogDescription>
                   </DialogHeader>
-                   <div className="overflow-x-auto">
+                   <div className="flex-1 overflow-y-auto -mr-6 pr-6">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -308,12 +308,12 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                         </TableBody>
                     </Table>
                    </div>
-                  <CardFooter className="justify-end bg-secondary/50 p-4 mt-4">
+                  <CardFooter className="justify-end bg-secondary/50 p-4 mt-auto border-t -mx-6 -mb-6">
                         <div className="text-xl font-bold">
                             Total Presupuesto: <span className="font-mono">€{viewingBudget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </CardFooter>
-                  <DialogFooter>
+                  <DialogFooter className="mt-auto pt-4">
                       <DialogClose asChild><Button variant="secondary">Cerrar</Button></DialogClose>
                   </DialogFooter>
               </DialogContent>

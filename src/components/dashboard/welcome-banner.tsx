@@ -13,7 +13,7 @@ import {
 
 function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: number }) {
   return (
-    <div className="p-4 rounded-lg bg-secondary/50 dark:bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:shadow-md">
+    <div className="p-4 rounded-lg bg-secondary/50 dark:bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:shadow-md flex-1 basis-28">
       <Icon className="h-8 w-8 text-primary mx-auto" />
       <p className="text-3xl font-bold text-foreground">
         {value}
@@ -35,7 +35,7 @@ export function ProjectOverview({ signed, inProgress, completed }: { signed: num
         <CardTitle>Resumen de Proyectos</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+        <div className="flex flex-wrap justify-center gap-4 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>
@@ -55,7 +55,7 @@ export function BudgetOverview({ pending, accepted, rejected }: { pending: numbe
         <CardTitle>Resumen de Presupuestos</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+        <div className="flex flex-wrap justify-center gap-4 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>
@@ -75,7 +75,7 @@ export function FormOverview({ total, called, pending }: { total: number, called
         <CardTitle>Resumen de Formularios</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+        <div className="flex flex-wrap justify-center gap-4 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>

@@ -34,7 +34,7 @@ export function DashboardTabs({
   
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="h-auto w-full justify-start overflow-x-auto">
+      <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}

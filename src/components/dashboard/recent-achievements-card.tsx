@@ -181,61 +181,63 @@ export function FormsResponsesCard({
             <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead className="hidden sm:table-cell">Email</TableHead>
-                  <TableHead className="hidden md:table-cell">Tipo</TableHead>
-                  <TableHead>Llamado</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contacts.length > 0 ? contacts.map(contact => (
-                  <TableRow key={contact.id}>
-                    <TableCell className="font-medium">{contact.name}</TableCell>
-                    <TableCell>{contact.phone}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{contact.email}</TableCell>
-                    <TableCell className="hidden md:table-cell"><span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{contact.type}</span></TableCell>
-                    <TableCell><Checkbox checked={contact.called} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} /></TableCell>
-                    <TableCell>
-                      <Select value={contact.status} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
-                        <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pendiente">Pendiente</SelectItem>
-                          <SelectItem value="Contactado">Contactado</SelectItem>
-                          <SelectItem value="En proceso">En proceso</SelectItem>
-                          <SelectItem value="Firmado">Firmado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => setEditingContact(contact)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el contacto.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteContact(contact.id)}>Eliminar</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Llamado</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                )) : (
-                  <TableRow><TableCell colSpan={7} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {contacts.length > 0 ? contacts.map(contact => (
+                    <TableRow key={contact.id}>
+                      <TableCell className="font-medium">{contact.name}</TableCell>
+                      <TableCell>{contact.phone}</TableCell>
+                      <TableCell>{contact.email}</TableCell>
+                      <TableCell><span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{contact.type}</span></TableCell>
+                      <TableCell><Checkbox checked={contact.called} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} /></TableCell>
+                      <TableCell>
+                        <Select value={contact.status} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
+                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pendiente">Pendiente</SelectItem>
+                            <SelectItem value="Contactado">Contactado</SelectItem>
+                            <SelectItem value="En proceso">En proceso</SelectItem>
+                            <SelectItem value="Firmado">Firmado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                         <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => setEditingContact(contact)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el contacto.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteContact(contact.id)}>Eliminar</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  )) : (
+                    <TableRow><TableCell colSpan={7} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
 

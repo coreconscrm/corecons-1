@@ -90,14 +90,15 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                 <ProviderForm onSubmit={onAddProvider} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
             </Dialog>
             <CardContent>
+              <div className="w-full overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Proveedor</TableHead>
                             <TableHead>Especialidad</TableHead>
-                            <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+                            <TableHead>Contacto</TableHead>
                             <TableHead>Teléfono</TableHead>
-                            <TableHead className="hidden md:table-cell">Descuento</TableHead>
+                            <TableHead>Descuento</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -106,9 +107,9 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                             <TableRow key={provider.id}>
                                 <TableCell className="font-medium">{provider.name}</TableCell>
                                 <TableCell>{provider.specialization}</TableCell>
-                                <TableCell className="hidden sm:table-cell">{provider.contact}</TableCell>
+                                <TableCell>{provider.contact}</TableCell>
                                 <TableCell>{provider.phone}</TableCell>
-                                <TableCell className="hidden md:table-cell">{provider.discount}</TableCell>
+                                <TableCell>{provider.discount}</TableCell>
                                 <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
@@ -131,6 +132,7 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                         ))}
                     </TableBody>
                 </Table>
+              </div>
             </CardContent>
         </Card>
     );

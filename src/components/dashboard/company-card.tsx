@@ -164,12 +164,13 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
                 <CompanyForm onSubmit={onAddCompany} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
             </Dialog>
             <CardContent>
+              <div className="w-full overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Empresa</TableHead>
-                            <TableHead className="hidden md:table-cell">CIF</TableHead>
-                            <TableHead className="hidden md:table-cell">Email</TableHead>
+                            <TableHead>CIF</TableHead>
+                            <TableHead>Email</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
@@ -178,8 +179,8 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
                         {companies.map(company => (
                             <TableRow key={company.id}>
                                 <TableCell className="font-medium">{company.name}</TableCell>
-                                <TableCell className="hidden md:table-cell">{company.cif}</TableCell>
-                                <TableCell className="hidden md:table-cell">{company.email}</TableCell>
+                                <TableCell>{company.cif}</TableCell>
+                                <TableCell>{company.email}</TableCell>
                                 <TableCell>{company.phone}</TableCell>
                                 <TableCell className="text-right">
                                     <AlertDialog>
@@ -203,6 +204,7 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
                         ))}
                     </TableBody>
                 </Table>
+              </div>
             </CardContent>
         </Card>
     );
