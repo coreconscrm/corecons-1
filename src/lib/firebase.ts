@@ -1,5 +1,8 @@
+"use client";
+
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // TODO: Reemplaza esto con la configuración de tu proyecto de Firebase.
 // Puedes encontrarla en la consola de Firebase, en la configuración de tu proyecto.
@@ -20,5 +23,6 @@ if (!getApps().length) {
 }
 
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-export { app, auth };
+export { app, auth, db };

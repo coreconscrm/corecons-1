@@ -1,70 +1,30 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
 import { OverviewCard } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-
-const initialClients = [
-  { id: 'cli-1', name: 'Constructora Central', contact: 'Juan Pérez', email: 'juan.perez@constructora.com', phone: '555-1234' },
-  { id: 'cli-2', name: 'Inmobiliaria Futuro', contact: 'Ana Gómez', email: 'ana.gomez@infuturo.es', phone: '555-5678' },
-];
-
-const initialProjects = [
-  { id: 'pro-1', name: 'Residencial Los Robles', clientId: 'cli-1', status: 'En progreso', budget: 500000, documentation: [], plan: null, photos: [], ganttData: [], assignedProviders: [{ id: 'prov-1', cost: 150000 }] },
-  { id: 'pro-2', name: 'Edificio de Oficinas Metrópolis', clientId: 'cli-2', status: 'Completado', budget: 1200000, documentation: [{name: 'Planos Finales.pdf', url: '#'}], plan: {url: '#'}, photos: ['https://placehold.co/600x400.png'], ganttData: [{name: "Cimentación", days: 15}, {name: "Estructura", days: 30}, {name: "Acabados", days: 25}], assignedProviders: [{id: 'prov-1', cost: 300000}, {id: 'prov-2', cost: 450000}] },
-];
-
-const initialProviders = [
-  { id: 'prov-1', name: 'Cementos Fortaleza', contact: 'Carlos Ruiz', phone: '555-8765', discount: '10%', specialization: 'Materiales de obra' },
-  { id: 'prov-2', name: 'Aceros del Norte', contact: 'Luisa Fernández', phone: '555-4321', discount: '15%', specialization: 'Estructuras metálicas' },
-];
-
-const initialTeamMembers = [
-  { id: 'team-1', name: 'Elena García', role: 'Jefa de Proyecto', avatar: 'https://placehold.co/40x40.png', hint: 'woman portrait' },
-  { id: 'team-2', name: 'Miguel Torres', role: 'Arquitecto Principal', avatar: 'https://placehold.co/40x40.png', hint: 'man portrait' },
-  { id: 'team-3', name: 'Sofía Romero', role: 'Administración', avatar: 'https://placehold.co/40x40.png', hint: 'person glasses' },
-];
+import { Loader2 } from 'lucide-react';
 
 const initialFormSubmissions: any[] = [];
 
-const initialBudgets = [
-  { id: 'bud-1', name: 'Reforma Baño Principal', clientId: 'cli-1', companyId: 'comp-1', status: 'Aceptado', documents: [{name: 'Planos Baño.pdf', url: '#'}], 
-    lineItems: [
-      { description: 'Alicatado paredes', quantity: 25, unit: 'm2', unitPrice: 45 },
-      { description: 'Instalación plato de ducha', quantity: 1, unit: 'ud', unitPrice: 600 },
-      { description: 'Mueble lavabo y espejo', quantity: 1, unit: 'ud', unitPrice: 750 },
-    ], 
-    total: (25*45 + 600 + 750) 
-  },
-];
-
-const initialCompanies = [
-  { 
-    id: 'comp-1', 
-    name: 'WinnBuilders', 
-    address: 'Parque Tecnológico de Barcelona, C/ Marie Curie, 8, 08042 Barcelona', 
-    cif: 'B-12345678', 
-    phone: '+34 930 000 000', 
-    email: 'info@winnbuilders.com',
-    web: 'https://www.winnbuilders.com',
-    logo: '',
-    validity: 'Validez del presupuesto: 30 días.', 
-    paymentMethods: 'Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización.'
-  },
-];
-
-
 export default function DashboardPage() {
-  const [clients, setClients] = useState(initialClients);
-  const [projects, setProjects] = useState(initialProjects);
-  const [providers, setProviders] = useState(initialProviders);
-  const [team, setTeam] = useState(initialTeamMembers);
+  const [clients, setClients] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [team, setTeam] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [forms, setForms] = useState(initialFormSubmissions);
-  const [budgets, setBudgets] = useState(initialBudgets);
-  const [companies, setCompanies] = useState(initialCompanies);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
   const [visibleTabs, setVisibleTabs] = useState({
     projects: true,
     clients: true,
@@ -75,21 +35,87 @@ export default function DashboardPage() {
     companies: true,
   });
   const [activeTab, setActiveTab] = useState("projects");
-  const { toast } = useToast();
+  
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies'];
+        const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
+        
+        const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
 
-  const handleCreate = (setter: Function, item: any, type: string) => {
-    setter((prev: any[]) => [...prev, { ...item, id: `${type.slice(0,4)}-${Date.now()}` }]);
-    toast({ title: `${type} añadido`, description: `El ${type.toLowerCase()} ha sido creado con éxito.` });
+        setClients(mapSnapToState(snapshots[0]));
+        setProjects(mapSnapToState(snapshots[1]));
+        setProviders(mapSnapToState(snapshots[2]));
+        setTeam(mapSnapToState(snapshots[3]));
+        setBudgets(mapSnapToState(snapshots[4]));
+        setCompanies(mapSnapToState(snapshots[5]));
+
+    } catch (error) {
+        console.error("Error fetching data: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al cargar los datos",
+            description: "No se pudieron obtener los datos de la base de datos. Asegúrate de que Firestore está habilitado.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            fetchData();
+        } else {
+            setIsLoading(false);
+        }
+    });
+    return () => unsubscribe();
+  }, [fetchData]);
+
+
+  const handleCreate = async (collectionName: string, item: any, type: string) => {
+    const { id, ...data } = item;
+    try {
+        await addDoc(collection(db, collectionName), data);
+        toast({ title: `${type} añadido`, description: `El ${type.toLowerCase()} ha sido creado con éxito.` });
+        fetchData();
+    } catch (error) {
+        console.error(`Error adding ${type}: `, error);
+        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: "No se pudo guardar el elemento."});
+    }
   };
 
-  const handleUpdate = (setter: Function, updatedItem: any, type: string) => {
-    setter((prev: any[]) => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    toast({ title: `${type} actualizado`, description: `El ${type.toLowerCase()} ha sido actualizado.` });
+  const handleUpdate = async (collectionName: string, item: any, type: string) => {
+    const { id, ...data } = item;
+    if (!id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionado un ID para actualizar.' });
+        return;
+    }
+    try {
+        await updateDoc(doc(db, collectionName, id), data);
+        toast({ title: `${type} actualizado`, description: `El ${type.toLowerCase()} ha sido actualizado.` });
+        fetchData();
+    } catch (error) {
+        console.error(`Error updating ${type}: `, error);
+        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: "No se pudo guardar los cambios."});
+    }
   };
   
-  const handleDelete = (setter: Function, id: any, type: string) => {
-    setter((prev: any[]) => prev.filter(item => item.id !== id));
-    toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
+  const handleDelete = async (collectionName: string, id: string, type: string) => {
+     if (!id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionado un ID para eliminar.' });
+        return;
+    }
+    try {
+        await deleteDoc(doc(db, collectionName, id));
+        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
+        fetchData();
+    } catch (error) {
+        console.error(`Error deleting ${type}: `, error);
+        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: "No se pudo eliminar el elemento."});
+    }
   };
 
   const handleLoadForms = (data: any[]) => {
@@ -117,58 +143,65 @@ export default function DashboardPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header onSettingsClick={() => setActiveTab("settings")} />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold">Panel de Control</h1>
-          <OverviewCard
-            projectsInProgress={projectsInProgress}
-            projectsCompleted={projectsCompleted}
-            contactsCalled={contactsCalled}
-            contactsInProcess={contactsInProcess}
-            contactsSigned={contactsSigned}
-          />
-          <DashboardTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
+        {isLoading ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Cargando datos...</span>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold">Panel de Control</h1>
+            <OverviewCard
+              projectsInProgress={projectsInProgress}
+              projectsCompleted={projectsCompleted}
+              contactsCalled={contactsCalled}
+              contactsInProcess={contactsInProcess}
+              contactsSigned={contactsSigned}
+            />
+            <DashboardTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
 
-            clients={clients}
-            onAddClient={(client) => handleCreate(setClients, client, 'Cliente')}
-            onUpdateClient={(client) => handleUpdate(setClients, client, 'Cliente')}
-            onDeleteClient={(id) => handleDelete(setClients, id, 'Cliente')}
+              clients={clients}
+              onAddClient={(client) => handleCreate('clients', client, 'Cliente')}
+              onUpdateClient={(client) => handleUpdate('clients', client, 'Cliente')}
+              onDeleteClient={(id) => handleDelete('clients', id, 'Cliente')}
 
-            projects={projects}
-            onAddProject={(project) => handleCreate(setProjects, {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
-            onUpdateProject={(project) => handleUpdate(setProjects, project, 'Proyecto')}
-            onDeleteProject={(id) => handleDelete(setProjects, id, 'Proyecto')}
+              projects={projects}
+              onAddProject={(project) => handleCreate('projects', {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
+              onUpdateProject={(project) => handleUpdate('projects', project, 'Proyecto')}
+              onDeleteProject={(id) => handleDelete('projects', id, 'Proyecto')}
 
-            providers={providers}
-            onAddProvider={(provider) => handleCreate(setProviders, provider, 'Proveedor')}
-            onUpdateProvider={(provider) => handleUpdate(setProviders, provider, 'Proveedor')}
-            onDeleteProvider={(id) => handleDelete(setProviders, id, 'Proveedor')}
+              providers={providers}
+              onAddProvider={(provider) => handleCreate('providers', provider, 'Proveedor')}
+              onUpdateProvider={(provider) => handleUpdate('providers', provider, 'Proveedor')}
+              onDeleteProvider={(id) => handleDelete('providers', id, 'Proveedor')}
 
-            team={team}
-            onAddTeamMember={(member) => handleCreate(setTeam, member, 'Miembro')}
-            onUpdateTeamMember={(member) => handleUpdate(setTeam, member, 'Miembro')}
-            onDeleteTeamMember={(id) => handleDelete(setTeam, id, 'Miembro')}
+              team={team}
+              onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
+              onUpdateTeamMember={(member) => handleUpdate('team', member, 'Miembro')}
+              onDeleteTeamMember={(id) => handleDelete('team', id, 'Miembro')}
 
-            forms={forms}
-            onLoadForms={handleLoadForms}
-            onUpdateForm={handleUpdateForm}
-            onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
+              forms={forms}
+              onLoadForms={handleLoadForms}
+              onUpdateForm={handleUpdateForm}
+              onDeleteForm={(id) => handleDelete('forms', id, 'Formulario')}
 
-            budgets={budgets}
-            onAddBudget={(budget) => handleCreate(setBudgets, {...budget, documents: []}, 'Presupuesto')}
-            onUpdateBudget={(budget) => handleUpdate(setBudgets, budget, 'Presupuesto')}
-            onDeleteBudget={(id) => handleDelete(setBudgets, id, 'Presupuesto')}
+              budgets={budgets}
+              onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: []}, 'Presupuesto')}
+              onUpdateBudget={(budget) => handleUpdate('budgets', budget, 'Presupuesto')}
+              onDeleteBudget={(id) => handleDelete('budgets', id, 'Presupuesto')}
 
-            companies={companies}
-            onAddCompany={(company) => handleCreate(setCompanies, company, 'Empresa')}
-            onUpdateCompany={(company) => handleUpdate(setCompanies, company, 'Empresa')}
-            onDeleteCompany={(id) => handleDelete(setCompanies, id, 'Empresa')}
+              companies={companies}
+              onAddCompany={(company) => handleCreate('companies', company, 'Empresa')}
+              onUpdateCompany={(company) => handleUpdate('companies', company, 'Empresa')}
+              onDeleteCompany={(id) => handleDelete('companies', id, 'Empresa')}
 
-            visibleTabs={visibleTabs}
-            onTabVisibilityChange={setVisibleTabs}
-          />
-        </div>
+              visibleTabs={visibleTabs}
+              onTabVisibilityChange={setVisibleTabs}
+            />
+          </div>
+        )}
       </main>
       <Toaster />
     </div>
