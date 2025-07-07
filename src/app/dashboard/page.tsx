@@ -55,7 +55,7 @@ export default function DashboardPage() {
         toast({
             variant: "destructive",
             title: "Error al cargar los datos",
-            description: "No se pudieron obtener los datos de la base de datos. Asegúrate de que Firestore está habilitado.",
+            description: `Hubo un problema al conectar con Firestore. Error: ${(error as Error).message}`,
         });
     } finally {
         setIsLoading(false);
@@ -75,7 +75,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: "No se pudo guardar el elemento."});
+        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar el elemento. Error: ${(error as Error).message}`});
     }
   };
 
@@ -91,7 +91,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: "No se pudo guardar los cambios."});
+        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar los cambios. Error: ${(error as Error).message}`});
     }
   };
   
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: "No se pudo eliminar el elemento."});
+        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar el elemento. Error: ${(error as Error).message}`});
     }
   };
 
