@@ -7,13 +7,14 @@ import { getFirestore } from "firebase/firestore";
 // Para completarlo, copia el objeto de configuración COMPLETO de tu consola
 // (Configuración del proyecto -> Tus Apps -> Configuración del SDK -> Config) 
 // y reemplaza este objeto.
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AlzaSyCzeGtW-b-CI-_CPjth_fRXbLE62Smio2A",
+  apiKey: "AIzaSyCzeGtW-b-CI-_CPjth_fRXbLE62Smio2A",
   authDomain: "study-hub-dashboard.firebaseapp.com",
   projectId: "study-hub-dashboard",
-  storageBucket: "study-hub-dashboard.appspot.com",
+  storageBucket: "study-hub-dashboard.firebasestorage.app",
   messagingSenderId: "955037422201",
-  appId: "TU_APP_ID_AQUI"
+  appId: "1:955037422201:web:ac9276c258fec58929baa8"
 };
 
 

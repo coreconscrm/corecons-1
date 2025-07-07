@@ -138,7 +138,7 @@ export default function DashboardPage() {
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Cargando datos...</span>
+            <span className="ml-2">Conectando con tu base de datos...</span>
           </div>
         ) : (
           <div className="space-y-6">
