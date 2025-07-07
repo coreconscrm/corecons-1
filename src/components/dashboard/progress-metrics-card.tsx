@@ -5,6 +5,7 @@ import { ProviderListCard } from "@/components/dashboard/tasks-card";
 import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
+import { BudgetListCard } from "@/components/dashboard/budgets-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -13,6 +14,7 @@ export function DashboardTabs({
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
+    budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     visibleTabs, onTabVisibilityChange
 }: {
     activeTab: string, onTabChange: (tab: string) => void,
@@ -21,13 +23,15 @@ export function DashboardTabs({
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
+    budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
 }) {
   
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
+        {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
@@ -36,7 +40,13 @@ export function DashboardTabs({
       </TabsList>
 
       {visibleTabs.projects && <TabsContent value="projects">
-        <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
+        <div className="mt-12 md:mt-0">
+         <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
+        </div>
+      </TabsContent>}
+
+      {visibleTabs.budgets && <TabsContent value="budgets">
+        <BudgetListCard budgets={budgets} clients={clients} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
       </TabsContent>}
       
       {visibleTabs.clients && <TabsContent value="clients">

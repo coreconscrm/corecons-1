@@ -30,6 +30,17 @@ const initialTeamMembers = [
 
 const initialFormSubmissions: any[] = [];
 
+const initialBudgets = [
+  { id: 'bud-1', name: 'Reforma Baño Principal', clientId: 'cli-1', status: 'Aceptado', documents: [{name: 'Planos Baño.pdf', url: '#'}], 
+    lineItems: [
+      { description: 'Alicatado paredes', quantity: 25, unit: 'm2', unitPrice: 45 },
+      { description: 'Instalación plato de ducha', quantity: 1, unit: 'ud', unitPrice: 600 },
+      { description: 'Mueble lavabo y espejo', quantity: 1, unit: 'ud', unitPrice: 750 },
+    ], 
+    total: (25*45 + 600 + 750) 
+  },
+];
+
 
 export default function CrmPage() {
   const [clients, setClients] = useState(initialClients);
@@ -37,12 +48,14 @@ export default function CrmPage() {
   const [providers, setProviders] = useState(initialProviders);
   const [team, setTeam] = useState(initialTeamMembers);
   const [forms, setForms] = useState(initialFormSubmissions);
+  const [budgets, setBudgets] = useState(initialBudgets);
   const [visibleTabs, setVisibleTabs] = useState({
     projects: true,
     clients: true,
     providers: true,
     team: true,
     forms: true,
+    budgets: true,
   });
   const [activeTab, setActiveTab] = useState("projects");
   const { toast } = useToast();
@@ -124,6 +137,11 @@ export default function CrmPage() {
             onLoadForms={handleLoadForms}
             onUpdateForm={handleUpdateForm}
             onDeleteForm={(id) => handleDelete(setForms, id, 'Formulario')}
+
+            budgets={budgets}
+            onAddBudget={(budget) => handleCreate(setBudgets, {...budget, documents: []}, 'Presupuesto')}
+            onUpdateBudget={(budget) => handleUpdate(setBudgets, budget, 'Presupuesto')}
+            onDeleteBudget={(id) => handleDelete(setBudgets, id, 'Presupuesto')}
 
             visibleTabs={visibleTabs}
             onTabVisibilityChange={setVisibleTabs}

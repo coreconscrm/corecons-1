@@ -10,10 +10,12 @@ type VisibleTabs = {
     providers: boolean;
     team: boolean;
     forms: boolean;
+    budgets: boolean;
 }
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
     projects: "Proyectos",
+    budgets: "Presupuestos",
     clients: "Clientes",
     providers: "Proveedores",
     team: "Equipo",
@@ -33,7 +35,7 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
         <CardDescription>Selecciona las pestañas que deseas mostrar en el panel de control.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-2">
-        {Object.keys(visibleTabs).map(tabKey => (
+        {Object.keys(tabLabels).map(tabKey => (
             <div key={tabKey} className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary">
                 <Label htmlFor={`${tabKey}-switch`} className="text-base cursor-pointer">
                     {tabLabels[tabKey as keyof VisibleTabs]}
