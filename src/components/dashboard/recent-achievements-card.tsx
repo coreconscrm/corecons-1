@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,7 +34,7 @@ const contactSchema = z.object({
   status: z.string().default('Pendiente'),
 });
 
-type Contact = z.infer<typeof contactSchema> & { id: string };
+type Contact = z.infer<typeof contactSchema> & { id: string, [key: string]: any };
 
 function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Contact, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
   const form = useForm<z.infer<typeof contactSchema>>({
@@ -53,7 +53,40 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
     },
   });
 
+  // When a contact is passed for editing, make sure to reset the form with its values
+  useEffect(() => {
+    if (contact) {
+      form.reset({
+        type: contact.type || "Reforma",
+        active: contact.active ?? true,
+        project: contact.project ?? false,
+        license: contact.license ?? false,
+        name: contact.name || '',
+        phone: contact.phone || '',
+        email: contact.email || '',
+        location: contact.location || '',
+        called: contact.called ?? false,
+        status: contact.status || 'Pendiente'
+      });
+    } else {
+       form.reset({
+          type: "Reforma",
+          active: true,
+          project: false,
+          license: false,
+          name: "",
+          phone: "",
+          email: "",
+          location: "",
+          called: false,
+          status: "Pendiente"
+      });
+    }
+  }, [contact, form, open]);
+
+
   const handleSubmit = (values: z.infer<typeof contactSchema>) => {
+    // This preserves extra fields that are not in the form
     onSubmit({ ...contact, ...values });
     form.reset();
     onOpenChange(false);
@@ -218,10 +251,54 @@ export function FormsResponsesCard({
 
   const csvHeaders = getCsvHeaders();
 
+  const handlePromoteToContact = (formRow: any) => {
+    const { id, ...data } = formRow; 
+    const contactName = data.name || data.Nombre || data.nombre || 'un contacto';
+    
+    const newContactPayload = {
+      ...data,
+      called: data.called ?? false,
+      status: data.status ?? 'Pendiente',
+    };
+
+    onAddContact(newContactPayload);
+    toast({ title: "Contacto añadido", description: `"${contactName}" ha sido guardado en tus contactos.` });
+  };
+  
+  const getContactHeaders = () => {
+    if (!contacts || contacts.length === 0) return [];
+    const allKeys = new Set<string>();
+    contacts.forEach(contact => {
+      Object.keys(contact).forEach(key => allKeys.add(key));
+    });
+    allKeys.delete('id');
+    
+    const keyArray = Array.from(allKeys);
+    const preferredOrder = ['name', 'Nombre', 'phone', 'Teléfono', 'email', 'Email', 'status', 'called'];
+    keyArray.sort((a, b) => {
+        const indexA = preferredOrder.indexOf(a);
+        const indexB = preferredOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+    return keyArray;
+  };
+  
+  const contactHeaders = getContactHeaders();
+
   return (
     <Card>
-      {editingContact && <ContactForm contact={editingContact} onSubmit={onUpdateContact} open={!!editingContact} onOpenChange={() => setEditingContact(undefined)} />}
-      <ContactForm onSubmit={onAddContact} open={isFormOpen} onOpenChange={setIsFormOpen} />
+      <ContactForm 
+        contact={editingContact} 
+        onSubmit={editingContact ? onUpdateContact : onAddContact} 
+        open={isFormOpen} 
+        onOpenChange={(open) => {
+          if(!open) setEditingContact(undefined);
+          setIsFormOpen(open);
+        }} 
+      />
       <GoogleSheetDialog 
         open={isSheetDialogOpen}
         onOpenChange={setIsSheetDialogOpen}
@@ -240,47 +317,53 @@ export function FormsResponsesCard({
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:items-center mb-4">
             <h3 className="text-lg font-semibold">Contactos Manuales</h3>
-            <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
+            <Button onClick={() => { setEditingContact(undefined); setIsFormOpen(true); }} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
-            <div className="w-full overflow-x-auto">
+            <ScrollArea className="w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Teléfono</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Llamado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                    <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contacts.length > 0 ? contacts.map(contact => (
                     <TableRow key={contact.id}>
-                      <TableCell className="font-medium">{contact.name}</TableCell>
-                      <TableCell>{contact.phone}</TableCell>
-                      <TableCell>{contact.email}</TableCell>
-                      <TableCell><span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{contact.type}</span></TableCell>
-                      <TableCell><Checkbox checked={contact.called} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} /></TableCell>
-                      <TableCell>
-                        <Select value={contact.status} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
-                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Pendiente">Pendiente</SelectItem>
-                            <SelectItem value="Contactado">Contactado</SelectItem>
-                            <SelectItem value="En proceso">En proceso</SelectItem>
-                            <SelectItem value="Firmado">Firmado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      {contactHeaders.map(header => (
+                        <TableCell key={`${contact.id}-${header}`} className="whitespace-normal break-words max-w-[200px]">
+                          {(() => {
+                            const value = contact[header];
+                            if (header === 'called') {
+                              return <Checkbox checked={!!value} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} />;
+                            }
+                            if (header === 'status') {
+                              return (
+                                <Select value={value || 'Pendiente'} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
+                                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                    <SelectItem value="Contactado">Contactado</SelectItem>
+                                    <SelectItem value="En proceso">En proceso</SelectItem>
+                                    <SelectItem value="Firmado">Firmado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            if (typeof value === 'boolean') {
+                              return <Checkbox checked={value} disabled />;
+                            }
+                            return value?.toString() || '';
+                          })()}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right sticky right-0 bg-card">
                          <AlertDialog>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
                               <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => setEditingContact(contact)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {setEditingContact(contact); setIsFormOpen(true);}}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -295,11 +378,12 @@ export function FormsResponsesCard({
                       </TableCell>
                     </TableRow>
                   )) : (
-                    <TableRow><TableCell colSpan={7} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={contactHeaders.length + 1} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
-            </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         </div>
 
@@ -320,14 +404,14 @@ export function FormsResponsesCard({
               </div>
           </div>
           {forms.length > 0 ? (
-              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+              <ScrollArea className="w-full rounded-md border">
                   <Table>
                       <TableHeader>
                           <TableRow>
                               <TableHead>Llamado</TableHead>
                               <TableHead>Estado</TableHead>
-                              {csvHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}
-                              <TableHead className="text-right">Acciones</TableHead>
+                              {csvHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                              <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -346,19 +430,24 @@ export function FormsResponsesCard({
                                   </Select>
                               </TableCell>
                               {csvHeaders.map(header => (
-                                  <TableCell key={`${sub.id}-${header}`} className="max-w-[200px] truncate" title={sub[header]}>{sub[header]}</TableCell>
+                                  <TableCell key={`${sub.id}-${header}`} className="whitespace-normal break-words max-w-[200px]">{sub[header]}</TableCell>
                               ))}
-                              <TableCell className="text-right">
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 size={16} /></Button></AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                  <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la respuesta del formulario.</AlertDialogDescription></AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDeleteForm(sub.id)}>Eliminar</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
+                              <TableCell className="text-right sticky right-0 bg-card">
+                              <div className="flex items-center justify-end">
+                                <Button variant="ghost" size="icon" title="Añadir a contactos" onClick={() => handlePromoteToContact(sub)}>
+                                    <UserPlus size={16} />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 size={16} /></Button></AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la respuesta del formulario.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDeleteForm(sub.id)}>Eliminar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                               </TableCell>
                           </TableRow>
                           ))}
