@@ -34,6 +34,7 @@ export default function DashboardPage() {
     forms: true,
     budgets: true,
     companies: true,
+    prices: true,
   });
   const [activeTab, setActiveTab] = useState("projects");
   

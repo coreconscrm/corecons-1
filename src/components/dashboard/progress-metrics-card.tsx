@@ -7,6 +7,7 @@ import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-c
 import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetListCard } from "@/components/dashboard/budgets-card";
 import { CompanyListCard } from "@/components/dashboard/company-card";
+import { PriceListCard } from "./prices-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -39,6 +40,7 @@ export function DashboardTabs({
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
+        {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
         {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
@@ -61,6 +63,10 @@ export function DashboardTabs({
 
       {visibleTabs.providers && <TabsContent value="providers" className="mt-6">
         <ProviderListCard providers={providers} onAddProvider={onAddProvider} onUpdateProvider={onUpdateProvider} onDeleteProvider={onDeleteProvider} />
+      </TabsContent>}
+      
+      {visibleTabs.prices && <TabsContent value="prices" className="mt-6">
+        <PriceListCard providers={providers} />
       </TabsContent>}
 
       {visibleTabs.team && <TabsContent value="team" className="mt-6">

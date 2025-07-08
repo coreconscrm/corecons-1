@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Truck, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Truck, MoreHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react";
+
+const priceListItemSchema = z.object({
+  description: z.string().min(1, "La descripción es requerida."),
+  unit: z.enum(["ud", "m", "pa", "m2", "m3"]),
+  price: z.coerce.number().min(0, "El precio debe ser un número positivo."),
+});
 
 const providerSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -20,6 +27,7 @@ const providerSchema = z.object({
   phone: z.string().min(1, "El teléfono es requerido."),
   discount: z.string().min(1, "El descuento es requerido."),
   specialization: z.string().min(1, "La especialidad es requerida."),
+  priceList: z.array(priceListItemSchema).optional(),
 });
 
 type Provider = z.infer<typeof providerSchema> & { id: string };
@@ -27,8 +35,19 @@ type Provider = z.infer<typeof providerSchema> & { id: string };
 function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: Provider, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof providerSchema>>({
         resolver: zodResolver(providerSchema),
-        defaultValues: provider || { name: "", contact: "", phone: "", discount: "", specialization: "" },
+        defaultValues: provider || { name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] },
     });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "priceList"
+    });
+
+    useEffect(() => {
+        if (open) {
+            form.reset(provider ? { ...provider, priceList: provider.priceList || [] } : { name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] });
+        }
+    }, [provider, open, form]);
 
     const handleSubmit = (values: z.infer<typeof providerSchema>) => {
         onSubmit({ ...provider, ...values });
@@ -38,12 +57,12 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-4xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{provider ? "Editar Proveedor" : "Añadir Nuevo Proveedor"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem><FormLabel>Nombre del Proveedor</FormLabel><FormControl><Input placeholder="Cementos Fortaleza" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -59,7 +78,58 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
                         <FormField control={form.control} name="discount" render={({ field }) => (
                             <FormItem><FormLabel>Descuento Acordado</FormLabel><FormControl><Input placeholder="10%" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <DialogFooter>
+                        
+                        <Card>
+                            <CardHeader><CardTitle>Base de Precios</CardTitle><CardDescription>Añade los productos o servicios que ofrece este proveedor.</CardDescription></CardHeader>
+                            <CardContent>
+                                <div className="w-full overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="min-w-[250px]">Descripción</TableHead>
+                                                <TableHead className="w-[120px]">Unidad</TableHead>
+                                                <TableHead className="w-[120px]">Precio/Ud.</TableHead>
+                                                <TableHead className="w-[50px]"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {fields.map((field, index) => (
+                                                <TableRow key={field.id}>
+                                                    <TableCell>
+                                                        <FormField control={form.control} name={`priceList.${index}.description`} render={({ field }) => <Input {...field} placeholder="Saco de cemento cola" />} />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <FormField control={form.control} name={`priceList.${index}.unit`} render={({ field }) => (
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="ud">ud</SelectItem>
+                                                                <SelectItem value="m">m</SelectItem>
+                                                                <SelectItem value="m2">m2</SelectItem>
+                                                                <SelectItem value="m3">m3</SelectItem>
+                                                                <SelectItem value="pa">pa</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        )} />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <FormField control={form.control} name={`priceList.${index}.price`} render={({ field }) => <Input type="number" {...field} />} />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", unit: "ud", price: 0 })}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Añadir Precio
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        <DialogFooter className="pt-4 mt-auto border-t">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">{provider ? "Guardar Cambios" : "Guardar Proveedor"}</Button>
                         </DialogFooter>

@@ -12,6 +12,7 @@ type VisibleTabs = {
     forms: boolean;
     budgets: boolean;
     companies: boolean;
+    prices: boolean;
 }
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
@@ -19,6 +20,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     budgets: "Presupuestos",
     clients: "Clientes",
     providers: "Proveedores",
+    prices: "Precios",
     team: "Equipo",
     forms: "Formularios",
     companies: "Empresas",
