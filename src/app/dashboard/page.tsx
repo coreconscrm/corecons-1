@@ -78,20 +78,27 @@ export default function DashboardPage() {
             const url = configDoc.data().url;
             setSheetUrl(url);
             console.log("Fetching data from Google Sheet:", url);
-            Papa.parse(url, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    if (results.errors.length) {
-                      toast({ variant: 'destructive', title: "Error al leer Google Sheet", description: results.errors.map(e => e.message).join(', ') });
-                      return;
-                    }
-                    if (results.data.length > 0) {
-                      loadFormsFromData(results.data as any[], 'gsheet');
-                    }
-                },
-                error: (error) => toast({ variant: 'destructive', title: "Error al conectar con Google Sheet", description: error.message })
+            
+            await new Promise<void>((resolve) => {
+              Papa.parse(url, {
+                  download: true,
+                  header: true,
+                  skipEmptyLines: true,
+                  complete: (results) => {
+                      if (results.errors.length) {
+                        toast({ variant: 'destructive', title: "Error al leer Google Sheet", description: results.errors.map(e => e.message).join(', ') });
+                        return resolve();
+                      }
+                      if (results.data.length > 0) {
+                        loadFormsFromData(results.data as any[], 'gsheet');
+                      }
+                      resolve();
+                  },
+                  error: (error) => {
+                    toast({ variant: 'destructive', title: "Error al conectar con Google Sheet", description: error.message });
+                    resolve();
+                  }
+              });
             });
         }
         console.log("Data fetched successfully.");
