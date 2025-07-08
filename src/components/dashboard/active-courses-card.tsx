@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
@@ -19,6 +20,9 @@ const clientSchema = z.object({
   contact: z.string().min(1, "El nombre de contacto es requerido."),
   email: z.string().email("Email inválido."),
   phone: z.string().min(1, "El teléfono es requerido."),
+  origin: z.enum(["Email", "Recomendado", "Formulario", "Redes", "Otros"], {
+    required_error: "Debe seleccionar un origen."
+  }),
 });
 
 type Client = z.infer<typeof clientSchema> & { id: string };
@@ -26,7 +30,7 @@ type Client = z.infer<typeof clientSchema> & { id: string };
 function ClientForm({ client, onSubmit, onOpenChange, open }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: client || { name: "", contact: "", email: "", phone: "" },
+    defaultValues: client || { name: "", contact: "", email: "", phone: "", origin: "Formulario" },
   });
 
   const handleSubmit = (values: z.infer<typeof clientSchema>) => {
@@ -54,6 +58,26 @@ function ClientForm({ client, onSubmit, onOpenChange, open }: { client?: Client,
             )} />
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-4567" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="origin" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Origen del Cliente</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un origen" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Email">Email</SelectItem>
+                    <SelectItem value="Recomendado">Recomendado</SelectItem>
+                    <SelectItem value="Formulario">Formulario</SelectItem>
+                    <SelectItem value="Redes">Redes</SelectItem>
+                    <SelectItem value="Otros">Otros</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
             )} />
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -92,6 +116,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
               <TableRow>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Contacto</TableHead>
+                <TableHead>Origen</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -102,6 +127,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.name}</TableCell>
                   <TableCell>{client.contact}</TableCell>
+                  <TableCell>{client.origin}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>{client.phone}</TableCell>
                   <TableCell className="text-right">
