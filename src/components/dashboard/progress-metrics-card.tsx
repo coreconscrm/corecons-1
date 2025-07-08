@@ -19,7 +19,8 @@ export function DashboardTabs({
     forms, onLoadForms, onUpdateForm, onDeleteForm,
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
-    visibleTabs, onTabVisibilityChange
+    visibleTabs, onTabVisibilityChange,
+    sheetUrl, onSaveSheetUrl
 }: {
     activeTab: string, onTabChange: (tab: string) => void,
     clients: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void,
@@ -31,6 +32,7 @@ export function DashboardTabs({
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
+    sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
   
   return (
@@ -83,6 +85,8 @@ export function DashboardTabs({
           onLoadForms={onLoadForms} 
           onUpdateForm={onUpdateForm} 
           onDeleteForm={onDeleteForm} 
+          sheetUrl={sheetUrl}
+          onSaveSheetUrl={onSaveSheetUrl}
         />
       </TabsContent>}
 

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, getDoc } from "firebase/firestore";
+import Papa from 'papaparse';
 import { Header } from "@/components/dashboard/header";
 import { ProjectOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [forms, setForms] = useState(initialFormSubmissions);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [sheetUrl, setSheetUrl] = useState('');
 
 
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +42,20 @@ export default function DashboardPage() {
   
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setForms([]); // Clear forms before fetching
+
+    const loadFormsFromData = (data: any[], source: 'gsheet' | 'csv') => {
+      const dataWithIdsAndStatus = data.map((item, index) => ({
+        ...item,
+        id: `form-${source}-${Date.now()}-${index}`,
+        called: false,
+        status: 'Pendiente',
+      }));
+      setForms(prevForms => [...prevForms, ...dataWithIdsAndStatus]);
+      const sourceText = source === 'gsheet' ? 'Google Sheet' : 'CSV';
+      toast({ title: `Datos de ${sourceText} cargados`, description: "Los datos del formulario se han procesado." });
+    };
+
     try {
         console.log("Attempting to fetch data from Firestore...");
         const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts'];
@@ -54,6 +70,30 @@ export default function DashboardPage() {
         setBudgets(mapSnapToState(snapshots[4]));
         setCompanies(mapSnapToState(snapshots[5]));
         setContacts(mapSnapToState(snapshots[6]));
+
+        // Fetch Google Sheet config and data
+        const configDocRef = doc(db, 'config', 'googleSheet');
+        const configDoc = await getDoc(configDocRef);
+        if (configDoc.exists() && configDoc.data().url) {
+            const url = configDoc.data().url;
+            setSheetUrl(url);
+            console.log("Fetching data from Google Sheet:", url);
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    if (results.errors.length) {
+                      toast({ variant: 'destructive', title: "Error al leer Google Sheet", description: results.errors.map(e => e.message).join(', ') });
+                      return;
+                    }
+                    if (results.data.length > 0) {
+                      loadFormsFromData(results.data as any[], 'gsheet');
+                    }
+                },
+                error: (error) => toast({ variant: 'destructive', title: "Error al conectar con Google Sheet", description: error.message })
+            });
+        }
         console.log("Data fetched successfully.");
 
     } catch (error) {
@@ -61,7 +101,7 @@ export default function DashboardPage() {
         toast({
             variant: "destructive",
             title: "Error al cargar los datos",
-            description: `Hubo un problema al conectar con Firestore. Revisa la consola del navegador para más detalles. Error: ${(error as Error).message}`,
+            description: `Hubo un problema al conectar con Firestore. Revisa la consola. Error: ${(error as Error).message}`,
         });
     } finally {
         setIsLoading(false);
@@ -81,11 +121,11 @@ export default function DashboardPage() {
       } else {
         await addDoc(collection(db, collectionName), item);
       }
-      toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente en tu base de datos.` });
+      toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente.` });
       fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar el elemento. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar. Error: ${(error as Error).message}`});
     }
   };
 
@@ -97,42 +137,60 @@ export default function DashboardPage() {
     }
     try {
         await updateDoc(doc(db, collectionName, id), data);
-        toast({ title: `${type} actualizado`, description: `Los cambios en el ${type.toLowerCase()} se han guardado en tu base de datos.` });
+        toast({ title: `${type} actualizado`, description: `Los cambios se han guardado.` });
         fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar los cambios. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar. Error: ${(error as Error).message}`});
     }
   };
   
   const handleDelete = async (collectionName: string, id: string, type: string) => {
      if (!id) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionionado un ID para eliminar.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se ha proporcionado un ID para eliminar.' });
         return;
     }
     try {
         await deleteDoc(doc(db, collectionName, id));
-        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado de tu base de datos.`, variant: 'destructive' });
+        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
         fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
-        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar el elemento. Revisa la consola para más detalles. Error: ${(error as Error).message}`});
+        toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar. Error: ${(error as Error).message}`});
     }
   };
 
   const handleLoadForms = (data: any[]) => {
     const dataWithIdsAndStatus = data.map((item, index) => ({
       ...item,
-      id: `form-${Date.now()}-${index}`,
+      id: `form-csv-${Date.now()}-${index}`,
       called: false,
       status: 'Pendiente',
     }));
-    setForms(dataWithIdsAndStatus);
-    toast({ title: "Datos cargados", description: "El archivo CSV ha sido procesado correctamente." });
+    setForms(prevForms => [...prevForms, ...dataWithIdsAndStatus]);
+    toast({ title: "Datos de CSV cargados", description: "El archivo ha sido procesado." });
   };
   
   const handleUpdateForm = (updatedForm: any) => {
     setForms((prev: any[]) => prev.map(form => form.id === updatedForm.id ? updatedForm : form));
+  };
+  
+  const handleDeleteForm = (id: string) => {
+    setForms((prevForms) => prevForms.filter((form) => form.id !== id));
+    toast({ title: "Formulario eliminado", description: "La entrada del formulario ha sido eliminada de la vista actual.", variant: 'destructive' });
+  };
+
+  const handleSaveSheetUrl = async (url: string) => {
+    try {
+        const configDocRef = doc(db, 'config', 'googleSheet');
+        await setDoc(configDocRef, { url });
+        setSheetUrl(url);
+        toast({ title: 'Configuración guardada', description: `La conexión con Google Sheets se ha ${url ? 'establecido' : 'eliminado'}.` });
+        await fetchData();
+    } catch (error) {
+        console.error("Error saving Google Sheet URL: ", error);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: `No se pudo guardar la URL. Revisa la consola. Error: ${(error as Error).message}` });
+    }
   };
   
   const projectsSigned = projects.filter(p => p.status === 'Firmados').length;
@@ -210,7 +268,7 @@ export default function DashboardPage() {
               forms={forms}
               onLoadForms={handleLoadForms}
               onUpdateForm={handleUpdateForm}
-              onDeleteForm={(id) => handleDelete('forms', id, 'Formulario')}
+              onDeleteForm={handleDeleteForm}
 
               budgets={budgets}
               onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: []}, 'Presupuesto')}
@@ -224,6 +282,9 @@ export default function DashboardPage() {
 
               visibleTabs={visibleTabs}
               onTabVisibilityChange={setVisibleTabs}
+              
+              sheetUrl={sheetUrl}
+              onSaveSheetUrl={handleSaveSheetUrl}
             />
           </div>
         )}

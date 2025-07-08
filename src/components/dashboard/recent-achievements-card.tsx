@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -113,18 +113,73 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
   )
 }
 
+function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, currentUrl: string, onSave: (url: string) => void }) {
+    const [url, setUrl] = useState(currentUrl);
+    useEffect(() => { setUrl(currentUrl) }, [currentUrl, open]);
+
+    const handleSave = () => {
+        onSave(url);
+        onOpenChange(false);
+    };
+    
+    const handleDisconnect = () => {
+        onSave('');
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Conectar con Google Sheets</DialogTitle>
+                    <DialogDescription>Pega la URL publicada de tu hoja para sincronizar los datos automáticamente.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                    <div className="text-sm p-3 bg-secondary/50 rounded-md border border-border/50">
+                        <p className="font-semibold mb-2">¿Cómo obtener la URL?</p>
+                        <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
+                            <li>En Google Sheets, ve a <code className="bg-muted px-1 py-0.5 rounded">Archivo &gt; Compartir &gt; Publicar en la web</code>.</li>
+                            <li>Selecciona la hoja correcta que quieres conectar.</li>
+                            <li>En el segundo desplegable, elige <code className="bg-muted px-1 py-0.5 rounded">Valores separados por comas (.csv)</code>.</li>
+                            <li>Haz clic en "Publicar" y copia la URL generada.</li>
+                        </ol>
+                    </div>
+                    <Input 
+                        placeholder="Pega la URL aquí..."
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                    />
+                </div>
+                <DialogFooter className="sm:justify-between flex-col-reverse sm:flex-row gap-2">
+                    {currentUrl ? (
+                         <Button variant="destructive" onClick={handleDisconnect}><Unlink className="mr-2" />Desconectar</Button>
+                    ) : <div></div>}
+                   
+                    <div className="flex gap-2 justify-end">
+                        <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                        <Button onClick={handleSave}>Guardar Conexión</Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function FormsResponsesCard({
   contacts, onAddContact, onUpdateContact, onDeleteContact,
-  forms, onLoadForms, onUpdateForm, onDeleteForm
+  forms, onLoadForms, onUpdateForm, onDeleteForm,
+  sheetUrl, onSaveSheetUrl
 }: {
   contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
-  forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void
+  forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +222,13 @@ export function FormsResponsesCard({
     <Card>
       {editingContact && <ContactForm contact={editingContact} onSubmit={onUpdateContact} open={!!editingContact} onOpenChange={() => setEditingContact(undefined)} />}
       <ContactForm onSubmit={onAddContact} open={isFormOpen} onOpenChange={setIsFormOpen} />
+      <GoogleSheetDialog 
+        open={isSheetDialogOpen}
+        onOpenChange={setIsSheetDialogOpen}
+        currentUrl={sheetUrl}
+        onSave={onSaveSheetUrl}
+      />
+
 
       <CardHeader>
         <CardTitle>Contactos y Formularios</CardTitle>
@@ -247,11 +309,12 @@ export function FormsResponsesCard({
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
               <div>
-                  <h3 className="text-lg font-semibold">Respuestas de Formularios (CSV)</h3>
-                  <p className="text-sm text-muted-foreground">Carga un archivo CSV con las respuestas para visualizarlas.</p>
+                  <h3 className="text-lg font-semibold">Respuestas de Formularios</h3>
+                  <p className="text-sm text-muted-foreground">Carga un CSV o conecta una hoja de Google Sheets.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                   <Button onClick={triggerFileUpload}><Upload className="mr-2 h-4 w-4"/>Cargar CSV</Button>
+                  <Button variant="outline" onClick={() => setIsSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4"/>{sheetUrl ? "Cambiar Sheet" : "Conectar Sheet"}</Button>
                   <Button variant="outline" asChild><a href={formUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Abrir Formulario</a></Button>
                   <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden"/>
               </div>
@@ -306,9 +369,9 @@ export function FormsResponsesCard({
           ) : (
               <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
                   <FileText className="h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No hay datos de CSV cargados</h3>
+                  <h3 className="mt-4 text-lg font-semibold">No hay datos de formularios</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                      Carga un archivo CSV para empezar a ver las respuestas aquí.
+                      Carga un CSV o conecta una hoja de Google Sheets para ver las respuestas.
                   </p>
               </div>
           )}
