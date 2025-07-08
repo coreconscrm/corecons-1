@@ -214,6 +214,7 @@ export function FormsResponsesCard({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
+  const [viewingText, setViewingText] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -290,6 +291,22 @@ export function FormsResponsesCard({
 
   return (
     <Card>
+      <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Texto Completo</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] my-4">
+                 <div className="whitespace-pre-wrap break-words pr-4">
+                    {viewingText}
+                </div>
+            </ScrollArea>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setViewingText(null)}>Cerrar</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ContactForm 
         contact={editingContact} 
         onSubmit={editingContact ? onUpdateContact : onAddContact} 
@@ -331,33 +348,46 @@ export function FormsResponsesCard({
                 <TableBody>
                   {contacts.length > 0 ? contacts.map(contact => (
                     <TableRow key={contact.id}>
-                      {contactHeaders.map(header => (
-                        <TableCell key={`${contact.id}-${header}`} className="whitespace-normal break-words max-w-[200px]">
-                          {(() => {
-                            const value = contact[header];
-                            if (header === 'called') {
-                              return <Checkbox checked={!!value} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} />;
-                            }
-                            if (header === 'status') {
-                              return (
-                                <Select value={value || 'Pendiente'} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
-                                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                    <SelectItem value="Contactado">Contactado</SelectItem>
-                                    <SelectItem value="En proceso">En proceso</SelectItem>
-                                    <SelectItem value="Firmado">Firmado</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              );
-                            }
-                            if (typeof value === 'boolean') {
-                              return <Checkbox checked={value} disabled />;
-                            }
-                            return value?.toString() || '';
-                          })()}
-                        </TableCell>
-                      ))}
+                      {contactHeaders.map(header => {
+                        const value = contact[header];
+                        return (
+                          <TableCell key={`${contact.id}-${header}`} className="max-w-[200px]">
+                            {(() => {
+                                if (header === 'called') {
+                                    return <Checkbox checked={!!value} onCheckedChange={(checked) => onUpdateContact({ ...contact, called: !!checked })} />;
+                                }
+                                if (header === 'status') {
+                                    return (
+                                        <Select value={value || 'Pendiente'} onValueChange={(status) => onUpdateContact({ ...contact, status })}>
+                                            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                                <SelectItem value="Contactado">Contactado</SelectItem>
+                                                <SelectItem value="En proceso">En proceso</SelectItem>
+                                                <SelectItem value="Firmado">Firmado</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    );
+                                }
+                                if (typeof value === 'boolean') {
+                                    return <Checkbox checked={value} disabled />;
+                                }
+                                
+                                const textValue = value?.toString() || '';
+                                const isLongText = textValue.length > 50;
+
+                                if (isLongText) {
+                                    return (
+                                        <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
+                                            {textValue}
+                                        </div>
+                                    );
+                                }
+                                return textValue;
+                            })()}
+                          </TableCell>
+                        );
+                      })}
                       <TableCell className="text-right sticky right-0 bg-card">
                          <AlertDialog>
                             <DropdownMenu>
@@ -429,9 +459,21 @@ export function FormsResponsesCard({
                                       </SelectContent>
                                   </Select>
                               </TableCell>
-                              {csvHeaders.map(header => (
-                                  <TableCell key={`${sub.id}-${header}`} className="whitespace-normal break-words max-w-[200px]">{sub[header]}</TableCell>
-                              ))}
+                              {csvHeaders.map(header => {
+                                const textValue = sub[header]?.toString() || '';
+                                const isLongText = textValue.length > 50;
+                                return (
+                                    <TableCell key={`${sub.id}-${header}`} className="max-w-[200px]">
+                                        {isLongText ? (
+                                            <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
+                                                {textValue}
+                                            </div>
+                                        ) : (
+                                            textValue
+                                        )}
+                                    </TableCell>
+                                );
+                              })}
                               <TableCell className="text-right sticky right-0 bg-card">
                               <div className="flex items-center justify-end">
                                 <Button variant="ghost" size="icon" title="Añadir a contactos" onClick={() => handlePromoteToContact(sub)}>
