@@ -13,13 +13,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const clientSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -175,48 +175,9 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
   );
 }
 
-function ViewClientDialog({ client, providers, open, onOpenChange }: { client: Client | null, providers: any[], open: boolean, onOpenChange: (open: boolean) => void }) {
-    if (!client) return null;
-    const provider = providers.find(p => p.id === client.providerId);
-    
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{client.name}</DialogTitle>
-                    <DialogDescription>Contacto: {client.contact}</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4 text-sm">
-                    <div className="flex justify-between"><strong>Teléfono:</strong> <span>{client.phone}</span></div>
-                    <div className="flex justify-between"><strong>Email:</strong> <span>{client.email}</span></div>
-                    <div className="flex justify-between"><strong>Arquitecto:</strong> <span>{client.arquitecto || 'N/A'}</span></div>
-                    <div className="flex justify-between"><strong>Proveedor:</strong> <span>{provider?.name || 'N/A'}</span></div>
-                    <div className="flex justify-between items-center"><strong>Estado:</strong> <Badge>{client.estado}</Badge></div>
-                    <div>
-                        <h4 className="font-semibold mb-1">Info Adicional:</h4>
-                        <p className="p-2 bg-muted rounded-md text-muted-foreground">{client.infoAdicional || 'No hay información adicional.'}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
-                            <Button className="w-full" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
-                        </a>
-                        <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
-                             <Button className="w-full" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
-                        </a>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[] }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
-  const [viewingClient, setViewingClient] = useState<Client | null>(null);
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
@@ -231,7 +192,6 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
   return (
     <Card>
       <ClientForm client={editingClient} onSubmit={editingClient ? onUpdateClient : onAddClient} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} providers={providers} />
-      <ViewClientDialog client={viewingClient} providers={providers} open={!!viewingClient} onOpenChange={() => setViewingClient(null)} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -242,32 +202,21 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
       </CardHeader>
 
       <CardContent>
-        <div className="w-full overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Contacto</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map(client => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>{client.contact}</TableCell>
-                  <TableCell>{client.email}</TableCell>
-                  <TableCell>{client.phone}</TableCell>
-                  <TableCell><Badge variant="secondary">{client.estado}</Badge></TableCell>
-                  <TableCell className="text-right">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {clients.map(client => {
+            const provider = providers.find(p => p.id === client.providerId);
+            return (
+              <Card key={client.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="mb-1">{client.name}</CardTitle>
+                      <Badge variant="secondary">{client.estado}</Badge>
+                    </div>
                     <AlertDialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem onSelect={() => setViewingClient(client)}><Eye className="mr-2"/>Ver detalles</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                           <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                         </DropdownMenuContent>
@@ -280,11 +229,43 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-grow text-sm">
+                  <div>
+                    <h4 className="font-semibold mb-2">Contacto</h4>
+                    <div className="space-y-1 text-muted-foreground">
+                      <p>{client.contact}</p>
+                      <div className="flex items-center gap-2"><Phone size={14}/> {client.phone}</div>
+                      <div className="flex items-center gap-2"><Mail size={14}/> {client.email}</div>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
+                    <div className="space-y-1 text-muted-foreground">
+                      <div className="flex justify-between"><span>Arquitecto:</span> <strong>{client.arquitecto || 'N/A'}</strong></div>
+                      <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
+                    </div>
+                  </div>
+                   {client.infoAdicional && (
+                      <div>
+                        <h4 className="font-semibold mb-1">Info Adicional:</h4>
+                        <p className="p-2 text-xs bg-muted rounded-md text-muted-foreground whitespace-pre-wrap">{client.infoAdicional}</p>
+                    </div>
+                   )}
+                </CardContent>
+                <CardFooter className="grid grid-cols-2 gap-2">
+                  <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
+                      <Button className="w-full" variant="outline" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
+                  </a>
+                  <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
+                        <Button className="w-full" variant="outline" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
+                  </a>
+                </CardFooter>
+              </Card>
+            )
+          })}
         </div>
       </CardContent>
     </Card>
