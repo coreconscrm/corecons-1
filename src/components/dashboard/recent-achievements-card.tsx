@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -19,49 +19,73 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Textarea } from '../ui/textarea';
 
-const contactSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  phone: z.string().min(1, "El teléfono es requerido."),
-  email: z.string().email("Email inválido."),
-});
+const contactSchema = z.record(z.any()); // Allow any fields
 
-type Contact = z.infer<typeof contactSchema> & { id: string, [key: string]: any };
+type Contact = z.infer<typeof contactSchema> & { id: string };
 
 function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Contact, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-  const form = useForm<z.infer<typeof contactSchema>>({
+  const form = useForm<Contact>({
     resolver: zodResolver(contactSchema),
     defaultValues: contact || { name: "", phone: "", email: "" },
   });
 
-  const handleSubmit = (values: z.infer<typeof contactSchema>) => {
-    // This preserves extra fields that are not in the form
+  useEffect(() => {
+    if (contact) {
+      form.reset(contact);
+    } else {
+      form.reset({ name: "", phone: "", email: "" });
+    }
+  }, [contact, form]);
+  
+  const handleSubmit = (values: Contact) => {
     onSubmit({ ...contact, ...values });
     form.reset();
     onOpenChange(false);
   };
+
+  const fieldsToRender = contact ? Object.keys(contact).filter(key => key !== 'id') : ['name', 'phone', 'email'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{contact ? "Editar Contacto" : "Añadir Nuevo Contacto"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="phone" render={({ field }) => (
-              <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="600 000 000" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <DialogFooter>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 overflow-y-auto pr-6 -mr-6">
+             {fieldsToRender.map((fieldName) => {
+                const value = contact?.[fieldName] as string | number | undefined | boolean;
+                const isLongText = typeof value === 'string' && value.length > 50;
+                const Component = isLongText ? Textarea : Input;
+
+                return (
+                  <FormField
+                    key={fieldName}
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="capitalize">{fieldName.replace(/_/g, ' ')}</FormLabel>
+                        <FormControl>
+                          <Component
+                            placeholder={`Introduce ${fieldName.replace(/_/g, ' ')}...`}
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                );
+              })}
+            <DialogFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
               <Button type="submit">{contact ? "Guardar Cambios" : "Añadir Contacto"}</Button>
             </DialogFooter>
@@ -188,6 +212,7 @@ export function FormsResponsesCard({
     };
 
     onAddContact(newContactPayload);
+    onDeleteForm(id); // Remove from forms list after promoting
     toast({ title: "Contacto añadido", description: `"${contactName}" ha sido guardado en tus contactos.` });
   };
   
@@ -260,7 +285,7 @@ export function FormsResponsesCard({
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:items-center mb-4">
             <h3 className="text-lg font-semibold">Contactos Manuales</h3>
-            <Button onClick={() => setIsFormOpen(true)}><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
+            <Button onClick={() => { setEditingContact(undefined); setIsFormOpen(true); }}><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
             <ScrollArea className="w-full">
