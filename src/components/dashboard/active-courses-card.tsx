@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const clientSchema = z.object({
-  name: z.string().min(1, "El nombre de la empresa es requerido."),
+  name: z.string().min(1, "El nombre es requerido."),
   contact: z.string().min(1, "El nombre de contacto es requerido."),
   email: z.string().email("Email inválido."),
   phone: z.string().min(1, "El teléfono es requerido."),
@@ -56,7 +56,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open }: { client?: Client,
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="Construcciones S.A." {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Proyecto de reforma" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="contact" render={({ field }) => (
               <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
@@ -122,7 +122,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Empresa</TableHead>
+                <TableHead>Nombre</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
