@@ -11,33 +11,33 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Textarea } from '../ui/textarea';
 
-const contactSchema = z.record(z.any()); // Allow any fields
+const contactSchema = z.record(z.any());
 
 type Contact = z.infer<typeof contactSchema> & { id: string };
 
 function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Contact, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
   const form = useForm<Contact>({
     resolver: zodResolver(contactSchema),
-    defaultValues: contact || { name: "", phone: "", email: "" },
+    defaultValues: {},
   });
 
   useEffect(() => {
-    if (contact) {
+    if (open && contact) {
       form.reset(contact);
-    } else {
+    } else if (open && !contact) {
       form.reset({ name: "", phone: "", email: "" });
     }
-  }, [contact, form]);
+  }, [contact, open, form]);
   
   const handleSubmit = (values: Contact) => {
     onSubmit({ ...contact, ...values });
@@ -45,13 +45,10 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
     onOpenChange(false);
   };
 
-  const fieldsToRender = contact ? Object.keys(contact).filter(key => key !== 'id') : ['name', 'phone', 'email'];
+  const fieldsToRender = open ? (contact ? Object.keys(contact).filter(key => key !== 'id') : ['name', 'phone', 'email']) : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
-      </DialogTrigger>
       <DialogContent className="max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{contact ? "Editar Contacto" : "Añadir Nuevo Contacto"}</DialogTitle>
@@ -59,7 +56,7 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 overflow-y-auto pr-6 -mr-6">
              {fieldsToRender.map((fieldName) => {
-                const value = contact?.[fieldName] as string | number | undefined | boolean;
+                const value = form.getValues(fieldName) as string | number | undefined | boolean;
                 const isLongText = typeof value === 'string' && value.length > 50;
                 const Component = isLongText ? Textarea : Input;
 
@@ -165,6 +162,8 @@ export function FormsResponsesCard({
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
   const [viewingText, setViewingText] = useState<string | null>(null);
 
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -212,7 +211,7 @@ export function FormsResponsesCard({
     };
 
     onAddContact(newContactPayload);
-    onDeleteForm(id); // Remove from forms list after promoting
+    onDeleteForm(id);
     toast({ title: "Contacto añadido", description: `"${contactName}" ha sido guardado en tus contactos.` });
   };
   
@@ -225,7 +224,6 @@ export function FormsResponsesCard({
     allKeys.delete('id');
     
     const keyArray = Array.from(allKeys);
-    // Prioritize common fields
     const preferredOrder = ['name', 'Nombre', 'phone', 'Teléfono', 'email', 'Email', 'status', 'called'];
     keyArray.sort((a, b) => {
         const indexA = preferredOrder.indexOf(a);
@@ -239,6 +237,19 @@ export function FormsResponsesCard({
   };
   
   const contactHeaders = getContactHeaders();
+
+  useEffect(() => {
+    const initialVisibility: Record<string, boolean> = {};
+    contactHeaders.forEach(header => {
+      if (columnVisibility[header] === undefined) {
+        initialVisibility[header] = true;
+      }
+    });
+    setColumnVisibility(prev => ({ ...initialVisibility, ...prev }));
+  }, [contacts]);
+
+  const visibleContactHeaders = contactHeaders.filter(header => columnVisibility[header]);
+
 
   return (
     <Card>
@@ -281,10 +292,32 @@ export function FormsResponsesCard({
       </CardHeader>
 
       <CardContent className="space-y-8">
-        {/* Manual Contacts Section */}
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:items-center mb-4">
-            <h3 className="text-lg font-semibold">Contactos Manuales</h3>
+            <div className='flex items-center gap-4'>
+              <h3 className="text-lg font-semibold">Contactos Manuales</h3>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon"><ListFilter className="h-4 w-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Mostrar Columnas</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {contactHeaders.map((header) => (
+                    <DropdownMenuCheckboxItem
+                      key={header}
+                      className="capitalize"
+                      checked={columnVisibility[header]}
+                      onCheckedChange={(value) =>
+                        setColumnVisibility((prev) => ({ ...prev, [header]: value }))
+                      }
+                    >
+                      {header.replace(/_/g, ' ')}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button onClick={() => { setEditingContact(undefined); setIsFormOpen(true); }}><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
@@ -292,14 +325,14 @@ export function FormsResponsesCard({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                    {visibleContactHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
                     <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contacts.length > 0 ? contacts.map(contact => (
                     <TableRow key={contact.id}>
-                      {contactHeaders.map(header => {
+                      {visibleContactHeaders.map(header => {
                         const value = contact[header];
                         return (
                           <TableCell key={`${contact.id}-${header}`} className="max-w-[200px]">
@@ -354,7 +387,7 @@ export function FormsResponsesCard({
                       </TableCell>
                     </TableRow>
                   )) : (
-                    <TableRow><TableCell colSpan={contactHeaders.length + 1} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={visibleContactHeaders.length + 1} className="text-center h-24">No hay contactos manuales.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -365,7 +398,6 @@ export function FormsResponsesCard({
 
         <Separator />
 
-        {/* CSV Forms Section */}
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
               <div>
