@@ -51,7 +51,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open }: { client?: Client,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{client ? "Editar Oportunidad" : "Añadir Nueva Oportunidad"}</DialogTitle>
+          <DialogTitle>{client ? "Editar Cliente" : "Añadir Nuevo Cliente"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -89,7 +89,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open }: { client?: Client,
             )} />
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-              <Button type="submit">{client ? "Guardar Cambios" : "Guardar Oportunidad"}</Button>
+              <Button type="submit">{client ? "Guardar Cambios" : "Guardar Cliente"}</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -108,11 +108,11 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
       <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Oportunidades</CardTitle>
-            <CardDescription>Gestiona tus potenciales clientes y proyectos.</CardDescription>
+            <CardTitle>Clientes</CardTitle>
+            <CardDescription>Gestiona tus clientes y potenciales clientes.</CardDescription>
           </div>
           <DialogTrigger asChild>
-            <Button><UserPlus className="mr-2 h-4 w-4" />Añadir Oportunidad</Button>
+            <Button><UserPlus className="mr-2 h-4 w-4" />Añadir Cliente</Button>
           </DialogTrigger>
         </CardHeader>
         <ClientForm onSubmit={onAddClient} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
@@ -148,7 +148,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la oportunidad.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el cliente.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>

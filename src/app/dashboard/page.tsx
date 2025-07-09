@@ -250,9 +250,9 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
 
               clients={clients}
-              onAddClient={(client) => handleCreate('clients', client, 'Oportunidad')}
-              onUpdateClient={(client) => handleUpdate('clients', client, 'Oportunidad')}
-              onDeleteClient={(id) => handleDelete('clients', id, 'Oportunidad')}
+              onAddClient={(client) => handleCreate('clients', client, 'Cliente')}
+              onUpdateClient={(client) => handleUpdate('clients', client, 'Cliente')}
+              onDeleteClient={(id) => handleDelete('clients', id, 'Cliente')}
 
               projects={projects}
               onAddProject={(project) => handleCreate('projects', {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
