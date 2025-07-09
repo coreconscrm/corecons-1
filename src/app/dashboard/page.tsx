@@ -124,8 +124,8 @@ export default function DashboardPage() {
     try {
       let newItem = { ...item };
       
-      // Inicializar campos de documentos si es un cliente
-      if (type === 'Cliente') {
+      // Inicializar campos de documentos si es una obra nueva (cliente)
+      if (type === 'Obra') {
         newItem = {
           ...newItem,
           memoria: item.memoria || "",
@@ -139,7 +139,7 @@ export default function DashboardPage() {
       } else {
         await addDoc(collection(db, collectionName), newItem);
       }
-      toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente.` });
+      toast({ title: `${type} guardada`, description: `La ${type.toLowerCase()} se ha guardado correctamente.` });
       fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
@@ -155,7 +155,7 @@ export default function DashboardPage() {
     }
     try {
         await updateDoc(doc(db, collectionName, id), data);
-        toast({ title: `${type} actualizado`, description: `Los cambios se han guardado.` });
+        toast({ title: `${type} actualizada`, description: `Los cambios se han guardado.` });
         fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
@@ -170,7 +170,7 @@ export default function DashboardPage() {
     }
     try {
         await deleteDoc(doc(db, collectionName, id));
-        toast({ title: `${type} eliminado`, description: `El ${type.toLowerCase()} ha sido eliminado.`, variant: 'destructive' });
+        toast({ title: `${type} eliminada`, description: `La ${type.toLowerCase()} ha sido eliminada.`, variant: 'destructive' });
         fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
@@ -259,9 +259,9 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
 
               clients={clients}
-              onAddClient={(client) => handleCreate('clients', client, 'Cliente')}
-              onUpdateClient={(client) => handleUpdate('clients', client, 'Cliente')}
-              onDeleteClient={(id) => handleDelete('clients', id, 'Cliente')}
+              onAddClient={(client) => handleCreate('clients', client, 'Obra')}
+              onUpdateClient={(client) => handleUpdate('clients', client, 'Obra')}
+              onDeleteClient={(id) => handleDelete('clients', id, 'Obra')}
 
               projects={projects}
               onAddProject={(project) => handleCreate('projects', {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}

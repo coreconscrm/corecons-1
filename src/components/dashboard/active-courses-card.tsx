@@ -75,7 +75,7 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
                     </Button>
                 )}
             </div>
-            {!clientId && <p className="text-xs text-muted-foreground">Guarda el cliente para poder subir archivos.</p>}
+            {!clientId && <p className="text-xs text-muted-foreground">Guarda la obra para poder subir archivos.</p>}
             <FormMessage />
         </FormItem>
     );
@@ -108,7 +108,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{client ? "Editar Cliente" : "Añadir Nuevo Cliente"}</DialogTitle>
+          <DialogTitle>{client ? "Editar Obra" : "Añadir Nueva Obra"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
@@ -166,7 +166,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
 
             <DialogFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-              <Button type="submit">{client ? "Guardar Cambios" : "Guardar Cliente"}</Button>
+              <Button type="submit">{client ? "Guardar Cambios" : "Guardar Obra"}</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -195,10 +195,10 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Clientes</CardTitle>
-          <CardDescription>Gestiona tus clientes y potenciales clientes.</CardDescription>
+          <CardTitle>Obra Nueva</CardTitle>
+          <CardDescription>Gestiona tus proyectos de obra nueva.</CardDescription>
         </div>
-        <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Cliente</Button>
+        <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Obra</Button>
       </CardHeader>
 
       <CardContent>
@@ -222,7 +222,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el cliente.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
