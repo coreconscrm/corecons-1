@@ -122,8 +122,17 @@ export default function DashboardPage() {
 
   const handleCreate = async (collectionName: string, item: any, type: string) => {
     try {
-      const newItem = { ...item };
+      let newItem = { ...item };
       
+      // Inicializar campos de documentos si es un cliente
+      if (type === 'Cliente') {
+        newItem = {
+          ...newItem,
+          memoria: item.memoria || "",
+          planos: item.planos || "",
+        };
+      }
+
       if (newItem.id) {
         const { id, ...data } = newItem;
         await setDoc(doc(db, collectionName, id), data);
