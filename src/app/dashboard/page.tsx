@@ -38,7 +38,7 @@ export default function DashboardPage() {
     companies: true,
     prices: true,
   });
-  const [activeTab, setActiveTab] = useState("projects");
+  const [activeTab, setActiveTab] = useState("clients");
   
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -123,13 +123,7 @@ export default function DashboardPage() {
   const handleCreate = async (collectionName: string, item: any, type: string) => {
     try {
       const newItem = { ...item };
-      // Ensure document fields are initialized for clients
-      if (collectionName === 'clients') {
-        newItem.projectDoc = newItem.projectDoc || "";
-        newItem.memoryDoc = newItem.memoryDoc || "";
-        newItem.plansDoc = newItem.plansDoc || "";
-      }
-
+      
       if (newItem.id) {
         const { id, ...data } = newItem;
         await setDoc(doc(db, collectionName, id), data);
@@ -256,7 +250,7 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
 
               clients={clients}
-              onAddClient={(client) => handleCreate('clients', client, 'Oportunidad')}
+              onAddClient={(client) => handleCreate('clients', {...client, projectDoc: '', memoryDoc: '', plansDoc: ''}, 'Oportunidad')}
               onUpdateClient={(client) => handleUpdate('clients', client, 'Oportunidad')}
               onDeleteClient={(id) => handleDelete('clients', id, 'Oportunidad')}
 

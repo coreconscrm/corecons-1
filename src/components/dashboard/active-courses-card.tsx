@@ -39,8 +39,25 @@ type Client = z.infer<typeof clientSchema> & { id: string };
 
 function FileUploadButton({ form, fieldName, clientId }: { form: any, fieldName: 'projectDoc' | 'memoryDoc' | 'plansDoc', clientId: string }) {
   const [isUploading, setIsUploading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(form.getValues(fieldName));
+  const [fileName, setFileName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const currentUrl = form.getValues(fieldName);
+    if (currentUrl) {
+      // Intenta extraer el nombre del archivo de la URL
+      try {
+        const url = new URL(currentUrl);
+        const path = decodeURIComponent(url.pathname);
+        const name = path.substring(path.lastIndexOf('/') + 1);
+        setFileName(name.split('_').pop() || 'Archivo');
+      } catch (e) {
+        setFileName('Archivo');
+      }
+    } else {
+        setFileName(null);
+    }
+  }, [form, fieldName]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,7 +93,7 @@ function FileUploadButton({ form, fieldName, clientId }: { form: any, fieldName:
         <Button asChild variant="outline" className="w-full justify-start" disabled={isUploading}>
           <div>
             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            {fileName ? (fileName.split('_').pop()?.substring(0,20) || 'Archivo') : `Subir ${fieldName.replace('Doc', '')}`}
+            {fileName ? (fileName.substring(0,20)) : `Subir ${fieldName.replace('Doc', '')}`}
           </div>
         </Button>
       </label>
@@ -102,6 +119,9 @@ function ClientForm({ client, providers, onSubmit, onOpenChange, open }: { clien
       architect: "",
       providerId: "",
       info: "",
+      projectDoc: "",
+      memoryDoc: "",
+      plansDoc: ""
     },
   });
 
@@ -257,6 +277,7 @@ export function ClientListCard({ clients, providers, onAddClient, onUpdateClient
                 <TableHead>Proyecto</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Origen</TableHead>
                 <TableHead>Documentos</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -267,6 +288,7 @@ export function ClientListCard({ clients, providers, onAddClient, onUpdateClient
                   <TableCell className="font-medium">{client.name}</TableCell>
                   <TableCell>{client.contact}</TableCell>
                   <TableCell>{client.status}</TableCell>
+                  <TableCell>{client.origin}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                        {client.projectDoc && <a href={client.projectDoc} target="_blank" rel="noopener noreferrer"><FileText className="h-5 w-5 text-primary"/></a>}
@@ -301,5 +323,3 @@ export function ClientListCard({ clients, providers, onAddClient, onUpdateClient
     </Card>
   );
 }
-
-    
