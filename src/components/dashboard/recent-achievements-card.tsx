@@ -19,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Textarea } from '../ui/textarea';
 
 
 const contactSchema = z.object({
@@ -32,6 +33,8 @@ const contactSchema = z.object({
   location: z.string().min(1, "La ubicación es requerida."),
   called: z.boolean().default(false),
   status: z.string().default('Pendiente'),
+  seguimiento: z.string().optional(),
+  infoAdicional: z.string().optional(),
 });
 
 type Contact = z.infer<typeof contactSchema> & { id: string, [key: string]: any };
@@ -49,7 +52,9 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
       email: "",
       location: "",
       called: false,
-      status: "Pendiente"
+      status: "Pendiente",
+      seguimiento: "",
+      infoAdicional: "",
     },
   });
 
@@ -66,7 +71,9 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
         email: contact.email || '',
         location: contact.location || '',
         called: contact.called ?? false,
-        status: contact.status || 'Pendiente'
+        status: contact.status || 'Pendiente',
+        seguimiento: contact.seguimiento || '',
+        infoAdicional: contact.infoAdicional || '',
       });
     } else {
        form.reset({
@@ -79,7 +86,9 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
           email: "",
           location: "",
           called: false,
-          status: "Pendiente"
+          status: "Pendiente",
+          seguimiento: "",
+          infoAdicional: "",
       });
     }
   }, [contact, form, open]);
@@ -135,6 +144,12 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
                       <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Licencia</FormLabel></FormItem>
                   )} />
               </div>
+               <FormField control={form.control} name="seguimiento" render={({ field }) => (
+                  <FormItem><FormLabel>Seguimiento</FormLabel><FormControl><Textarea placeholder="Notas sobre el seguimiento del contacto..." {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+               <FormField control={form.control} name="infoAdicional" render={({ field }) => (
+                  <FormItem><FormLabel>Info Adicional</FormLabel><FormControl><Textarea placeholder="Información adicional relevante..." {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
               <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                 <Button type="submit">{contact ? "Guardar Cambios" : "Añadir Contacto"}</Button>
@@ -275,7 +290,15 @@ export function FormsResponsesCard({
     allKeys.delete('id');
     
     const keyArray = Array.from(allKeys);
-    const preferredOrder = ['name', 'Nombre', 'phone', 'Teléfono', 'email', 'Email', 'status', 'called'];
+    const preferredOrder = [
+        'name', 'Nombre', 
+        'phone', 'Teléfono', 
+        'email', 'Email', 
+        'status', 
+        'called', 
+        'seguimiento', 'Seguimiento',
+        'infoAdicional', 'Info Adicional'
+    ];
     keyArray.sort((a, b) => {
         const indexA = preferredOrder.indexOf(a);
         const indexB = preferredOrder.indexOf(b);
@@ -288,6 +311,12 @@ export function FormsResponsesCard({
   };
   
   const contactHeaders = getContactHeaders();
+  
+  const getHeaderDisplayName = (header: string) => {
+    if (header === 'seguimiento') return 'Seguimiento';
+    if (header === 'infoAdicional') return 'Info Adicional';
+    return header.replace(/_/g, ' ');
+  }
 
   return (
     <Card>
@@ -341,7 +370,7 @@ export function FormsResponsesCard({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{getHeaderDisplayName(header)}</TableHead>)}
                     <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
