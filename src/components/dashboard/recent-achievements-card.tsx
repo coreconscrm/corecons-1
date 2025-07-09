@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -19,22 +19,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Textarea } from '../ui/textarea';
-
 
 const contactSchema = z.object({
-  type: z.enum(["Obra Nueva", "Reforma", "Otro tipo"], { required_error: "Debe seleccionar un tipo." }),
-  active: z.boolean().default(true),
-  project: z.boolean().default(false),
-  license: z.boolean().default(false),
   name: z.string().min(1, "El nombre es requerido."),
   phone: z.string().min(1, "El teléfono es requerido."),
   email: z.string().email("Email inválido."),
-  location: z.string().min(1, "La ubicación es requerida."),
-  called: z.boolean().default(false),
-  status: z.string().default('Pendiente'),
-  seguimiento: z.string().optional(),
-  infoAdicional: z.string().optional(),
 });
 
 type Contact = z.infer<typeof contactSchema> & { id: string, [key: string]: any };
@@ -42,57 +31,8 @@ type Contact = z.infer<typeof contactSchema> & { id: string, [key: string]: any 
 function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Contact, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
-    defaultValues: contact || {
-      type: "Reforma",
-      active: true,
-      project: false,
-      license: false,
-      name: "",
-      phone: "",
-      email: "",
-      location: "",
-      called: false,
-      status: "Pendiente",
-      seguimiento: "",
-      infoAdicional: "",
-    },
+    defaultValues: contact || { name: "", phone: "", email: "" },
   });
-
-  // When a contact is passed for editing, make sure to reset the form with its values
-  useEffect(() => {
-    if (contact) {
-      form.reset({
-        type: contact.type || "Reforma",
-        active: contact.active ?? true,
-        project: contact.project ?? false,
-        license: contact.license ?? false,
-        name: contact.name || '',
-        phone: contact.phone || '',
-        email: contact.email || '',
-        location: contact.location || '',
-        called: contact.called ?? false,
-        status: contact.status || 'Pendiente',
-        seguimiento: contact.seguimiento || '',
-        infoAdicional: contact.infoAdicional || '',
-      });
-    } else {
-       form.reset({
-          type: "Reforma",
-          active: true,
-          project: false,
-          license: false,
-          name: "",
-          phone: "",
-          email: "",
-          location: "",
-          called: false,
-          status: "Pendiente",
-          seguimiento: "",
-          infoAdicional: "",
-      });
-    }
-  }, [contact, form, open]);
-
 
   const handleSubmit = (values: z.infer<typeof contactSchema>) => {
     // This preserves extra fields that are not in the form
@@ -103,67 +43,37 @@ function ContactForm({ contact, onSubmit, open, onOpenChange }: { contact?: Cont
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{contact ? "Editar Contacto" : "Añadir Nuevo Contacto"}</DialogTitle></DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="600 000 000" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-               </div>
-               <FormField control={form.control} name="location" render={({ field }) => (
-                  <FormItem><FormLabel>Ubicación</FormLabel><FormControl><Input placeholder="Ciudad, Dirección" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-               <FormField control={form.control} name="type" render={({ field }) => (
-                <FormItem><FormLabel>Tipo de Solicitud</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un tipo" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                        <SelectItem value="Obra Nueva">Obra Nueva</SelectItem>
-                        <SelectItem value="Reforma">Reforma</SelectItem>
-                        <SelectItem value="Otro tipo">Otro tipo</SelectItem>
-                    </SelectContent>
-                    </Select><FormMessage />
-                </FormItem>
-              )} />
-              <div className="flex items-center space-x-6">
-                  <FormField control={form.control} name="active" render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Activo</FormLabel></FormItem>
-                  )} />
-                  <FormField control={form.control} name="project" render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Proyecto</FormLabel></FormItem>
-                  )} />
-                  <FormField control={form.control} name="license" render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Licencia</FormLabel></FormItem>
-                  )} />
-              </div>
-               <FormField control={form.control} name="seguimiento" render={({ field }) => (
-                  <FormItem><FormLabel>Seguimiento</FormLabel><FormControl><Textarea placeholder="Notas sobre el seguimiento del contacto..." {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-               <FormField control={form.control} name="infoAdicional" render={({ field }) => (
-                  <FormItem><FormLabel>Info Adicional</FormLabel><FormControl><Textarea placeholder="Información adicional relevante..." {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                <Button type="submit">{contact ? "Guardar Cambios" : "Añadir Contacto"}</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
+      <DialogTrigger asChild>
+        <Button><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{contact ? "Editar Contacto" : "Añadir Nuevo Contacto"}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="phone" render={({ field }) => (
+              <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="600 000 000" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+              <Button type="submit">{contact ? "Guardar Cambios" : "Añadir Contacto"}</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
     </Dialog>
   )
 }
 
 function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, currentUrl: string, onSave: (url: string) => void }) {
     const [url, setUrl] = useState(currentUrl);
-    useEffect(() => { setUrl(currentUrl) }, [currentUrl, open]);
 
     const handleSave = () => {
         onSave(url);
@@ -186,7 +96,7 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
                     <div className="text-sm p-3 bg-secondary/50 rounded-md border border-border/50">
                         <p className="font-semibold mb-2">¿Cómo obtener la URL?</p>
                         <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
-                            <li>En Google Sheets, ve a <code className="bg-muted px-1 py-0.5 rounded">Archivo &gt; Compartir &gt; Publicar en la web</code>.</li>
+                            <li>En Google Sheets, ve a <code className="bg-muted px-1 py-0.5 rounded">Archivo > Compartir > Publicar en la web</code>.</li>
                             <li>Selecciona la hoja correcta que quieres conectar.</li>
                             <li>En el segundo desplegable, elige <code className="bg-muted px-1 py-0.5 rounded">Valores separados por comas (.csv)</code>.</li>
                             <li>Haz clic en "Publicar" y copia la URL generada.</li>
@@ -226,9 +136,9 @@ export function FormsResponsesCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
+  const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
   const [viewingText, setViewingText] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,15 +200,8 @@ export function FormsResponsesCard({
     allKeys.delete('id');
     
     const keyArray = Array.from(allKeys);
-    const preferredOrder = [
-        'name', 'Nombre', 
-        'phone', 'Teléfono', 
-        'email', 'Email', 
-        'status', 
-        'called', 
-        'seguimiento', 'Seguimiento',
-        'infoAdicional', 'Info Adicional'
-    ];
+    // Prioritize common fields
+    const preferredOrder = ['name', 'Nombre', 'phone', 'Teléfono', 'email', 'Email', 'status', 'called'];
     keyArray.sort((a, b) => {
         const indexA = preferredOrder.indexOf(a);
         const indexB = preferredOrder.indexOf(b);
@@ -311,12 +214,6 @@ export function FormsResponsesCard({
   };
   
   const contactHeaders = getContactHeaders();
-  
-  const getHeaderDisplayName = (header: string) => {
-    if (header === 'seguimiento') return 'Seguimiento';
-    if (header === 'infoAdicional') return 'Info Adicional';
-    return header.replace(/_/g, ' ');
-  }
 
   return (
     <Card>
@@ -363,14 +260,14 @@ export function FormsResponsesCard({
         <div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:items-center mb-4">
             <h3 className="text-lg font-semibold">Contactos Manuales</h3>
-            <Button onClick={() => { setEditingContact(undefined); setIsFormOpen(true); }} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
+            <Button onClick={() => setIsFormOpen(true)}><Plus className="mr-2 h-4 w-4"/>Añadir Contacto</Button>
           </div>
           <div className="rounded-md border">
             <ScrollArea className="w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{getHeaderDisplayName(header)}</TableHead>)}
+                    {contactHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
                     <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -398,13 +295,8 @@ export function FormsResponsesCard({
                                         </Select>
                                     );
                                 }
-                                if (typeof value === 'boolean') {
-                                    return <Checkbox checked={value} disabled />;
-                                }
-                                
                                 const textValue = value?.toString() || '';
                                 const isLongText = textValue.length > 50;
-
                                 if (isLongText) {
                                     return (
                                         <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
