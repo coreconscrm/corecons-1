@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 type VisibleTabs = {
     projects: boolean;
     clients: boolean;
+    reformas: boolean;
     providers: boolean;
     team: boolean;
     forms: boolean;
@@ -19,6 +20,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     projects: "Proyectos",
     budgets: "Presupuestos",
     clients: "Obra Nueva",
+    reformas: "Reformas",
     providers: "Proveedores",
     prices: "Precios",
     team: "Equipo",
@@ -55,5 +57,3 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
     </Card>
   );
 }
-
-    

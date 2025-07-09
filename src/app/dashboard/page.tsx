@@ -15,6 +15,7 @@ const initialFormSubmissions: any[] = [];
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<any[]>([]);
+  const [reformas, setReformas] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
@@ -31,6 +32,7 @@ export default function DashboardPage() {
   const [visibleTabs, setVisibleTabs] = useState({
     projects: true,
     clients: true,
+    reformas: true,
     providers: true,
     team: true,
     forms: true,
@@ -58,7 +60,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -70,6 +72,7 @@ export default function DashboardPage() {
         setBudgets(mapSnapToState(snapshots[4]));
         setCompanies(mapSnapToState(snapshots[5]));
         setContacts(mapSnapToState(snapshots[6]));
+        setReformas(mapSnapToState(snapshots[7]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -124,8 +127,7 @@ export default function DashboardPage() {
     try {
       let newItem = { ...item };
       
-      // Inicializar campos de documentos si es una obra nueva (cliente)
-      if (type === 'Obra') {
+      if (type === 'Obra Nueva' || type === 'Reforma') {
         newItem = {
           ...newItem,
           memoria: item.memoria || "",
@@ -259,9 +261,14 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
 
               clients={clients}
-              onAddClient={(client) => handleCreate('clients', client, 'Obra')}
-              onUpdateClient={(client) => handleUpdate('clients', client, 'Obra')}
-              onDeleteClient={(id) => handleDelete('clients', id, 'Obra')}
+              onAddClient={(client) => handleCreate('clients', client, 'Obra Nueva')}
+              onUpdateClient={(client) => handleUpdate('clients', client, 'Obra Nueva')}
+              onDeleteClient={(id) => handleDelete('clients', id, 'Obra Nueva')}
+              
+              reformas={reformas}
+              onAddReforma={(reforma) => handleCreate('reformas', reforma, 'Reforma')}
+              onUpdateReforma={(reforma) => handleUpdate('reformas', reforma, 'Reforma')}
+              onDeleteReforma={(id) => handleDelete('reformas', id, 'Reforma')}
 
               projects={projects}
               onAddProject={(project) => handleCreate('projects', {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
@@ -311,5 +318,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
