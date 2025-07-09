@@ -40,7 +40,7 @@ export function DashboardTabs({
       <TabsList className="w-full justify-start overflow-x-auto md:justify-between">
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
-        {visibleTabs.clients && <TabsTrigger value="clients">Clientes</TabsTrigger>}
+        {visibleTabs.clients && <TabsTrigger value="clients">Oportunidades</TabsTrigger>}
         {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
@@ -60,7 +60,7 @@ export function DashboardTabs({
       </TabsContent>}
       
       {visibleTabs.clients && <TabsContent value="clients" className="mt-6">
-        <ClientListCard clients={clients} onAddClient={onAddClient} onUpdateClient={onUpdateClient} onDeleteClient={onDeleteClient} />
+        <ClientListCard clients={clients} providers={providers} onAddClient={onAddClient} onUpdateClient={onUpdateClient} onDeleteClient={onDeleteClient} />
       </TabsContent>}
 
       {visibleTabs.providers && <TabsContent value="providers" className="mt-6">
@@ -100,3 +100,5 @@ export function DashboardTabs({
     </Tabs>
   );
 }
+
+    

@@ -18,7 +18,7 @@ type VisibleTabs = {
 const tabLabels: Record<keyof VisibleTabs, string> = {
     projects: "Proyectos",
     budgets: "Presupuestos",
-    clients: "Clientes",
+    clients: "Oportunidades",
     providers: "Proveedores",
     prices: "Precios",
     team: "Equipo",
@@ -55,3 +55,5 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
     </Card>
   );
 }
+
+    

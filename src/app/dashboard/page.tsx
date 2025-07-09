@@ -122,11 +122,19 @@ export default function DashboardPage() {
 
   const handleCreate = async (collectionName: string, item: any, type: string) => {
     try {
-      if (item.id) {
-        const { id, ...data } = item;
+      const newItem = { ...item };
+      // Ensure document fields are initialized for clients
+      if (collectionName === 'clients') {
+        newItem.projectDoc = newItem.projectDoc || "";
+        newItem.memoryDoc = newItem.memoryDoc || "";
+        newItem.plansDoc = newItem.plansDoc || "";
+      }
+
+      if (newItem.id) {
+        const { id, ...data } = newItem;
         await setDoc(doc(db, collectionName, id), data);
       } else {
-        await addDoc(collection(db, collectionName), item);
+        await addDoc(collection(db, collectionName), newItem);
       }
       toast({ title: `${type} guardado`, description: `El ${type.toLowerCase()} se ha guardado correctamente.` });
       fetchData();
@@ -248,9 +256,9 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
 
               clients={clients}
-              onAddClient={(client) => handleCreate('clients', client, 'Cliente')}
-              onUpdateClient={(client) => handleUpdate('clients', client, 'Cliente')}
-              onDeleteClient={(id) => handleDelete('clients', id, 'Cliente')}
+              onAddClient={(client) => handleCreate('clients', client, 'Oportunidad')}
+              onUpdateClient={(client) => handleUpdate('clients', client, 'Oportunidad')}
+              onDeleteClient={(id) => handleDelete('clients', id, 'Oportunidad')}
 
               projects={projects}
               onAddProject={(project) => handleCreate('projects', {...project, documentation: [], photos: [], ganttData: [], assignedProviders: []}, 'Proyecto')}
@@ -300,3 +308,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
