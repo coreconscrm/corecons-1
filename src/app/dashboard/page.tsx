@@ -316,7 +316,7 @@ export default function DashboardPage() {
               onDeleteForm={handleDeleteForm}
 
               priorityCalls={priorityCalls}
-              onAddPriorityCall={(call) => handleCreate('priority_calls', call, 'Llamada Prioritaria')}
+              onAddPriorityCall={(call) => handleCreate('priority_calls', {...call, called: call.called ?? false, status: call.status ?? 'Pendiente'}, 'Llamada Prioritaria')}
               onUpdatePriorityCall={(call) => handleUpdate('priority_calls', call, 'Llamada Prioritaria')}
               onDeletePriorityCall={(id) => handleDelete('priority_calls', id, 'Llamada Prioritaria')}
 
