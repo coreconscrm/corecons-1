@@ -314,7 +314,7 @@ export default function DashboardPage() {
               onDeleteForm={handleDeleteForm}
 
               budgets={budgets}
-              onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: []}, 'Presupuesto')}
+              onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: [], m2: budget.m2 || 0 }, 'Presupuesto')}
               onUpdateBudget={(budget) => handleUpdate('budgets', budget, 'Presupuesto')}
               onDeleteBudget={(id) => handleDelete('budgets', id, 'Presupuesto')}
 

@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
@@ -35,6 +35,7 @@ const budgetSchema = z.object({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   companyId: z.string().min(1, "Debe seleccionar una empresa."),
   status: z.string().min(1, "El estado es requerido."),
+  m2: z.coerce.number().min(0, "Los metros cuadrados deben ser un número positivo.").optional(),
   lineItems: z.array(lineItemSchema).min(1, "Debe añadir al menos una línea."),
 });
 
@@ -48,6 +49,7 @@ export type Budget = z.infer<typeof budgetSchema> & {
     id: string;
     documents: any[];
     total: number;
+    m2?: number;
 };
 
 
@@ -108,6 +110,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
       clientId: "",
       companyId: "",
       status: "Pendiente",
+      m2: 0,
       lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
     },
   });
@@ -141,13 +144,14 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
 
   useEffect(() => {
     if (budget && open) {
-      form.reset(budget);
+      form.reset({ ...budget, m2: budget.m2 || 0 });
     } else if (!budget) {
       form.reset({
         name: "",
         clientId: "",
         companyId: "",
         status: "Pendiente",
+        m2: 0,
         lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
       });
     }
@@ -172,7 +176,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
             <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Nombre del Presupuesto</FormLabel><FormControl><Input placeholder="Reforma integral vivienda" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormField control={form.control} name="clientId" render={({ field }) => (
                 <FormItem><FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
@@ -188,6 +192,9 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
                     <SelectContent>{companies.map(company => (<SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
+              )} />
+              <FormField control={form.control} name="m2" render={({ field }) => (
+                <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
              <FormField control={form.control} name="status" render={({ field }) => (
@@ -424,11 +431,19 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                   </AlertDialog>
               </div>
             </CardHeader>
-            <CardContent className="flex-grow">
-                <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                <p className="text-sm text-muted-foreground">{budget.status}</p>
+            <CardContent className="flex-grow space-y-4">
+                <div>
+                  <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-sm text-muted-foreground">{budget.status}</p>
+                </div>
+                 {budget.m2 && (
+                    <div className="flex items-center text-sm text-muted-foreground gap-2 border-t pt-3">
+                        <Home className="h-4 w-4 text-primary"/>
+                        <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                    </div>
+                 )}
             </CardContent>
-            <CardFooter className="flex justify-between items-center">
+            <CardFooter className="flex justify-between items-center border-t pt-4">
                  <div>
                     <h4 className="font-semibold text-sm mb-2">Documentos</h4>
                     {budget.documents.length > 0 ? (
