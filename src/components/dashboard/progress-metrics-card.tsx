@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientListCard } from "@/components/dashboard/active-courses-card";
 import { ProjectListCard } from "@/components/dashboard/performance-chart";
@@ -60,7 +61,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.budgets && <TabsContent value="budgets" className="mt-6">
-        <BudgetListCard budgets={budgets} clients={clients} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
+        <BudgetListCard budgets={budgets} clients={[...clients, ...reformas]} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
       </TabsContent>}
       
       {visibleTabs.clients && <TabsContent value="clients" className="mt-6">
@@ -89,6 +90,8 @@ export function DashboardTabs({
           onAddContact={onAddContact}
           onUpdateContact={onUpdateContact}
           onDeleteContact={onDeleteContact}
+          onAddClient={onAddClient}
+          onAddReforma={onAddReforma}
           forms={forms} 
           onLoadForms={onLoadForms} 
           onUpdateForm={onUpdateForm} 
@@ -108,3 +111,5 @@ export function DashboardTabs({
     </Tabs>
   );
 }
+
+    

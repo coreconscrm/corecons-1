@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useRef, useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter, ArrowRightCircle } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -146,10 +147,12 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 
 export function FormsResponsesCard({
   contacts, onAddContact, onUpdateContact, onDeleteContact,
+  onAddClient, onAddReforma,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
   sheetUrl, onSaveSheetUrl
 }: {
   contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
+  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
   sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -158,6 +161,7 @@ export function FormsResponsesCard({
   const { toast } = useToast();
   
   const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
+  const [promotingContact, setPromotingContact] = useState<Contact | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
   const [viewingText, setViewingText] = useState<string | null>(null);
@@ -249,6 +253,36 @@ export function FormsResponsesCard({
   }, [contacts]);
 
   const visibleContactHeaders = contactHeaders.filter(header => columnVisibility[header]);
+  
+  const handlePromoteToProject = (section: 'clients' | 'reformas') => {
+    if (!promotingContact) return;
+
+    const { id, ...data } = promotingContact;
+    const contactName = data.name || data.Nombre || data.nombre || 'Nuevo Proyecto desde Contacto';
+
+    const newProjectData = {
+        name: contactName,
+        contact: contactName,
+        phone: data.phone || data.Phone || data.Teléfono || '',
+        email: data.email || data.Email || '',
+        estado: 'Contactado',
+        infoAdicional: 'Promovido desde Contactos Manuales.',
+        arquitecto: '',
+        providerId: '',
+        memoria: '',
+        planos: '',
+    };
+    
+    if (section === 'clients') {
+        onAddClient(newProjectData);
+        toast({ title: "Promovido a Obra Nueva", description: `Se ha creado un nuevo proyecto para ${contactName}.` });
+    } else {
+        onAddReforma(newProjectData);
+        toast({ title: "Promovido a Reforma", description: `Se ha creado una nueva reforma para ${contactName}.` });
+    }
+    
+    setPromotingContact(null);
+  };
 
 
   return (
@@ -268,6 +302,22 @@ export function FormsResponsesCard({
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+       <AlertDialog open={!!promotingContact} onOpenChange={(open) => !open && setPromotingContact(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Promover Contacto a Proyecto</AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿A qué sección quieres añadir a "{promotingContact?.name || 'este contacto'}"? Se creará una nueva entrada con su nombre, email y teléfono.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => handlePromoteToProject('reformas')}>Añadir a Reformas</Button>
+              <Button onClick={() => handlePromoteToProject('clients')}>Añadir a Obra Nueva</Button>
+            </AlertDialogFooter>
+             <AlertDialogCancel className="mt-2 w-full">Cancelar</AlertDialogCancel>
+          </AlertDialogContent>
+        </AlertDialog>
 
       <ContactForm 
         contact={editingContact} 
@@ -307,7 +357,7 @@ export function FormsResponsesCard({
                     <DropdownMenuCheckboxItem
                       key={header}
                       className="capitalize"
-                      checked={columnVisibility[header]}
+                      checked={columnVisibility[header] ?? true}
                       onCheckedChange={(value) =>
                         setColumnVisibility((prev) => ({ ...prev, [header]: value }))
                       }
@@ -372,6 +422,10 @@ export function FormsResponsesCard({
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
                               <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => setPromotingContact(contact)}>
+                                  <ArrowRightCircle className="mr-2"/>Promover a Proyecto
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => {setEditingContact(contact); setIsFormOpen(true);}}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                               </DropdownMenuContent>
@@ -489,3 +543,5 @@ export function FormsResponsesCard({
     </Card>
   );
 }
+
+    
