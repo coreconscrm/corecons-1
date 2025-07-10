@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -21,27 +21,27 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const itemSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  phone: z.string().min(1, "El teléfono es requerido."),
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  called: z.boolean().default(false),
-  status: z.string().default('Pendiente'),
-});
+const itemSchema = z.record(z.any());
 
-type Item = z.infer<typeof itemSchema> & { id: string };
+type Item = { [key: string]: any; id: string };
 
-function ItemForm({ item, onSubmit, open, onOpenChange, title }: { item?: Item, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, title: string }) {
+function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item?: Item, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, title: string, headers: string[] }) {
   const form = useForm<z.infer<typeof itemSchema>>({
     resolver: zodResolver(itemSchema),
-    defaultValues: item || { name: "", phone: "", email: "", called: false, status: 'Pendiente' },
+    defaultValues: item || {},
   });
 
   useEffect(() => {
     if (open) {
-      form.reset(item || { name: "", phone: "", email: "", called: false, status: 'Pendiente' });
+      const defaultValues: { [key: string]: any } = {};
+      headers.forEach(header => {
+        defaultValues[header] = item?.[header] || '';
+      });
+      defaultValues.called = item?.called || false;
+      defaultValues.status = item?.status || 'Pendiente';
+      form.reset(defaultValues);
     }
-  }, [item, open, form]);
+  }, [item, open, form, headers]);
 
   const handleSubmit = (values: z.infer<typeof itemSchema>) => {
     onSubmit({ ...item, ...values });
@@ -51,21 +51,28 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title }: { item?: Item, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item ? `Editar ${title}` : `Añadir Nuevo ${title}`}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Nombre del contacto" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Número de teléfono" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Email de contacto" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
+            {headers.map(header => (
+              <FormField
+                key={header}
+                control={form.control}
+                name={header}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="capitalize">{header.replace(/_/g, ' ')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={`Introduce ${header.replace(/_/g, ' ')}`} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
               <Button type="submit">{item ? 'Guardar Cambios' : 'Añadir'}</Button>
@@ -78,18 +85,19 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title }: { item?: Item, 
 }
 
 function DynamicTableCard({
-  title, description, items, onAddItem, onUpdateItem, onDeleteItem, onAddClient, onAddReforma,
-  defaultHeaders = ['name', 'phone', 'email']
+  title, description, items, headers,
+  onAddItem, onUpdateItem, onDeleteItem,
+  onAddClient, onAddReforma
 }: {
-  title: string, description: string, items: any[],
+  title: string, description: string, items: any[], headers: string[],
   onAddItem: (item: any) => void, onUpdateItem: (item: any) => void, onDeleteItem: (id: string) => void,
   onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
-  defaultHeaders?: string[]
 }) {
   const { toast } = useToast();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | undefined>(undefined);
   const [promotingItem, setPromotingItem] = useState<any | null>(null);
+  const [viewingText, setViewingText] = useState<string | null>(null);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -100,11 +108,16 @@ function DynamicTableCard({
     if (!promotingItem) return;
 
     const { id, ...data } = promotingItem;
-    const contactName = data.name || 'Nuevo Proyecto desde Contacto';
+    const contactName = data.name || data.Nombre || 'Nuevo Proyecto desde Contacto';
 
     const newProjectData = {
-        name: contactName, contact: contactName, phone: data.phone, email: data.email, estado: 'Contactado',
-        infoAdicional: `Promovido desde ${title}.`, arquitecto: '', providerId: '', memoria: '', planos: '',
+        name: contactName,
+        contact: contactName,
+        phone: data.phone || data.Teléfono || '',
+        email: data.email || data.Email || data['Dirección de correo electrónico'] || '',
+        estado: 'Contactado',
+        infoAdicional: `Promovido desde ${title}.`,
+        arquitecto: '', providerId: '', memoria: '', planos: '',
     };
     
     if (section === 'clients') {
@@ -121,12 +134,19 @@ function DynamicTableCard({
   
   return (
     <Card>
+      <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Texto Completo</DialogTitle></DialogHeader>
+          <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingText}</div></ScrollArea>
+          <DialogFooter><Button variant="outline" onClick={() => setViewingText(null)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={!!promotingItem} onOpenChange={(open) => !open && setPromotingItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Promover a Proyecto</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿A qué sección quieres añadir a "{promotingItem?.name}"? Se creará una nueva entrada con sus datos.
+              ¿A qué sección quieres añadir a "{promotingItem?.name || promotingItem?.Nombre}"? Se creará una nueva entrada con sus datos de contacto.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -143,6 +163,7 @@ function DynamicTableCard({
         open={isAddDialogOpen} 
         onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
         title={title}
+        headers={headers}
       />
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -157,14 +178,28 @@ function DynamicTableCard({
         <div className="rounded-md border">
           <Table>
             <TableHeader><TableRow>
-                {defaultHeaders.map(h => <TableHead key={h} className="capitalize">{h.replace(/_/g, ' ')}</TableHead>)}
+                {headers.map(h => <TableHead key={h} className="capitalize">{h.replace(/_/g, ' ')}</TableHead>)}
                 <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  {defaultHeaders.map(h => <TableCell key={h} className={h === 'name' ? 'font-medium' : ''}>{item[h]}</TableCell>)}
+                  {headers.map(h => {
+                    const textValue = item[h]?.toString() || '';
+                    const isLongText = textValue.length > 50;
+                    return (
+                        <TableCell key={`${item.id}-${h}`} className="max-w-[200px]">
+                            {isLongText ? (
+                                <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
+                                    {textValue}
+                                </div>
+                            ) : (
+                                textValue
+                            )}
+                        </TableCell>
+                    );
+                  })}
                   <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
                   <TableCell>
                       <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
@@ -196,7 +231,7 @@ function DynamicTableCard({
                 </TableRow>
               ))}
                {items.length === 0 && (
-                  <TableRow><TableCell colSpan={defaultHeaders.length + 3} className="h-24 text-center">No hay elementos.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={headers.length + 3} className="h-24 text-center">No hay elementos.</TableCell></TableRow>
                )}
             </TableBody>
           </Table>
@@ -264,11 +299,13 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 function MainFormsCard({
   onAddContact, onAddPriorityCall,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
-  sheetUrl, onSaveSheetUrl
+  sheetUrl, onSaveSheetUrl,
+  headers
 }: {
   onAddContact: (contact: any) => void, onAddPriorityCall: (call: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-  sheetUrl: string, onSaveSheetUrl: (url: string) => void
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
+  headers: string[]
 }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -302,40 +339,26 @@ function MainFormsCard({
 
   const triggerFileUpload = () => fileInputRef.current?.click();
   
-  const getCsvHeaders = () => {
-    if (forms.length === 0) return [];
-    const allKeys = forms.reduce((keys, form) => {
-        Object.keys(form).forEach(key => { if (!keys.includes(key)) keys.push(key); });
-        return keys;
-    }, [] as string[]);
-    return allKeys.filter(h => h !== 'id' && h !== 'called' && h !== 'status');
-  }
-
-  const csvHeaders = getCsvHeaders();
-
-  const mapFormToStandardItem = (form: any) => {
+  const transferData = (form: any) => {
+    const { id, ...originalData } = form;
     return {
-      name: form.Nombre || form.name || 'N/A',
-      phone: form.Teléfono || form.phone || 'N/A',
-      email: form.Email || form['Dirección de correo electrónico'] || form.email || '',
+      ...originalData,
       called: form.called || false,
       status: form.status || 'Pendiente'
     };
   };
   
   const handleMoveToPriority = (form: any) => {
-    const { id, ...originalData } = form;
-    const standardItem = mapFormToStandardItem(originalData);
-    onAddPriorityCall(standardItem);
-    onDeleteForm(id);
+    const dataToMove = transferData(form);
+    onAddPriorityCall(dataToMove);
+    onDeleteForm(form.id);
     toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
   };
   
   const handleMoveToContacts = (form: any) => {
-    const { id, ...originalData } = form;
-    const standardItem = mapFormToStandardItem(originalData);
-    onAddContact(standardItem);
-    onDeleteForm(id);
+    const dataToMove = transferData(form);
+    onAddContact(dataToMove);
+    onDeleteForm(form.id);
     toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
   };
 
@@ -389,7 +412,7 @@ function MainFormsCard({
                           <TableRow>
                               <TableHead>Llamado</TableHead>
                               <TableHead>Estado</TableHead>
-                              {csvHeaders.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                              {headers.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
                               <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
                           </TableRow>
                       </TableHeader>
@@ -408,7 +431,7 @@ function MainFormsCard({
                                       </SelectContent>
                                   </Select>
                               </TableCell>
-                              {csvHeaders.map(header => {
+                              {headers.map(header => {
                                 const textValue = sub[header]?.toString() || '';
                                 const isLongText = textValue.length > 50;
                                 return (
@@ -475,6 +498,21 @@ export function FormsSection({
   sheetUrl: string, onSaveSheetUrl: (url: string) => void,
   priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void
 }) {
+  const allHeaders = useMemo(() => {
+    const allItems = [...forms, ...contacts, ...priorityCalls];
+    if (allItems.length === 0) return ['Nombre', 'Teléfono', 'Email'];
+    
+    const headerSet = new Set<string>();
+    allItems.forEach(item => {
+      Object.keys(item).forEach(key => {
+        if (key !== 'id' && key !== 'called' && key !== 'status') {
+          headerSet.add(key);
+        }
+      });
+    });
+    return Array.from(headerSet);
+  }, [forms, contacts, priorityCalls]);
+
   return (
     <Tabs defaultValue="main" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -487,6 +525,7 @@ export function FormsSection({
                 title="Contactos Manuales"
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
+                headers={allHeaders}
                 onAddItem={onAddContact}
                 onUpdateItem={onUpdateContact}
                 onDeleteItem={onDeleteContact}
@@ -494,9 +533,15 @@ export function FormsSection({
                 onAddReforma={onAddReforma}
             />
             <MainFormsCard 
-                onAddContact={onAddContact} onAddPriorityCall={onAddPriorityCall}
-                forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
-                sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
+                onAddContact={onAddContact} 
+                onAddPriorityCall={onAddPriorityCall}
+                forms={forms} 
+                onLoadForms={onLoadForms} 
+                onUpdateForm={onUpdateForm} 
+                onDeleteForm={onDeleteForm}
+                sheetUrl={sheetUrl} 
+                onSaveSheetUrl={onSaveSheetUrl}
+                headers={allHeaders}
             />
         </div>
       </TabsContent>
@@ -505,6 +550,7 @@ export function FormsSection({
               title="Llamada Prioritaria"
               description="Contactos marcados como prioritarios desde la bandeja de entrada de formularios."
               items={priorityCalls}
+              headers={allHeaders}
               onAddItem={onAddPriorityCall}
               onUpdateItem={onUpdatePriorityCall}
               onDeleteItem={onDeletePriorityCall}
@@ -515,3 +561,5 @@ export function FormsSection({
     </Tabs>
   );
 }
+
+    
