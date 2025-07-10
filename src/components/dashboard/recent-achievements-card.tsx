@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -464,38 +464,24 @@ function MainFormsCard({
 
   const triggerFileUpload = () => fileInputRef.current?.click();
   
-  const mapFormData = (form: any) => {
-      const { id, called, status, ...originalData } = form;
-      // Copy all original data
-      const mappedData: { [key: string]: any } = { ...originalData };
-      
-      // Standardize common fields if they don't exist, to ensure compatibility
-      // with other parts of the system (like 'Promote to Project').
-      // These will be overridden by form data if columns with these names exist.
-      mappedData.name = mappedData.name || mappedData.Nombre || mappedData.nombre;
-      mappedData.phone = mappedData.phone || mappedData.Teléfono || mappedData.telefono;
-      mappedData.email = mappedData.email || mappedData.Email || mappedData['Dirección de correo electrónico'];
-  
-      return {
-          ...mappedData,
-          called: called || false,
-          status: status || 'Pendiente'
+  const mapAndTransferData = (form: any, destination: 'contacts' | 'priority') => {
+      const { id, ...originalData } = form;
+      // All data is copied, ensuring no loss.
+      const dataToMove = {
+          ...originalData,
+          called: form.called || false,
+          status: form.status || 'Pendiente'
       };
-  };
 
-  
-  const handleMoveToPriority = (form: any) => {
-    const dataToMove = mapFormData(form);
-    onAddPriorityCall(dataToMove);
-    onDeleteForm(form.id);
-    toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
-  };
-  
-  const handleMoveToContacts = (form: any) => {
-    const dataToMove = mapFormData(form);
-    onAddContact(dataToMove);
-    onDeleteForm(form.id);
-    toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
+      if (destination === 'contacts') {
+          onAddContact(dataToMove);
+          toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
+      } else {
+          onAddPriorityCall(dataToMove);
+          toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
+      }
+
+      onDeleteForm(form.id);
   };
 
   return (
@@ -587,8 +573,8 @@ function MainFormsCard({
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                      <DropdownMenuItem onSelect={() => handleMoveToPriority(sub)}><Star className="mr-2"/>Mover a Prioritarios</DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={() => handleMoveToContacts(sub)}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={() => mapAndTransferData(sub, 'priority')}><Star className="mr-2"/>Mover a Prioritarios</DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={() => mapAndTransferData(sub, 'contacts')}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
                                       <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -648,35 +634,50 @@ export function FormsSection({
     });
     return Array.from(headerSet);
   }, [forms, contacts, priorityCalls]);
+  
+  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>([]);
+  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>([]);
 
-  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
-  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
-
+  // Load from localStorage on mount and when allHeaders change
   useEffect(() => {
-    const newHeaders = allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
-    
-    const updateColumns = (prevCols: ColumnConfig[], newCols: ColumnConfig[]) => {
-        const newColMap = new Map(newCols.map(c => [c.key, c]));
-        const prevColMap = new Map(prevCols.map(c => [c.key, c]));
+    const getInitialConfig = (storageKey: string) => {
+      try {
+        const savedConfig = localStorage.getItem(storageKey);
+        if (savedConfig) {
+          const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
+          // Sync with current headers - add new ones, remove old ones
+          const headerKeys = new Set(allHeaders);
+          const configKeys = new Set(parsedConfig.map(c => c.key));
+          
+          const finalConfig = allHeaders.map(key => {
+            return parsedConfig.find(c => c.key === key) || { key, visible: true, displayName: getDisplayName(key) };
+          });
 
-        const updated = allHeaders.map(key => {
-            const prev = prevColMap.get(key);
-            const newCol = newColMap.get(key);
-            if (prev) { // Keep user's settings if column still exists
-                return prev;
-            }
-            if (newCol) { // Add new column
-                return newCol;
-            }
-            return null;
-        }).filter(Boolean) as ColumnConfig[];
-        
-        return updated;
+          return finalConfig;
+        }
+      } catch (e) {
+        console.error("Failed to parse column config from localStorage", e);
+      }
+      // Default config if nothing is saved
+      return allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
     };
     
-    setContactsColumns(prev => updateColumns(prev, newHeaders));
-    setPriorityColumns(prev => updateColumns(prev, newHeaders));
+    if (typeof window !== 'undefined') {
+        setContactsColumns(getInitialConfig('contactsColumnsConfig'));
+        setPriorityColumns(getInitialConfig('priorityColumnsConfig'));
+    }
+
   }, [allHeaders]);
+
+  const handleContactsColumnChange = (newConfig: ColumnConfig[]) => {
+      setContactsColumns(newConfig);
+      localStorage.setItem('contactsColumnsConfig', JSON.stringify(newConfig));
+  };
+  
+  const handlePriorityColumnChange = (newConfig: ColumnConfig[]) => {
+      setPriorityColumns(newConfig);
+      localStorage.setItem('priorityColumnsConfig', JSON.stringify(newConfig));
+  };
 
 
   return (
@@ -692,7 +693,7 @@ export function FormsSection({
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
                 columnConfig={contactsColumns}
-                onColumnConfigChange={setContactsColumns}
+                onColumnConfigChange={handleContactsColumnChange}
                 onAddItem={onAddContact}
                 onUpdateItem={onUpdateContact}
                 onDeleteItem={onDeleteContact}
@@ -717,7 +718,7 @@ export function FormsSection({
               description="Contactos marcados como prioritarios desde la bandeja de entrada de formularios."
               items={priorityCalls}
               columnConfig={priorityColumns}
-              onColumnConfigChange={setPriorityColumns}
+              onColumnConfigChange={handlePriorityColumnChange}
               onAddItem={onAddPriorityCall}
               onUpdateItem={onUpdatePriorityCall}
               onDeleteItem={onDeletePriorityCall}
@@ -728,3 +729,5 @@ export function FormsSection({
     </Tabs>
   );
 }
+
+    
