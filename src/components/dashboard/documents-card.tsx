@@ -21,7 +21,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 const documentSchema = z.object({
   title: z.string().min(1, "El título es requerido."),
   description: z.string().optional(),
-  file: z.any().refine(file => file?.length > 0, "Se requiere un archivo."),
+  file: z.any().refine(files => files?.length > 0, "Se requiere un archivo."),
 });
 
 export type Document = {
@@ -40,6 +40,7 @@ function DocumentForm({ onSubmit, open, onOpenChange }: { onSubmit: (values: any
     
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
+    const fileRef = form.register("file");
 
     const handleSubmit = async (values: z.infer<typeof documentSchema>) => {
         setIsUploading(true);
@@ -68,9 +69,12 @@ function DocumentForm({ onSubmit, open, onOpenChange }: { onSubmit: (values: any
             setIsUploading(false);
         }
     };
-
+    
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            if (!isOpen) form.reset();
+            onOpenChange(isOpen);
+        }}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Añadir Nuevo Documento</DialogTitle>
@@ -83,19 +87,13 @@ function DocumentForm({ onSubmit, open, onOpenChange }: { onSubmit: (values: any
                         <FormField control={form.control} name="description" render={({ field }) => (
                             <FormItem><FormLabel>Descripción (Opcional)</FormLabel><FormControl><Textarea placeholder="Añade una breve descripción..." {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <FormField
-                            control={form.control}
-                            name="file"
-                            render={({ field: { onChange, ...rest } }) => (
-                                <FormItem>
-                                    <FormLabel>Archivo</FormLabel>
-                                    <FormControl>
-                                        <Input type="file" onChange={(e) => onChange(e.target.files)} {...rest} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <FormItem>
+                            <FormLabel>Archivo</FormLabel>
+                            <FormControl>
+                                <Input type="file" {...fileRef} />
+                            </FormControl>
+                            <FormMessage>{form.formState.errors.file?.message as React.ReactNode}</FormMessage>
+                        </FormItem>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isUploading}>
