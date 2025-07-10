@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -166,6 +167,11 @@ export function TeamListCard({ team, onAddTeamMember, onUpdateTeamMember, onDele
                         </AlertDialog>
                     </div>
                 ))}
+                 {team.length === 0 && (
+                     <div className="text-center text-muted-foreground py-8">
+                        No hay miembros del equipo añadidos.
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
