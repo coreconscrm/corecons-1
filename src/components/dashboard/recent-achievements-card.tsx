@@ -464,31 +464,35 @@ function MainFormsCard({
 
   const triggerFileUpload = () => fileInputRef.current?.click();
   
-  const transferData = (form: any) => {
-    const { id, called, status, ...originalData } = form;
-    const mappedData: {[key: string]: any} = { ...originalData };
-    
-    // Standardize common fields
-    mappedData.name = form.Nombre || form.nombre || form.name;
-    mappedData.phone = form.Teléfono || form.telefono || form.phone;
-    mappedData.email = form.Email || form['Dirección de correo electrónico'] || form.email;
-    
-    return {
-      ...mappedData,
-      called: called || false,
-      status: status || 'Pendiente'
-    };
+  const mapFormData = (form: any) => {
+      const { id, called, status, ...originalData } = form;
+      // Copy all original data
+      const mappedData: { [key: string]: any } = { ...originalData };
+      
+      // Standardize common fields if they don't exist, to ensure compatibility
+      // with other parts of the system (like 'Promote to Project').
+      // These will be overridden by form data if columns with these names exist.
+      mappedData.name = mappedData.name || mappedData.Nombre || mappedData.nombre;
+      mappedData.phone = mappedData.phone || mappedData.Teléfono || mappedData.telefono;
+      mappedData.email = mappedData.email || mappedData.Email || mappedData['Dirección de correo electrónico'];
+  
+      return {
+          ...mappedData,
+          called: called || false,
+          status: status || 'Pendiente'
+      };
   };
+
   
   const handleMoveToPriority = (form: any) => {
-    const dataToMove = transferData(form);
+    const dataToMove = mapFormData(form);
     onAddPriorityCall(dataToMove);
     onDeleteForm(form.id);
     toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
   };
   
   const handleMoveToContacts = (form: any) => {
-    const dataToMove = transferData(form);
+    const dataToMove = mapFormData(form);
     onAddContact(dataToMove);
     onDeleteForm(form.id);
     toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
@@ -632,7 +636,7 @@ export function FormsSection({
 }) {
   const allHeaders = useMemo(() => {
     const allItems = [...forms, ...contacts, ...priorityCalls];
-    if (allItems.length === 0) return ['Nombre', 'Teléfono', 'Email'];
+    if (allItems.length === 0) return ['name', 'phone', 'email'];
     
     const headerSet = new Set<string>();
     allItems.forEach(item => {
@@ -724,4 +728,3 @@ export function FormsSection({
     </Tabs>
   );
 }
-
