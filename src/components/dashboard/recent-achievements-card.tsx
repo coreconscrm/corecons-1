@@ -28,6 +28,7 @@ type Item = { [key: string]: any; id: string };
 type ColumnConfig = {
     key: string;
     visible: boolean;
+    displayName: string;
 };
 
 const columnDisplayNames: Record<string, string> = {
@@ -60,6 +61,10 @@ function ColumnSettingsDialog({
     const handleToggleVisibility = (key: string) => {
         setCurrentColumns(prev => prev.map(c => c.key === key ? { ...c, visible: !c.visible } : c));
     };
+    
+    const handleDisplayNameChange = (key: string, newName: string) => {
+        setCurrentColumns(prev => prev.map(c => c.key === key ? { ...c, displayName: newName } : c));
+    };
 
     const handleMove = (index: number, direction: 'up' | 'down') => {
         const newColumns = [...currentColumns];
@@ -77,11 +82,11 @@ function ColumnSettingsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-xl">
                 <DialogHeader>
                     <DialogTitle>Configurar Columnas</DialogTitle>
                     <DialogDescription>
-                        Selecciona las columnas que quieres ver y arrástralas para reordenar.
+                        Renombra, reordena y cambia la visibilidad de las columnas.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -92,13 +97,19 @@ function ColumnSettingsDialog({
                                 checked={col.visible}
                                 onCheckedChange={() => handleToggleVisibility(col.key)}
                             />
-                            <label htmlFor={`vis-${col.key}`} className="flex-1 capitalize">{getDisplayName(col.key)}</label>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'up')} disabled={index === 0}>
-                                <ArrowUp className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'down')} disabled={index === currentColumns.length - 1}>
-                                <ArrowDown className="h-4 w-4" />
-                            </Button>
+                            <Input 
+                                value={col.displayName}
+                                onChange={(e) => handleDisplayNameChange(col.key, e.target.value)}
+                                className="h-8 flex-1"
+                            />
+                            <div className="flex">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'up')} disabled={index === 0}>
+                                    <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'down')} disabled={index === currentColumns.length - 1}>
+                                    <ArrowDown className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -190,7 +201,7 @@ function DynamicTableCard({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
-  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible).map(c => c.key), [columnConfig]);
+  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible), [columnConfig]);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -279,7 +290,7 @@ function DynamicTableCard({
           <ScrollArea className="w-full">
             <Table>
               <TableHeader><TableRow>
-                  {visibleHeaders.map(h => <TableHead key={h} className="capitalize">{getDisplayName(h)}</TableHead>)}
+                  {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
                   <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
               </TableRow></TableHeader>
@@ -287,10 +298,10 @@ function DynamicTableCard({
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     {visibleHeaders.map(h => {
-                      const textValue = item[h]?.toString() || '';
+                      const textValue = item[h.key]?.toString() || '';
                       const isLongText = textValue.length > 50;
                       return (
-                          <TableCell key={`${item.id}-${h}`} className="max-w-[200px]">
+                          <TableCell key={`${item.id}-${h.key}`} className="max-w-[200px]">
                               {isLongText ? (
                                   <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
                                       {textValue}
@@ -402,13 +413,11 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 function MainFormsCard({
   onAddContact, onAddPriorityCall,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
-  sheetUrl, onSaveSheetUrl,
-  headers
+  sheetUrl, onSaveSheetUrl
 }: {
   onAddContact: (contact: any) => void, onAddPriorityCall: (call: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
-  headers: string[]
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -416,6 +425,19 @@ function MainFormsCard({
   
   const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
+
+  const headers = useMemo(() => {
+    if (forms.length === 0) return [];
+    const headerSet = new Set<string>();
+    forms.forEach(item => {
+      Object.keys(item).forEach(key => {
+        if (key !== 'id' && key !== 'called' && key !== 'status') {
+          headerSet.add(key);
+        }
+      });
+    });
+    return Array.from(headerSet);
+  }, [forms]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -443,11 +465,18 @@ function MainFormsCard({
   const triggerFileUpload = () => fileInputRef.current?.click();
   
   const transferData = (form: any) => {
-    const { id, ...originalData } = form;
+    const { id, called, status, ...originalData } = form;
+    const mappedData: {[key: string]: any} = { ...originalData };
+    
+    // Standardize common fields
+    mappedData.name = form.Nombre || form.nombre || form.name;
+    mappedData.phone = form.Teléfono || form.telefono || form.phone;
+    mappedData.email = form.Email || form['Dirección de correo electrónico'] || form.email;
+    
     return {
-      ...originalData,
-      called: form.called || false,
-      status: form.status || 'Pendiente'
+      ...mappedData,
+      called: called || false,
+      status: status || 'Pendiente'
     };
   };
   
@@ -616,17 +645,29 @@ export function FormsSection({
     return Array.from(headerSet);
   }, [forms, contacts, priorityCalls]);
 
-  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true })));
-  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true })));
+  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
+  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
 
   useEffect(() => {
-    const newHeaders = allHeaders.map(h => ({ key: h, visible: true }));
+    const newHeaders = allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
+    
     const updateColumns = (prevCols: ColumnConfig[], newCols: ColumnConfig[]) => {
         const newColMap = new Map(newCols.map(c => [c.key, c]));
-        const updated = prevCols.map(pc => newColMap.has(pc.key) ? { ...newColMap.get(pc.key)!, visible: pc.visible } : null).filter(Boolean) as ColumnConfig[];
-        const existingKeys = new Set(updated.map(c => c.key));
-        const trulyNewCols = newCols.filter(nc => !existingKeys.has(nc.key));
-        return [...updated, ...trulyNewCols];
+        const prevColMap = new Map(prevCols.map(c => [c.key, c]));
+
+        const updated = allHeaders.map(key => {
+            const prev = prevColMap.get(key);
+            const newCol = newColMap.get(key);
+            if (prev) { // Keep user's settings if column still exists
+                return prev;
+            }
+            if (newCol) { // Add new column
+                return newCol;
+            }
+            return null;
+        }).filter(Boolean) as ColumnConfig[];
+        
+        return updated;
     };
     
     setContactsColumns(prev => updateColumns(prev, newHeaders));
@@ -663,7 +704,6 @@ export function FormsSection({
                 onDeleteForm={onDeleteForm}
                 sheetUrl={sheetUrl} 
                 onSaveSheetUrl={onSaveSheetUrl}
-                headers={allHeaders}
             />
         </div>
       </TabsContent>
@@ -684,3 +724,4 @@ export function FormsSection({
     </Tabs>
   );
 }
+
