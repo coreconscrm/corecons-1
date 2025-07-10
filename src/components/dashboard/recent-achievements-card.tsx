@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter, ArrowRightCircle, Star } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter, ArrowRightCircle, Star, Contact } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -201,7 +201,7 @@ function DynamicTableCard({
             }
         });
         setColumnVisibility(prev => ({ ...initialVisibility, ...prev }));
-    }, [data]);
+    }, [data, headers]);
 
     const visibleHeaders = headers.filter(header => columnVisibility[header]);
 
@@ -315,11 +315,13 @@ function DynamicTableCard({
 
 function MainFormsCard({
   onAddClient, onAddReforma,
+  onAddContact,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
   sheetUrl, onSaveSheetUrl,
   onAddPriorityCall
 }: {
   onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
+  onAddContact: (contact: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
   sheetUrl: string, onSaveSheetUrl: (url: string) => void,
   onAddPriorityCall: (call: any) => void
@@ -367,19 +369,22 @@ function MainFormsCard({
 
   const csvHeaders = getCsvHeaders();
 
-  const handlePromoteToContact = (formRow: any) => {
+  const handlePromoteToObraNueva = (formRow: any) => {
     const { id, ...data } = formRow; 
     const contactName = data.name || data.Nombre || data.nombre || 'un contacto';
     
-    const newContactPayload = {
-      ...data,
-      called: data.called ?? false,
-      status: data.status ?? 'Pendiente',
-    };
-
-    onAddClient(newContactPayload);
+    onAddClient(data);
     onDeleteForm(id);
-    toast({ title: "Contacto añadido", description: `"${contactName}" ha sido guardado en tus contactos.` });
+    toast({ title: "Promovido a Obra Nueva", description: `Se ha creado una nueva Obra Nueva para "${contactName}".` });
+  };
+
+  const handleMoveToContact = (formRow: any) => {
+    const { id, ...data } = formRow;
+    const contactName = data.name || data.Nombre || data.nombre || 'un contacto';
+
+    onAddContact(data);
+    onDeleteForm(id);
+    toast({ title: "Movido a Contactos", description: `"${contactName}" se ha movido a Contactos Manuales.` });
   };
   
   const handleAddToPriority = (formRow: any) => {
@@ -479,10 +484,11 @@ function MainFormsCard({
                               <TableCell className="text-right sticky right-0 bg-card">
                                <AlertDialog>
                                   <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></ButtonMenuTrigger>
                                     <DropdownMenuContent>
                                       <DropdownMenuItem onSelect={() => handleAddToPriority(sub)}><Star className="mr-2"/>Añadir a Prioritarias</DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={() => handlePromoteToContact(sub)}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={() => handleMoveToContact(sub)}><Contact className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={() => handlePromoteToObraNueva(sub)}><UserPlus className="mr-2"/>Promover a Obra Nueva</DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                     </DropdownMenuContent>
@@ -613,6 +619,7 @@ export function FormsSection({
              <TabsContent value="forms" className="mt-6">
                 <MainFormsCard 
                     onAddClient={onAddClient} onAddReforma={onAddReforma}
+                    onAddContact={onAddContact}
                     forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
                     sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
                     onAddPriorityCall={onAddPriorityCall}
