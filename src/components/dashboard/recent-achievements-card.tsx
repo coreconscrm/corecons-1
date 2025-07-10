@@ -262,11 +262,10 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 }
 
 function MainFormsCard({
-  onAddClient, onAddReforma, onAddContact, onAddPriorityCall,
+  onAddContact, onAddPriorityCall,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
   sheetUrl, onSaveSheetUrl
 }: {
-  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
   onAddContact: (contact: any) => void, onAddPriorityCall: (call: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
   sheetUrl: string, onSaveSheetUrl: (url: string) => void
@@ -277,7 +276,6 @@ function MainFormsCard({
   
   const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
-  const [promotingForm, setPromotingForm] = useState<any>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -314,70 +312,35 @@ function MainFormsCard({
   }
 
   const csvHeaders = getCsvHeaders();
+
+  const mapFormToStandardItem = (form: any) => {
+    return {
+      name: form.Nombre || form.name || 'N/A',
+      phone: form.Teléfono || form.phone || 'N/A',
+      email: form.Email || form['Dirección de correo electrónico'] || form.email || '',
+      called: form.called || false,
+      status: form.status || 'Pendiente'
+    };
+  };
   
   const handleMoveToPriority = (form: any) => {
-    const { id, ...data } = form;
-    onAddPriorityCall(data);
+    const { id, ...originalData } = form;
+    const standardItem = mapFormToStandardItem(originalData);
+    onAddPriorityCall(standardItem);
     onDeleteForm(id);
     toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
   };
   
   const handleMoveToContacts = (form: any) => {
-    const { id, ...data } = form;
-    onAddContact(data);
+    const { id, ...originalData } = form;
+    const standardItem = mapFormToStandardItem(originalData);
+    onAddContact(standardItem);
     onDeleteForm(id);
     toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
   };
 
-  const handlePromote = (section: 'clients' | 'reformas') => {
-    if (!promotingForm) return;
-
-    const { id, ...data } = promotingForm;
-    const contactName = data.name || data.Nombre || data.nombre || 'Nuevo Proyecto';
-
-    const newProjectData = {
-        name: contactName,
-        contact: contactName,
-        phone: data.phone || data.Phone || data.Teléfono || '',
-        email: data.email || data.Email || '',
-        estado: 'Contactado',
-        infoAdicional: 'Promovido desde formulario web.',
-        arquitecto: '',
-        providerId: '',
-        memoria: '',
-        planos: '',
-    };
-    
-    if (section === 'clients') {
-        onAddClient(newProjectData);
-        toast({ title: "Promovido a Obra Nueva", description: `Se ha creado una nueva Obra Nueva para ${contactName}.` });
-    } else {
-        onAddReforma(newProjectData);
-        toast({ title: "Promovido a Reforma", description: `Se ha creado una nueva reforma para ${contactName}.` });
-    }
-    
-    onDeleteForm(id);
-    setPromotingForm(null);
-  };
-
   return (
     <Card>
-      <AlertDialog open={!!promotingForm} onOpenChange={(open) => !open && setPromotingForm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Promover Contacto a Proyecto</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿A qué sección quieres añadir a "{promotingForm?.name || 'este contacto'}"? Se creará una nueva entrada con su nombre, email y teléfono.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => handlePromote('reformas')}>Añadir a Reformas</Button>
-            <Button onClick={() => handlePromote('clients')}>Añadir a Obra Nueva</Button>
-          </AlertDialogFooter>
-          <AlertDialogCancel className="mt-2 w-full">Cancelar</AlertDialogCancel>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
         <DialogContent>
             <DialogHeader>
@@ -467,7 +430,6 @@ function MainFormsCard({
                                     <DropdownMenuContent>
                                       <DropdownMenuItem onSelect={() => handleMoveToPriority(sub)}><Star className="mr-2"/>Mover a Prioritarios</DropdownMenuItem>
                                       <DropdownMenuItem onSelect={() => handleMoveToContacts(sub)}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={() => setPromotingForm(sub)}><UserPlus className="mr-2"/>Promover a Obra Nueva</DropdownMenuItem>
                                       <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -522,7 +484,7 @@ export function FormsSection({
       <TabsContent value="main" className="mt-6">
         <div className="space-y-6">
             <MainFormsCard 
-                onAddClient={onAddClient} onAddReforma={onAddReforma} onAddContact={onAddContact} onAddPriorityCall={onAddPriorityCall}
+                onAddContact={onAddContact} onAddPriorityCall={onAddPriorityCall}
                 forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
                 sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
             />
