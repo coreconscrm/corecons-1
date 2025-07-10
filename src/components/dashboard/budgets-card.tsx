@@ -27,7 +27,7 @@ import { Separator } from "../ui/separator";
 const lineItemSchema = z.object({
   description: z.string().min(1, "La descripción es requerida."),
   quantity: z.coerce.number().min(0, "La medición debe ser positiva."),
-  unit: z.enum(["m", "m2", "m3", "pa", "ud"]),
+  unit: z.enum(["m", "m2", "m3", "pa", "ud", "cap"]),
   unitPrice: z.coerce.number().min(0, "El precio debe ser positivo."),
 });
 
@@ -253,6 +253,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
                                     <SelectItem value="m3">m3</SelectItem>
                                     <SelectItem value="pa">pa</SelectItem>
                                     <SelectItem value="ud">ud</SelectItem>
+                                    <SelectItem value="cap">cap</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 )} />
