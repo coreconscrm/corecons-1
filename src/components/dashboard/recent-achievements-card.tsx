@@ -30,6 +30,16 @@ type ColumnConfig = {
     visible: boolean;
 };
 
+const columnDisplayNames: Record<string, string> = {
+    'Columna 12': 'Info de llamada',
+    'Columna 12 1': 'Fecha Llamada',
+};
+
+function getDisplayName(key: string) {
+    return columnDisplayNames[key] || key.replace(/_/g, ' ');
+}
+
+
 function ColumnSettingsDialog({ 
     columns, 
     onSave, 
@@ -82,7 +92,7 @@ function ColumnSettingsDialog({
                                 checked={col.visible}
                                 onCheckedChange={() => handleToggleVisibility(col.key)}
                             />
-                            <label htmlFor={`vis-${col.key}`} className="flex-1 capitalize">{col.key.replace(/_/g, ' ')}</label>
+                            <label htmlFor={`vis-${col.key}`} className="flex-1 capitalize">{getDisplayName(col.key)}</label>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'up')} disabled={index === 0}>
                                 <ArrowUp className="h-4 w-4" />
                             </Button>
@@ -141,9 +151,9 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item
                 name={header}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="capitalize">{header.replace(/_/g, ' ')}</FormLabel>
+                    <FormLabel className="capitalize">{getDisplayName(header)}</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Introduce ${header.replace(/_/g, ' ')}`} {...field} />
+                      <Input placeholder={`Introduce ${getDisplayName(header)}`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -269,7 +279,7 @@ function DynamicTableCard({
           <ScrollArea className="w-full">
             <Table>
               <TableHeader><TableRow>
-                  {visibleHeaders.map(h => <TableHead key={h} className="capitalize">{h.replace(/_/g, ' ')}</TableHead>)}
+                  {visibleHeaders.map(h => <TableHead key={h} className="capitalize">{getDisplayName(h)}</TableHead>)}
                   <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
               </TableRow></TableHeader>
@@ -434,25 +444,8 @@ function MainFormsCard({
   
   const transferData = (form: any) => {
     const { id, ...originalData } = form;
-    const mappedData: { [key: string]: any } = { ...originalData };
-
-    const mappings: {[key: string]: string[]} = {
-        name: ['Nombre', 'nombre'],
-        phone: ['Teléfono', 'telefono'],
-        email: ['Email', 'email', 'Dirección de correo electrónico'],
-    };
-
-    for (const [targetKey, sourceKeys] of Object.entries(mappings)) {
-        for (const sourceKey of sourceKeys) {
-            if (originalData[sourceKey]) {
-                mappedData[targetKey] = originalData[sourceKey];
-                break;
-            }
-        }
-    }
-    
     return {
-      ...mappedData,
+      ...originalData,
       called: form.called || false,
       status: form.status || 'Pendiente'
     };
