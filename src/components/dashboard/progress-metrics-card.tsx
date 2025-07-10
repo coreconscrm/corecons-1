@@ -2,7 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientListCard } from "@/components/dashboard/active-courses-card";
 import { ProjectListCard } from "@/components/dashboard/performance-chart";
-import { ProviderListCard } from "@/components/dashboard/tasks-card";
+import { ProviderSection } from "@/components/dashboard/tasks-card";
 import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
@@ -17,6 +17,7 @@ export function DashboardTabs({
     reformas, onAddReforma, onUpdateReforma, onDeleteReforma,
     projects, onAddProject, onUpdateProject, onDeleteProject,
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
+    collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
@@ -31,6 +32,7 @@ export function DashboardTabs({
     reformas: any[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: any) => void,
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
+    collaborators: any[], onAddCollaborator: (c: any) => void, onUpdateCollaborator: (c: any) => void, onDeleteCollaborator: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
@@ -48,7 +50,7 @@ export function DashboardTabs({
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Obra Nueva</TabsTrigger>}
         {visibleTabs.reformas && <TabsTrigger value="reformas">Reformas</TabsTrigger>}
-        {visibleTabs.providers && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
+        {(visibleTabs.providers || visibleTabs.collaborators) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
@@ -74,8 +76,18 @@ export function DashboardTabs({
         <ReformaListCard reformas={reformas} providers={providers} onAddReforma={onAddReforma} onUpdateReforma={onUpdateReforma} onDeleteReforma={onDeleteReforma} />
       </TabsContent>}
 
-      {visibleTabs.providers && <TabsContent value="providers" className="mt-6">
-        <ProviderListCard providers={providers} onAddProvider={onAddProvider} onUpdateProvider={onUpdateProvider} onDeleteProvider={onDeleteProvider} />
+      {(visibleTabs.providers || visibleTabs.collaborators) && <TabsContent value="providers" className="mt-6">
+         <ProviderSection
+          providers={providers}
+          onAddProvider={onAddProvider}
+          onUpdateProvider={onUpdateProvider}
+          onDeleteProvider={onDeleteProvider}
+          collaborators={collaborators}
+          onAddCollaborator={onAddCollaborator}
+          onUpdateCollaborator={onUpdateCollaborator}
+          onDeleteCollaborator={onDeleteCollaborator}
+          visibleTabs={visibleTabs}
+        />
       </TabsContent>}
       
       {visibleTabs.prices && <TabsContent value="prices" className="mt-6">

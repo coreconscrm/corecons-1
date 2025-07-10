@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -14,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Truck, MoreHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CollaboratorsListCard, type Collaborator } from "./collaborators-card";
+
 
 const priceListItemSchema = z.object({
   description: z.string().min(1, "La descripción es requerida."),
@@ -144,21 +148,47 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
     const [isAddDialogOpen, setAddDialogOpen] = useState(false);
     const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined);
 
+    const handleEdit = (provider: Provider) => {
+      setEditingProvider(provider);
+    };
+
+    const handleAdd = () => {
+      setEditingProvider(undefined);
+      setAddDialogOpen(true);
+    };
+
+    const handleSubmit = (values: any) => {
+        if(editingProvider) {
+            onUpdateProvider(values);
+        } else {
+            onAddProvider(values);
+        }
+        setEditingProvider(undefined);
+    };
+
     return (
         <Card>
-            {editingProvider && <ProviderForm provider={editingProvider} onSubmit={onUpdateProvider} open={!!editingProvider} onOpenChange={() => setEditingProvider(undefined)} />}
-            <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <CardTitle>Proveedores</CardTitle>
-                        <CardDescription>Gestiona los proveedores y sus acuerdos.</CardDescription>
-                    </div>
-                    <DialogTrigger asChild>
-                        <Button><Truck className="mr-2 h-4 w-4" />Añadir Proveedor</Button>
-                    </DialogTrigger>
-                </CardHeader>
-                <ProviderForm onSubmit={onAddProvider} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
-            </Dialog>
+            <ProviderForm 
+              provider={editingProvider} 
+              onSubmit={handleSubmit} 
+              open={isAddDialogOpen || !!editingProvider} 
+              onOpenChange={(open) => {
+                if(!open) {
+                  setAddDialogOpen(false);
+                  setEditingProvider(undefined);
+                } else {
+                  setAddDialogOpen(true)
+                }
+              }} 
+            />
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <CardTitle>Proveedores</CardTitle>
+                    <CardDescription>Gestiona los proveedores y sus acuerdos.</CardDescription>
+                </div>
+                 <Button onClick={handleAdd}><Truck className="mr-2 h-4 w-4" />Añadir Proveedor</Button>
+            </CardHeader>
+            
             <CardContent>
               <div className="w-full overflow-x-auto">
                 <Table>
@@ -185,7 +215,7 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setEditingProvider(provider)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleEdit(provider)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
                                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -206,4 +236,49 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
             </CardContent>
         </Card>
     );
+}
+
+export function ProviderSection({
+    providers, onAddProvider, onUpdateProvider, onDeleteProvider,
+    collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator,
+    visibleTabs
+}: {
+    providers: Provider[], onAddProvider: (p: any) => void, onUpdateProvider: (p: any) => void, onDeleteProvider: (id: string) => void,
+    collaborators: Collaborator[], onAddCollaborator: (c: any) => void, onUpdateCollaborator: (c: any) => void, onDeleteCollaborator: (id: string) => void,
+    visibleTabs: any
+}) {
+     const tabs = [
+        { value: "providers", label: "Proveedores", visible: visibleTabs.providers },
+        { value: "collaborators", label: "Colaboradores", visible: visibleTabs.collaborators }
+    ].filter(tab => tab.visible);
+
+    const defaultTab = tabs.length > 0 ? tabs[0].value : "";
+    
+    return (
+        <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+                {tabs.map(tab => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
+            </TabsList>
+            {visibleTabs.providers && (
+              <TabsContent value="providers" className="mt-6">
+                  <ProviderListCard 
+                      providers={providers}
+                      onAddProvider={onAddProvider}
+                      onUpdateProvider={onUpdateProvider}
+                      onDeleteProvider={onDeleteProvider}
+                  />
+              </TabsContent>
+            )}
+            {visibleTabs.collaborators && (
+              <TabsContent value="collaborators" className="mt-6">
+                  <CollaboratorsListCard 
+                      collaborators={collaborators}
+                      onAddCollaborator={onAddCollaborator}
+                      onUpdateCollaborator={onUpdateCollaborator}
+                      onDeleteCollaborator={onDeleteCollaborator}
+                  />
+              </TabsContent>
+            )}
+        </Tabs>
+    )
 }

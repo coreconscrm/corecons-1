@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [reformas, setReformas] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -41,6 +42,7 @@ export default function DashboardPage() {
     budgets: true,
     companies: true,
     prices: true,
+    collaborators: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
   
@@ -62,7 +64,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -76,6 +78,7 @@ export default function DashboardPage() {
         setContacts(mapSnapToState(snapshots[6]));
         setReformas(mapSnapToState(snapshots[7]));
         setDocuments(mapSnapToState(snapshots[8]));
+        setCollaborators(mapSnapToState(snapshots[9]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -282,6 +285,11 @@ export default function DashboardPage() {
               onAddProvider={(provider) => handleCreate('providers', provider, 'Proveedor')}
               onUpdateProvider={(provider) => handleUpdate('providers', provider, 'Proveedor')}
               onDeleteProvider={(id) => handleDelete('providers', id, 'Proveedor')}
+
+              collaborators={collaborators}
+              onAddCollaborator={(collaborator) => handleCreate('collaborators', collaborator, 'Colaborador')}
+              onUpdateCollaborator={(collaborator) => handleUpdate('collaborators', collaborator, 'Colaborador')}
+              onDeleteCollaborator={(id) => handleDelete('collaborators', id, 'Colaborador')}
 
               team={team}
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
