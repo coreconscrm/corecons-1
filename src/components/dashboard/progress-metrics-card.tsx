@@ -7,7 +7,7 @@ import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetListCard } from "@/components/dashboard/budgets-card";
-import { CompanyListCard } from "@/components/dashboard/company-card";
+import { CompanySection } from "@/components/dashboard/company-card";
 import { PriceListCard } from "./prices-card";
 import { ReformaListCard } from "./reformas-card";
 
@@ -22,6 +22,7 @@ export function DashboardTabs({
     forms, onLoadForms, onUpdateForm, onDeleteForm,
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
+    documents, onAddDocument, onDeleteDocument,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -35,6 +36,7 @@ export function DashboardTabs({
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
+    documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -102,7 +104,15 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.companies && <TabsContent value="companies" className="mt-6">
-        <CompanyListCard companies={companies} onAddCompany={onAddCompany} onUpdateCompany={onUpdateCompany} onDeleteCompany={onDeleteCompany} />
+        <CompanySection
+            companies={companies}
+            onAddCompany={onAddCompany}
+            onUpdateCompany={onUpdateCompany}
+            onDeleteCompany={onDeleteCompany}
+            documents={documents}
+            onAddDocument={onAddDocument}
+            onDeleteDocument={onDeleteDocument}
+        />
       </TabsContent>}
 
       <TabsContent value="settings" className="mt-6">
@@ -111,5 +121,3 @@ export function DashboardTabs({
     </Tabs>
   );
 }
-
-    

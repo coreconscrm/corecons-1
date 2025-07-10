@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -18,6 +19,9 @@ import { Building, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentsCard, type Document } from "./documents-card";
+
 
 const companySchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -144,7 +148,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
     );
 }
 
-export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDeleteCompany }: { companies: Company[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: string) => void }) {
+function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDeleteCompany }: { companies: Company[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: string) => void }) {
     const [isAddDialogOpen, setAddDialogOpen] = useState(false);
     const [editingCompany, setEditingCompany] = useState<Company | undefined>(undefined);
 
@@ -154,7 +158,7 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
                 <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle>Empresa</CardTitle>
+                        <CardTitle>Perfiles de Empresa</CardTitle>
                         <CardDescription>Gestiona los perfiles de empresa para emitir presupuestos.</CardDescription>
                     </div>
                     <DialogTrigger asChild>
@@ -208,4 +212,36 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
             </CardContent>
         </Card>
     );
+}
+
+export function CompanySection({
+    companies, onAddCompany, onUpdateCompany, onDeleteCompany,
+    documents, onAddDocument, onDeleteDocument
+}: {
+    companies: Company[], onAddCompany: (c: any) => void, onUpdateCompany: (c: any) => void, onDeleteCompany: (id: string) => void,
+    documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void
+}) {
+    return (
+        <Tabs defaultValue="profiles" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="profiles">Perfiles de Empresa</TabsTrigger>
+                <TabsTrigger value="documents">Documentos Generales</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profiles" className="mt-6">
+                <CompanyProfilesCard 
+                    companies={companies}
+                    onAddCompany={onAddCompany}
+                    onUpdateCompany={onUpdateCompany}
+                    onDeleteCompany={onDeleteCompany}
+                />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-6">
+                <DocumentsCard 
+                    documents={documents}
+                    onAddDocument={onAddDocument}
+                    onDeleteDocument={onDeleteDocument}
+                />
+            </TabsContent>
+        </Tabs>
+    )
 }
