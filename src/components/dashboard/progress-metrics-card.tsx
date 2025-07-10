@@ -50,7 +50,7 @@ export function DashboardTabs({
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-        {visibleTabs.companies && <TabsTrigger value="companies">Empresas</TabsTrigger>}
+        {visibleTabs.companies && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
 

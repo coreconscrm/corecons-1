@@ -25,7 +25,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     prices: "Precios",
     team: "Equipo",
     forms: "Formularios",
-    companies: "Empresas",
+    companies: "Empresa",
 };
 
 export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs: VisibleTabs, onVisibilityChange: (fn: (prev: VisibleTabs) => VisibleTabs) => void }) {

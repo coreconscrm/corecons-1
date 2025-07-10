@@ -154,7 +154,7 @@ export function CompanyListCard({ companies, onAddCompany, onUpdateCompany, onDe
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
                 <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle>Empresas</CardTitle>
+                        <CardTitle>Empresa</CardTitle>
                         <CardDescription>Gestiona los perfiles de empresa para emitir presupuestos.</CardDescription>
                     </div>
                     <DialogTrigger asChild>
