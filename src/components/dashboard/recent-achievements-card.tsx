@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useRef, useState, useEffect } from 'react';
@@ -201,6 +200,7 @@ function DynamicTableCard({
             }
         });
         setColumnVisibility(prev => ({ ...initialVisibility, ...prev }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, headers]);
 
     const visibleHeaders = headers.filter(header => columnVisibility[header]);
@@ -240,7 +240,7 @@ function DynamicTableCard({
                                 <DropdownMenuLabel>Mostrar Columnas</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {headers.map((header) => (
-                                    <DropdownMenuCheckboxItem key={header} className="capitalize" checked={columnVisibility[header] ?? true} onCheckedChange={(value) => setColumnVisibility((prev) => ({ ...prev, [header]: value }))}>
+                                    <DropdownMenuCheckboxItem key={header} className="capitalize" checked={columnVisibility[header] ?? true} onCheckedChange={(value) => setColumnVisibility((prev) => ({ ...prev, [header]: !!value }))}>
                                         {header.replace(/_/g, ' ')}
                                     </DropdownMenuCheckboxItem>
                                 ))}
@@ -565,6 +565,7 @@ export function FormsSection({
         toast({ title: "Promovido a Reforma", description: `Se ha creado una nueva reforma para ${contactName}.` });
     }
     
+    onDeleteContact(id);
     setPromotingContact(null);
   };
     
