@@ -4,7 +4,7 @@ import { ClientListCard } from "@/components/dashboard/active-courses-card";
 import { ProjectListCard } from "@/components/dashboard/performance-chart";
 import { ProviderSection } from "@/components/dashboard/tasks-card";
 import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
-import { FormsResponsesCard } from "@/components/dashboard/recent-achievements-card";
+import { FormsSection } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetListCard } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
@@ -21,6 +21,7 @@ export function DashboardTabs({
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
+    priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall,
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
@@ -36,6 +37,7 @@ export function DashboardTabs({
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
+    priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void,
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
@@ -99,7 +101,7 @@ export function DashboardTabs({
       </TabsContent>}
       
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
-        <FormsResponsesCard 
+        <FormsSection 
           contacts={contacts}
           onAddContact={onAddContact}
           onUpdateContact={onUpdateContact}
@@ -112,6 +114,10 @@ export function DashboardTabs({
           onDeleteForm={onDeleteForm} 
           sheetUrl={sheetUrl}
           onSaveSheetUrl={onSaveSheetUrl}
+          priorityCalls={priorityCalls}
+          onAddPriorityCall={onAddPriorityCall}
+          onUpdatePriorityCall={onUpdatePriorityCall}
+          onDeletePriorityCall={onDeletePriorityCall}
         />
       </TabsContent>}
 

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter, ArrowRightCircle } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Pencil, Link, Unlink, UserPlus, ListFilter, ArrowRightCircle, Star, Phone } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Textarea } from '../ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const contactSchema = z.record(z.any());
 
@@ -145,16 +146,93 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
     );
 }
 
-export function FormsResponsesCard({
+function PriorityCallsCard({
+  priorityCalls,
+  onUpdatePriorityCall,
+  onDeletePriorityCall
+}: {
+  priorityCalls: any[];
+  onUpdatePriorityCall: (call: any) => void;
+  onDeletePriorityCall: (id: string) => void;
+}) {
+  const { toast } = useToast();
+
+  const getHeaders = () => {
+    if (!priorityCalls || priorityCalls.length === 0) return [];
+    const allKeys = new Set<string>();
+    priorityCalls.forEach(call => {
+      Object.keys(call).forEach(key => allKeys.add(key));
+    });
+    allKeys.delete('id');
+    return Array.from(allKeys);
+  };
+  
+  const headers = getHeaders();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Llamadas Prioritarias</CardTitle>
+        <CardDescription>Contactos marcados para seguimiento inmediato.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <ScrollArea className="w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {headers.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
+                  <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {priorityCalls.length > 0 ? priorityCalls.map(call => (
+                  <TableRow key={call.id}>
+                    {headers.map(header => (
+                      <TableCell key={`${call.id}-${header}`} className="max-w-[200px] truncate">
+                        {call[header]?.toString()}
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-right sticky right-0 bg-card">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="mr-2" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la llamada prioritaria.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDeletePriorityCall(call.id)}>Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow><TableCell colSpan={headers.length + 1} className="text-center h-24">No hay llamadas prioritarias.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function FormsAndContactsCard({
   contacts, onAddContact, onUpdateContact, onDeleteContact,
   onAddClient, onAddReforma,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
-  sheetUrl, onSaveSheetUrl
+  sheetUrl, onSaveSheetUrl,
+  onAddPriorityCall
 }: {
   contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
   onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-  sheetUrl: string, onSaveSheetUrl: (url: string) => void
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
+  onAddPriorityCall: (call: any) => void
 }) {
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -283,7 +361,15 @@ export function FormsResponsesCard({
     
     setPromotingContact(null);
   };
-
+  
+  const handleAddToPriority = (formRow: any) => {
+    const { id, ...data } = formRow;
+    const contactName = data.name || data.Nombre || data.nombre || 'un contacto';
+    
+    onAddPriorityCall(data);
+    onDeleteForm(id);
+    toast({ title: "Movido a Prioritarias", description: `"${contactName}" se ha añadido a la lista de llamadas prioritarias.` });
+  };
 
   return (
     <Card>
@@ -507,21 +593,24 @@ export function FormsResponsesCard({
                                 );
                               })}
                               <TableCell className="text-right sticky right-0 bg-card">
-                              <div className="flex items-center justify-end">
-                                <Button variant="ghost" size="icon" title="Añadir a contactos" onClick={() => handlePromoteToContact(sub)}>
-                                    <UserPlus size={16} />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 size={16} /></Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
+                               <AlertDialog>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem onSelect={() => handleAddToPriority(sub)}><Star className="mr-2"/>Añadir a Prioritarias</DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={() => handlePromoteToContact(sub)}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <AlertDialogContent>
                                     <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la respuesta del formulario.</AlertDialogDescription></AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDeleteForm(sub.id)}>Eliminar</AlertDialogAction>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDeleteForm(sub.id)}>Eliminar</AlertDialogAction>
                                     </AlertDialogFooter>
-                                    </AlertDialogContent>
+                                  </AlertDialogContent>
                                 </AlertDialog>
-                              </div>
                               </TableCell>
                           </TableRow>
                           ))}
@@ -544,4 +633,41 @@ export function FormsResponsesCard({
   );
 }
 
-    
+export function FormsSection({
+  contacts, onAddContact, onUpdateContact, onDeleteContact,
+  onAddClient, onAddReforma,
+  forms, onLoadForms, onUpdateForm, onDeleteForm,
+  sheetUrl, onSaveSheetUrl,
+  priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall
+}: {
+  contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
+  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
+  forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
+  priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void
+}) {
+  return (
+    <Tabs defaultValue="main" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="main">Contactos y Formularios</TabsTrigger>
+        <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
+      </TabsList>
+      <TabsContent value="main" className="mt-6">
+        <FormsAndContactsCard 
+          contacts={contacts} onAddContact={onAddContact} onUpdateContact={onUpdateContact} onDeleteContact={onDeleteContact}
+          onAddClient={onAddClient} onAddReforma={onAddReforma}
+          forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
+          sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
+          onAddPriorityCall={onAddPriorityCall}
+        />
+      </TabsContent>
+      <TabsContent value="priority" className="mt-6">
+        <PriorityCallsCard 
+          priorityCalls={priorityCalls}
+          onUpdatePriorityCall={onUpdatePriorityCall}
+          onDeletePriorityCall={onDeletePriorityCall}
+        />
+      </TabsContent>
+    </Tabs>
+  );
+}

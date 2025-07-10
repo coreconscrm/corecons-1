@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [forms, setForms] = useState(initialFormSubmissions);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
 
@@ -64,7 +65,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -79,6 +80,7 @@ export default function DashboardPage() {
         setReformas(mapSnapToState(snapshots[7]));
         setDocuments(mapSnapToState(snapshots[8]));
         setCollaborators(mapSnapToState(snapshots[9]));
+        setPriorityCalls(mapSnapToState(snapshots[10]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -227,8 +229,8 @@ export default function DashboardPage() {
   const budgetsAccepted = budgets.filter(b => b.status === 'Aceptado').length;
   const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
 
-  const formsTotal = forms.length + contacts.length;
-  const formsCalled = forms.filter(f => f.called).length + contacts.filter(c => c.called).length;
+  const formsTotal = forms.length + contacts.length + priorityCalls.length;
+  const formsCalled = forms.filter(f => f.called).length + contacts.filter(c => c.called).length + priorityCalls.filter(pc => pc.called).length;
   const formsPending = formsTotal - formsCalled;
 
   return (
@@ -312,6 +314,11 @@ export default function DashboardPage() {
               onLoadForms={handleLoadForms}
               onUpdateForm={handleUpdateForm}
               onDeleteForm={handleDeleteForm}
+
+              priorityCalls={priorityCalls}
+              onAddPriorityCall={(call) => handleCreate('priority_calls', call, 'Llamada Prioritaria')}
+              onUpdatePriorityCall={(call) => handleUpdate('priority_calls', call, 'Llamada Prioritaria')}
+              onDeletePriorityCall={(id) => handleDelete('priority_calls', id, 'Llamada Prioritaria')}
 
               budgets={budgets}
               onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: [], m2: budget.m2 || 0 }, 'Presupuesto')}
