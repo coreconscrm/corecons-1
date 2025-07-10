@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +24,83 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const itemSchema = z.record(z.any());
 
 type Item = { [key: string]: any; id: string };
+
+type ColumnConfig = {
+    key: string;
+    visible: boolean;
+};
+
+function ColumnSettingsDialog({ 
+    columns, 
+    onSave, 
+    open, 
+    onOpenChange 
+}: { 
+    columns: ColumnConfig[], 
+    onSave: (cols: ColumnConfig[]) => void, 
+    open: boolean, 
+    onOpenChange: (o: boolean) => void 
+}) {
+    const [currentColumns, setCurrentColumns] = useState(columns);
+
+    useEffect(() => {
+        setCurrentColumns(columns);
+    }, [columns, open]);
+
+    const handleToggleVisibility = (key: string) => {
+        setCurrentColumns(prev => prev.map(c => c.key === key ? { ...c, visible: !c.visible } : c));
+    };
+
+    const handleMove = (index: number, direction: 'up' | 'down') => {
+        const newColumns = [...currentColumns];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex >= 0 && targetIndex < newColumns.length) {
+            [newColumns[index], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[index]];
+            setCurrentColumns(newColumns);
+        }
+    };
+
+    const handleSave = () => {
+        onSave(currentColumns);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configurar Columnas</DialogTitle>
+                    <DialogDescription>
+                        Selecciona las columnas que quieres ver y arrástralas para reordenar.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {currentColumns.map((col, index) => (
+                        <div key={col.key} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                            <Checkbox
+                                id={`vis-${col.key}`}
+                                checked={col.visible}
+                                onCheckedChange={() => handleToggleVisibility(col.key)}
+                            />
+                            <label htmlFor={`vis-${col.key}`} className="flex-1 capitalize">{col.key.replace(/_/g, ' ')}</label>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'up')} disabled={index === 0}>
+                                <ArrowUp className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMove(index, 'down')} disabled={index === currentColumns.length - 1}>
+                                <ArrowDown className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                    <Button onClick={handleSave}>Guardar Cambios</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item?: Item, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, title: string, headers: string[] }) {
   const form = useForm<z.infer<typeof itemSchema>>({
@@ -85,11 +162,13 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item
 }
 
 function DynamicTableCard({
-  title, description, items, headers,
+  title, description, items,
+  columnConfig, onColumnConfigChange,
   onAddItem, onUpdateItem, onDeleteItem,
-  onAddClient, onAddReforma
+  onAddClient, onAddReforma,
 }: {
-  title: string, description: string, items: any[], headers: string[],
+  title: string, description: string, items: any[],
+  columnConfig: ColumnConfig[], onColumnConfigChange: (cols: ColumnConfig[]) => void,
   onAddItem: (item: any) => void, onUpdateItem: (item: any) => void, onDeleteItem: (id: string) => void,
   onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
 }) {
@@ -98,6 +177,10 @@ function DynamicTableCard({
   const [editingItem, setEditingItem] = useState<any | undefined>(undefined);
   const [promotingItem, setPromotingItem] = useState<any | null>(null);
   const [viewingText, setViewingText] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
+  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible).map(c => c.key), [columnConfig]);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -108,15 +191,15 @@ function DynamicTableCard({
     if (!promotingItem) return;
 
     const { id, ...data } = promotingItem;
-    const contactName = data.name || data.Nombre || 'Nuevo Proyecto desde Contacto';
+    const contactName = data.name || data.Nombre || data.nombre || 'Nuevo Proyecto desde Contacto';
 
     const newProjectData = {
         name: contactName,
         contact: contactName,
-        phone: data.phone || data.Teléfono || '',
-        email: data.email || data.Email || data['Dirección de correo electrónico'] || '',
+        phone: data.phone || data.Teléfono || data.telefono || '',
+        email: data.email || data.Email || data.email_address || data['Dirección de correo electrónico'] || '',
         estado: 'Contactado',
-        infoAdicional: `Promovido desde ${title}.`,
+        infoAdicional: `Promovido desde ${title}.\n\nDatos originales:\n${Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n')}`,
         arquitecto: '', providerId: '', memoria: '', planos: '',
     };
     
@@ -134,6 +217,7 @@ function DynamicTableCard({
   
   return (
     <Card>
+      <ColumnSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} columns={columnConfig} onSave={onColumnConfigChange} />
       <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Texto Completo</DialogTitle></DialogHeader>
@@ -146,7 +230,7 @@ function DynamicTableCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Promover a Proyecto</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿A qué sección quieres añadir a "{promotingItem?.name || promotingItem?.Nombre}"? Se creará una nueva entrada con sus datos de contacto.
+              ¿A qué sección quieres añadir a "{promotingItem?.name || promotingItem?.Nombre || promotingItem?.nombre}"? Se creará una nueva entrada con sus datos de contacto.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -163,7 +247,7 @@ function DynamicTableCard({
         open={isAddDialogOpen} 
         onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
         title={title}
-        headers={headers}
+        headers={allHeaders}
       />
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -171,70 +255,79 @@ function DynamicTableCard({
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          <Button onClick={() => setAddDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Añadir</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="h-4 w-4"/>
+              <span className="sr-only">Configurar columnas</span>
+            </Button>
+            <Button onClick={() => setAddDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Añadir</Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <Table>
-            <TableHeader><TableRow>
-                {headers.map(h => <TableHead key={h} className="capitalize">{h.replace(/_/g, ' ')}</TableHead>)}
-                <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  {headers.map(h => {
-                    const textValue = item[h]?.toString() || '';
-                    const isLongText = textValue.length > 50;
-                    return (
-                        <TableCell key={`${item.id}-${h}`} className="max-w-[200px]">
-                            {isLongText ? (
-                                <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
-                                    {textValue}
-                                </div>
-                            ) : (
-                                textValue
-                            )}
-                        </TableCell>
-                    );
-                  })}
-                  <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
-                  <TableCell>
-                      <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
-                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="Pendiente">Pendiente</SelectItem>
-                              <SelectItem value="Contactado">Contactado</SelectItem>
-                              <SelectItem value="En proceso">En proceso</SelectItem>
-                              <SelectItem value="Firmado">Firmado</SelectItem>
-                          </SelectContent>
-                      </Select>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                          <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {items.length === 0 && (
-                  <TableRow><TableCell colSpan={headers.length + 3} className="h-24 text-center">No hay elementos.</TableCell></TableRow>
-               )}
-            </TableBody>
-          </Table>
+          <ScrollArea className="w-full">
+            <Table>
+              <TableHeader><TableRow>
+                  {visibleHeaders.map(h => <TableHead key={h} className="capitalize">{h.replace(/_/g, ' ')}</TableHead>)}
+                  <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    {visibleHeaders.map(h => {
+                      const textValue = item[h]?.toString() || '';
+                      const isLongText = textValue.length > 50;
+                      return (
+                          <TableCell key={`${item.id}-${h}`} className="max-w-[200px]">
+                              {isLongText ? (
+                                  <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
+                                      {textValue}
+                                  </div>
+                              ) : (
+                                  textValue
+                              )}
+                          </TableCell>
+                      );
+                    })}
+                    <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
+                    <TableCell>
+                        <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
+                            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                <SelectItem value="Contactado">Contactado</SelectItem>
+                                <SelectItem value="En proceso">En proceso</SelectItem>
+                                <SelectItem value="Firmado">Firmado</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                 {items.length === 0 && (
+                    <TableRow><TableCell colSpan={visibleHeaders.length + 3} className="h-24 text-center">No hay elementos.</TableCell></TableRow>
+                 )}
+              </TableBody>
+            </Table>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
@@ -341,8 +434,25 @@ function MainFormsCard({
   
   const transferData = (form: any) => {
     const { id, ...originalData } = form;
+    const mappedData: { [key: string]: any } = { ...originalData };
+
+    const mappings: {[key: string]: string[]} = {
+        name: ['Nombre', 'nombre'],
+        phone: ['Teléfono', 'telefono'],
+        email: ['Email', 'email', 'Dirección de correo electrónico'],
+    };
+
+    for (const [targetKey, sourceKeys] of Object.entries(mappings)) {
+        for (const sourceKey of sourceKeys) {
+            if (originalData[sourceKey]) {
+                mappedData[targetKey] = originalData[sourceKey];
+                break;
+            }
+        }
+    }
+    
     return {
-      ...originalData,
+      ...mappedData,
       called: form.called || false,
       status: form.status || 'Pendiente'
     };
@@ -513,6 +623,24 @@ export function FormsSection({
     return Array.from(headerSet);
   }, [forms, contacts, priorityCalls]);
 
+  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true })));
+  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>(() => allHeaders.map(h => ({ key: h, visible: true })));
+
+  useEffect(() => {
+    const newHeaders = allHeaders.map(h => ({ key: h, visible: true }));
+    const updateColumns = (prevCols: ColumnConfig[], newCols: ColumnConfig[]) => {
+        const newColMap = new Map(newCols.map(c => [c.key, c]));
+        const updated = prevCols.map(pc => newColMap.has(pc.key) ? { ...newColMap.get(pc.key)!, visible: pc.visible } : null).filter(Boolean) as ColumnConfig[];
+        const existingKeys = new Set(updated.map(c => c.key));
+        const trulyNewCols = newCols.filter(nc => !existingKeys.has(nc.key));
+        return [...updated, ...trulyNewCols];
+    };
+    
+    setContactsColumns(prev => updateColumns(prev, newHeaders));
+    setPriorityColumns(prev => updateColumns(prev, newHeaders));
+  }, [allHeaders]);
+
+
   return (
     <Tabs defaultValue="main" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -525,7 +653,8 @@ export function FormsSection({
                 title="Contactos Manuales"
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
-                headers={allHeaders}
+                columnConfig={contactsColumns}
+                onColumnConfigChange={setContactsColumns}
                 onAddItem={onAddContact}
                 onUpdateItem={onUpdateContact}
                 onDeleteItem={onDeleteContact}
@@ -550,7 +679,8 @@ export function FormsSection({
               title="Llamada Prioritaria"
               description="Contactos marcados como prioritarios desde la bandeja de entrada de formularios."
               items={priorityCalls}
-              headers={allHeaders}
+              columnConfig={priorityColumns}
+              onColumnConfigChange={setPriorityColumns}
               onAddItem={onAddPriorityCall}
               onUpdateItem={onUpdatePriorityCall}
               onDeleteItem={onDeletePriorityCall}
@@ -561,5 +691,3 @@ export function FormsSection({
     </Tabs>
   );
 }
-
-    
