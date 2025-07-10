@@ -14,12 +14,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home, Scaling } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Separator } from "../ui/separator";
 
 
 // Schemas
@@ -436,10 +437,17 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                   <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   <p className="text-sm text-muted-foreground">{budget.status}</p>
                 </div>
-                 {budget.m2 && (
-                    <div className="flex items-center text-sm text-muted-foreground gap-2 border-t pt-3">
-                        <Home className="h-4 w-4 text-primary"/>
-                        <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                 {budget.m2 && budget.m2 > 0 && (
+                    <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4 text-primary"/>
+                          <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                        </div>
+                        <Separator orientation="vertical" className="h-4" />
+                        <div className="flex items-center gap-2">
+                           <Scaling className="h-4 w-4 text-primary"/>
+                           <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        </div>
                     </div>
                  )}
             </CardContent>
