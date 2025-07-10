@@ -321,7 +321,7 @@ export default function DashboardPage() {
               onDeletePriorityCall={(id) => handleDelete('priority_calls', id, 'Llamada Prioritaria')}
 
               budgets={budgets}
-              onAddBudget={(budget) => handleCreate('budgets', {...budget, documents: [], m2: budget.m2 || 0 }, 'Presupuesto')}
+              onAddBudget={(budget) => handleCreate('budgets', {...budget, m2: budget.m2 || 0 }, 'Presupuesto')}
               onUpdateBudget={(budget) => handleUpdate('budgets', budget, 'Presupuesto')}
               onDeleteBudget={(id) => handleDelete('budgets', id, 'Presupuesto')}
 
