@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -20,6 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const itemSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
@@ -365,7 +365,7 @@ function MainFormsCard({
       />
 
       <CardHeader>
-        <CardTitle>Formularios Externos y Contactos</CardTitle>
+        <CardTitle>Formularios Externos</CardTitle>
         <CardDescription>Gestiona las respuestas de tus formularios y añade contactos manualmente.</CardDescription>
       </CardHeader>
 
@@ -483,12 +483,7 @@ export function FormsSection({
       </TabsList>
       <TabsContent value="main" className="mt-6">
         <div className="space-y-6">
-            <MainFormsCard 
-                onAddContact={onAddContact} onAddPriorityCall={onAddPriorityCall}
-                forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
-                sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
-            />
-             <DynamicTableCard
+            <DynamicTableCard
                 title="Contactos Manuales"
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
@@ -497,6 +492,11 @@ export function FormsSection({
                 onDeleteItem={onDeleteContact}
                 onAddClient={onAddClient}
                 onAddReforma={onAddReforma}
+            />
+            <MainFormsCard 
+                onAddContact={onAddContact} onAddPriorityCall={onAddPriorityCall}
+                forms={forms} onLoadForms={onLoadForms} onUpdateForm={onUpdateForm} onDeleteForm={onDeleteForm}
+                sheetUrl={sheetUrl} onSaveSheetUrl={onSaveSheetUrl}
             />
         </div>
       </TabsContent>
