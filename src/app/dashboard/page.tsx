@@ -143,6 +143,13 @@ export default function DashboardPage() {
         };
       }
 
+      if (collectionName === 'budgets') {
+        newItem = {
+            ...newItem,
+            documents: newItem.documents || [],
+        }
+      }
+
       if (newItem.id) {
         const { id, ...data } = newItem;
         await setDoc(doc(db, collectionName, id), data);

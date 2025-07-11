@@ -327,7 +327,7 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
         const newDoc = { name: file.name, url: downloadURL };
         const updatedBudget = {
             ...budget,
-            documents: [...budget.documents, newDoc],
+            documents: [...(budget.documents || []), newDoc],
         };
 
         onUpdateBudget(updatedBudget);
@@ -455,7 +455,7 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
             <CardFooter className="flex justify-between items-center border-t pt-4">
                  <div>
                     <h4 className="font-semibold text-sm mb-2">Documentos</h4>
-                    {budget.documents.length > 0 ? (
+                    {(budget.documents || []).length > 0 ? (
                         <ul className="list-disc list-inside text-sm text-muted-foreground">{budget.documents.map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
                     ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
                 </div>
