@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home, Scaling } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home, Scaling, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
@@ -48,6 +48,11 @@ const percentageSchema = z.object({
   percentage: z.coerce.number().min(0, "El porcentaje no puede ser negativo."),
 });
 
+const moveBudgetSchema = z.object({
+  category: z.enum(["enviados", "obra_nueva", "reformas", "subcontratas"]),
+});
+
+
 // Tipos
 export type BudgetCategory = z.infer<typeof budgetSchema>['category'];
 export type LineItem = z.infer<typeof lineItemSchema>;
@@ -57,6 +62,68 @@ export type Budget = z.infer<typeof budgetSchema> & {
     total: number;
     m2?: number;
 };
+
+const budgetCategories: { value: BudgetCategory, label: string }[] = [
+    { value: 'enviados', label: 'Enviados' },
+    { value: 'obra_nueva', label: 'Obra Nueva' },
+    { value: 'reformas', label: 'Reformas' },
+    { value: 'subcontratas', label: 'Subcontratas' },
+];
+
+function MoveBudgetDialog({ budget, open, onOpenChange, onMove }: { budget: Budget, open: boolean, onOpenChange: (open: boolean) => void, onMove: (category: BudgetCategory) => void }) {
+  const form = useForm<z.infer<typeof moveBudgetSchema>>({
+    resolver: zodResolver(moveBudgetSchema),
+    defaultValues: { category: budget.category },
+  });
+
+  const handleSubmit = (values: z.infer<typeof moveBudgetSchema>) => {
+    onMove(values.category);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Mover Presupuesto</DialogTitle>
+          <DialogDescription>
+            Selecciona la nueva categoría para el presupuesto "{budget.name}".
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nueva Categoría</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione una categoría" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {budgetCategories.map(cat => (
+                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+              <Button type="submit">Mover Presupuesto</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 
 function PercentageDialog({ open, onOpenChange, onApply }: { open: boolean, onOpenChange: (open: boolean) => void, onApply: (percentage: number) => void }) {
@@ -225,10 +292,9 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una categoría" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        <SelectItem value="enviados">Enviados</SelectItem>
-                        <SelectItem value="obra_nueva">Obra Nueva</SelectItem>
-                        <SelectItem value="reformas">Reformas</SelectItem>
-                        <SelectItem value="subcontratas">Subcontratas</SelectItem>
+                        {budgetCategories.map(cat => (
+                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select><FormMessage />
                   </FormItem>
@@ -324,6 +390,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const [isAddBudgetOpen, setAddBudgetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
+  const [movingBudget, setMovingBudget] = useState<Budget | undefined>(undefined);
   const [printingBudget, setPrintingBudget] = useState<Budget | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
@@ -372,6 +439,11 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
     setEditingBudget(undefined);
     setAddBudgetOpen(true);
   };
+  
+  const handleMoveBudget = (category: BudgetCategory) => {
+    if (!movingBudget) return;
+    onUpdateBudget({ ...movingBudget, category });
+  }
 
 
   return (
@@ -387,6 +459,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
       {/* Diálogos */}
       <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} activeCategory={activeCategory} />
       <BudgetForm clients={clients} companies={companies} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} activeCategory={activeCategory} />
+      {movingBudget && <MoveBudgetDialog budget={movingBudget} open={!!movingBudget} onOpenChange={() => setMovingBudget(undefined)} onMove={handleMoveBudget} />}
       
       {viewingBudget && (
           <Dialog open={!!viewingBudget} onOpenChange={() => setViewingBudget(undefined)}>
@@ -466,6 +539,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                                 <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -537,21 +611,14 @@ export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpda
     return budgets.filter(b => (b.category || 'enviados') === activeTab);
   }, [budgets, activeTab]);
 
-  const tabConfigs = [
-    { value: 'enviados', label: 'Enviados' },
-    { value: 'obra_nueva', label: 'Obra Nueva' },
-    { value: 'reformas', label: 'Reformas' },
-    { value: 'subcontratas', label: 'Subcontratas' },
-  ];
-
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BudgetCategory)} className="w-full">
       <TabsList className="grid w-full grid-cols-4">
-        {tabConfigs.map(tab => (
+        {budgetCategories.map(tab => (
           <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
         ))}
       </TabsList>
-      {tabConfigs.map(tab => (
+      {budgetCategories.map(tab => (
         <TabsContent key={tab.value} value={tab.value} className="mt-6">
           <BudgetListCard
             title={`Presupuestos de ${tab.label}`}
