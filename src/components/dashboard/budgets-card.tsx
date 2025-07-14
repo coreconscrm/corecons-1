@@ -48,7 +48,7 @@ const percentageSchema = z.object({
 export type LineItem = z.infer<typeof lineItemSchema>;
 export type Budget = z.infer<typeof budgetSchema> & {
     id: string;
-    documents: any[];
+    documents?: any[];
     total: number;
     m2?: number;
 };
@@ -371,18 +371,30 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
                             <TableHead>Unidad</TableHead>
                             <TableHead className="text-right">Precio/Ud.</TableHead>
                             <TableHead className="text-right">Total</TableHead>
+                             {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
+                                <TableHead className="text-right">€ / m²</TableHead>
+                            )}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {viewingBudget.lineItems.map((item, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{item.description}</TableCell>
-                                <TableCell className="text-right">{item.quantity}</TableCell>
-                                <TableCell>{item.unit}</TableCell>
-                                <TableCell className="text-right font-mono">€{item.unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                <TableCell className="text-right font-mono">€{(item.quantity * item.unitPrice).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                            </TableRow>
-                            ))}
+                            {viewingBudget.lineItems.map((item, index) => {
+                                const lineTotal = item.quantity * item.unitPrice;
+                                const costPerM2 = (viewingBudget.m2 && viewingBudget.m2 > 0) ? lineTotal / viewingBudget.m2 : 0;
+                                return (
+                                    <TableRow key={index}>
+                                        <TableCell>{item.description}</TableCell>
+                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                        <TableCell>{item.unit}</TableCell>
+                                        <TableCell className="text-right font-mono">€{item.unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell className="text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
+                                            <TableCell className="text-right font-mono">
+                                                €{costPerM2.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                )
+                            })}
                         </TableBody>
                     </Table>
                    </div>
