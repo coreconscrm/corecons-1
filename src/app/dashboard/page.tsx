@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [interioristas, setInterioristas] = useState<any[]>([]);
   const [constructoras, setConstructoras] = useState<any[]>([]);
   const [reformistas, setReformistas] = useState<any[]>([]);
+  const [inmobiliarias, setInmobiliarias] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -50,6 +51,7 @@ export default function DashboardPage() {
     interioristas: true,
     constructoras: true,
     reformistas: true,
+    inmobiliarias: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
   
@@ -71,7 +73,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -90,6 +92,7 @@ export default function DashboardPage() {
         setInterioristas(mapSnapToState(snapshots[11]));
         setConstructoras(mapSnapToState(snapshots[12]));
         setReformistas(mapSnapToState(snapshots[13]));
+        setInmobiliarias(mapSnapToState(snapshots[14]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -324,10 +327,15 @@ export default function DashboardPage() {
               onUpdateReformista={(reformista) => handleUpdate('reformistas', reformista, 'Reformista')}
               onDeleteReformista={(id) => handleDelete('reformistas', id, 'Reformista')}
 
+              inmobiliarias={inmobiliarias}
+              onAddInmobiliaria={(inmobiliaria) => handleCreate('inmobiliarias', inmobiliaria, 'Inmobiliaria')}
+              onUpdateInmobiliaria={(inmobiliaria) => handleUpdate('inmobiliarias', inmobiliaria, 'Inmobiliaria')}
+              onDeleteInmobiliaria={(id) => handleDelete('inmobiliarias', id, 'Inmobiliaria')}
+
               team={team}
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
               onUpdateTeamMember={(member) => handleUpdate('team', member, 'Miembro')}
-              onDeleteTeamMember={(id) => handleDelete('team', id, 'Miembro')}
+              onDeleteTeamMember={(id) => handleDelete('team', member, 'Miembro')}
 
               contacts={contacts}
               onAddContact={(contact) => {

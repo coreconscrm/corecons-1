@@ -11,6 +11,7 @@ import { CompanySection } from "@/components/dashboard/company-card";
 import { PriceListCard } from "./prices-card";
 import { ReformaListCard } from "./reformas-card";
 import { InterioristasListCard } from "./interioristas-card";
+import { InmobiliariasListCard } from "./inmobiliarias-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -22,6 +23,7 @@ export function DashboardTabs({
     interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista,
     constructoras, onAddConstructora, onUpdateConstructora, onDeleteConstructora,
     reformistas, onAddReformista, onUpdateReformista, onDeleteReformista,
+    inmobiliarias, onAddInmobiliaria, onUpdateInmobiliaria, onDeleteInmobiliaria,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
@@ -41,6 +43,7 @@ export function DashboardTabs({
     interioristas: any[], onAddInteriorista: (c: any) => void, onUpdateInteriorista: (c: any) => void, onDeleteInteriorista: (id: string) => void,
     constructoras: any[], onAddConstructora: (c: any) => void, onUpdateConstructora: (c: any) => void, onDeleteConstructora: (id: string) => void,
     reformistas: any[], onAddReformista: (c: any) => void, onUpdateReformista: (c: any) => void, onDeleteReformista: (id: string) => void,
+    inmobiliarias: any[], onAddInmobiliaria: (c: any) => void, onUpdateInmobiliaria: (c: any) => void, onDeleteInmobiliaria: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
@@ -107,6 +110,10 @@ export function DashboardTabs({
           onAddReformista={onAddReformista}
           onUpdateReformista={onUpdateReformista}
           onDeleteReformista={onDeleteReformista}
+          inmobiliarias={inmobiliarias}
+          onAddInmobiliaria={onAddInmobiliaria}
+          onUpdateInmobiliaria={onUpdateInmobiliaria}
+          onDeleteInmobiliaria={onDeleteInmobiliaria}
           visibleTabs={visibleTabs}
         />
       </TabsContent>}

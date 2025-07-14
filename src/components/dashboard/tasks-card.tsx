@@ -20,6 +20,7 @@ import { CollaboratorsListCard, type Collaborator } from "./collaborators-card";
 import { InterioristasListCard, type Interiorista } from "./interioristas-card";
 import { ConstructorasListCard, type Constructora } from "./constructoras-card";
 import { ReformistasListCard, type Reformista } from "./reformistas-card";
+import { InmobiliariasListCard, type Inmobiliaria } from "./inmobiliarias-card";
 
 
 const priceListItemSchema = z.object({
@@ -247,6 +248,7 @@ export function ProviderSection({
     interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista,
     constructoras, onAddConstructora, onUpdateConstructora, onDeleteConstructora,
     reformistas, onAddReformista, onUpdateReformista, onDeleteReformista,
+    inmobiliarias, onAddInmobiliaria, onUpdateInmobiliaria, onDeleteInmobiliaria,
     visibleTabs
 }: {
     providers: Provider[], onAddProvider: (p: any) => void, onUpdateProvider: (p: any) => void, onDeleteProvider: (id: string) => void,
@@ -254,6 +256,7 @@ export function ProviderSection({
     interioristas: Interiorista[], onAddInteriorista: (c: any) => void, onUpdateInteriorista: (c: any) => void, onDeleteInteriorista: (id: string) => void,
     constructoras: Constructora[], onAddConstructora: (c: any) => void, onUpdateConstructora: (c: any) => void, onDeleteConstructora: (id: string) => void,
     reformistas: Reformista[], onAddReformista: (c: any) => void, onUpdateReformista: (c: any) => void, onDeleteReformista: (id: string) => void,
+    inmobiliarias: Inmobiliaria[], onAddInmobiliaria: (c: any) => void, onUpdateInmobiliaria: (c: any) => void, onDeleteInmobiliaria: (id: string) => void,
     visibleTabs: any
 }) {
      const tabs = [
@@ -262,6 +265,7 @@ export function ProviderSection({
         { value: "interioristas", label: "Interioristas", visible: visibleTabs.interioristas },
         { value: "constructoras", label: "Constructoras", visible: visibleTabs.constructoras },
         { value: "reformistas", label: "Reformistas", visible: visibleTabs.reformistas },
+        { value: "inmobiliarias", label: "Inmobiliarias", visible: visibleTabs.inmobiliarias },
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
@@ -318,6 +322,16 @@ export function ProviderSection({
                       onAddReformista={onAddReformista}
                       onUpdateReformista={onUpdateReformista}
                       onDeleteReformista={onDeleteReformista}
+                  />
+              </TabsContent>
+            )}
+            {visibleTabs.inmobiliarias && (
+              <TabsContent value="inmobiliarias" className="mt-6">
+                  <InmobiliariasListCard 
+                      inmobiliarias={inmobiliarias}
+                      onAddInmobiliaria={onAddInmobiliaria}
+                      onUpdateInmobiliaria={onUpdateInmobiliaria}
+                      onDeleteInmobiliaria={onDeleteInmobiliaria}
                   />
               </TabsContent>
             )}
