@@ -19,6 +19,7 @@ import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 const collaboratorSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
   role: z.string().min(1, "El rol es requerido."),
+  localidad: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
   instagram: z.string().optional(),
@@ -29,7 +30,7 @@ export type Collaborator = z.infer<typeof collaboratorSchema> & { id: string };
 function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { collaborator?: Collaborator, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof collaboratorSchema>>({
         resolver: zodResolver(collaboratorSchema),
-        defaultValues: collaborator || { name: "", role: "", phone: "", email: "", instagram: "" },
+        defaultValues: collaborator || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "" },
     });
     
     const handleSubmit = async (values: z.infer<typeof collaboratorSchema>) => {
@@ -51,6 +52,9 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
                         )} />
                         <FormField control={form.control} name="role" render={({ field }) => (
                             <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Arquitecto Técnico" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="localidad" render={({ field }) => (
+                            <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input placeholder="Barcelona" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="phone" render={({ field }) => (
                             <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} /></FormControl><FormMessage /></FormItem>
@@ -119,6 +123,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                         <TableRow>
                             <TableHead>Nombre</TableHead>
                             <TableHead>Rol</TableHead>
+                            <TableHead>Localidad</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Instagram</TableHead>
@@ -130,6 +135,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                             <TableRow key={collaborator.id}>
                                 <TableCell className="font-medium">{collaborator.name}</TableCell>
                                 <TableCell>{collaborator.role}</TableCell>
+                                <TableCell>{collaborator.localidad}</TableCell>
                                 <TableCell>{collaborator.phone}</TableCell>
                                 <TableCell>{collaborator.email}</TableCell>
                                 <TableCell>{collaborator.instagram}</TableCell>
@@ -155,7 +161,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                         ))}
                          {collaborators.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     No hay colaboradores añadidos.
                                 </TableCell>
                             </TableRow>
