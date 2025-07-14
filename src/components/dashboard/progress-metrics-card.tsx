@@ -6,7 +6,7 @@ import { ProviderSection } from "@/components/dashboard/tasks-card";
 import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsSection } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
-import { BudgetListCard } from "@/components/dashboard/budgets-card";
+import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { PriceListCard } from "./prices-card";
 import { ReformaListCard } from "./reformas-card";
@@ -77,7 +77,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.budgets && <TabsContent value="budgets" className="mt-6">
-        <BudgetListCard budgets={budgets} clients={[...clients, ...reformas]} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
+        <BudgetSection budgets={budgets} clients={[...clients, ...reformas]} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
       </TabsContent>}
       
       {visibleTabs.clients && <TabsContent value="clients" className="mt-6">

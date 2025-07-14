@@ -21,6 +21,7 @@ import type { Company } from "./company-card";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Separator } from "../ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 // Schemas
@@ -38,6 +39,9 @@ const budgetSchema = z.object({
   status: z.string().min(1, "El estado es requerido."),
   m2: z.coerce.number().min(0, "Los metros cuadrados deben ser un número positivo.").optional(),
   lineItems: z.array(lineItemSchema).min(1, "Debe añadir al menos una línea."),
+  category: z.enum(["enviados", "obra_nueva", "reformas", "subcontratas"], {
+    required_error: "Debe seleccionar una categoría."
+  }),
 });
 
 const percentageSchema = z.object({
@@ -45,6 +49,7 @@ const percentageSchema = z.object({
 });
 
 // Tipos
+export type BudgetCategory = z.infer<typeof budgetSchema>['category'];
 export type LineItem = z.infer<typeof lineItemSchema>;
 export type Budget = z.infer<typeof budgetSchema> & {
     id: string;
@@ -101,7 +106,7 @@ function PercentageDialog({ open, onOpenChange, onApply }: { open: boolean, onOp
 
 
 // --- Componente de Formulario de Presupuesto ---
-function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }: { budget?: Budget, clients: any[], companies: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, activeCategory }: { budget?: Budget, clients: any[], companies: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, activeCategory: BudgetCategory }) {
   const [isPercentageDialogOpen, setPercentageDialogOpen] = useState(false);
   
   const form = useForm<z.infer<typeof budgetSchema>>({
@@ -113,6 +118,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
       status: "Pendiente",
       m2: 0,
       lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
+      category: activeCategory,
     },
   });
 
@@ -144,19 +150,22 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
 
 
   useEffect(() => {
-    if (budget && open) {
-      form.reset({ ...budget, m2: budget.m2 || 0 });
-    } else if (!budget) {
-      form.reset({
-        name: "",
-        clientId: "",
-        companyId: "",
-        status: "Pendiente",
-        m2: 0,
-        lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
-      });
+    if (open) {
+      if (budget) {
+        form.reset({ ...budget, m2: budget.m2 || 0 });
+      } else {
+        form.reset({
+          name: "",
+          clientId: "",
+          companyId: "",
+          status: "Pendiente",
+          m2: 0,
+          lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
+          category: activeCategory,
+        });
+      }
     }
-  }, [budget, open, form]);
+  }, [budget, open, form, activeCategory]);
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = values.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
@@ -198,18 +207,33 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
                 <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
-             <FormField control={form.control} name="status" render={({ field }) => (
-                <FormItem><FormLabel>Estado</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="Pendiente">Pendiente</SelectItem>
-                      <SelectItem value="Aceptado">Aceptado</SelectItem>
-                      <SelectItem value="Rechazado">Rechazado</SelectItem>
-                    </SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )} />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem><FormLabel>Estado</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Pendiente">Pendiente</SelectItem>
+                        <SelectItem value="Aceptado">Aceptado</SelectItem>
+                        <SelectItem value="Rechazado">Rechazado</SelectItem>
+                      </SelectContent>
+                    </Select><FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="category" render={({ field }) => (
+                  <FormItem><FormLabel>Categoría</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una categoría" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="enviados">Enviados</SelectItem>
+                        <SelectItem value="obra_nueva">Obra Nueva</SelectItem>
+                        <SelectItem value="reformas">Reformas</SelectItem>
+                        <SelectItem value="subcontratas">Subcontratas</SelectItem>
+                      </SelectContent>
+                    </Select><FormMessage />
+                  </FormItem>
+                )} />
+             </div>
 
 
             <Card>
@@ -295,8 +319,8 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange }
 }
 
 
-// --- Componente Principal ---
-export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
+// --- Componente de lista ---
+function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget, activeCategory }: { title: string, budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void, activeCategory: BudgetCategory }) {
   const [isAddBudgetOpen, setAddBudgetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
@@ -340,10 +364,19 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
     }
   };
 
+  const handleEditBudget = (budget: Budget) => {
+    setEditingBudget(budget);
+  };
+  
+  const handleAddBudget = () => {
+    setEditingBudget(undefined);
+    setAddBudgetOpen(true);
+  };
+
 
   return (
     <div>
-      <div className="printable-area">
+       <div className="printable-area">
         <BudgetPrintLayout 
           budget={printingBudget}
           client={printingBudget ? clients.find(c => c.id === printingBudget.clientId) : null}
@@ -352,8 +385,8 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
       </div>
 
       {/* Diálogos */}
-      <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} />
-      <BudgetForm clients={clients} companies={companies} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} />
+      <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} activeCategory={activeCategory} />
+      <BudgetForm clients={clients} companies={companies} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} activeCategory={activeCategory} />
       
       {viewingBudget && (
           <Dialog open={!!viewingBudget} onOpenChange={() => setViewingBudget(undefined)}>
@@ -409,85 +442,129 @@ export function BudgetListCard({ budgets, clients, companies, onAddBudget, onUpd
               </DialogContent>
           </Dialog>
       )}
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 mt-12 lg:mt-0">
-        <h2 className="text-2xl font-bold">Presupuestos</h2>
-        <Button onClick={() => setAddBudgetOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Crear Presupuesto</Button>
+      
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <h2 className="text-2xl font-bold">{title}</h2>
+        <Button onClick={handleAddBudget}><PlusCircle className="mr-2 h-4 w-4" />Crear Presupuesto</Button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {budgets.map(budget => (
-          <Card key={budget.id} className="flex flex-col shadow-md hover:shadow-lg transition-shadow border-border/50">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                  <div>
-                      <CardTitle className="mb-1">{budget.name}</CardTitle>
-                      <CardDescription>{clients.find(c => c.id === budget.clientId)?.name}</CardDescription>
-                      <CardDescription className="text-xs pt-1">Emitido por: {companies.find(c => c.id === budget.companyId)?.name}</CardDescription>
-                  </div>
-                  <AlertDialog>
-                      <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setEditingBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
-                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                          </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
-                          </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-                <div>
-                  <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-sm text-muted-foreground">{budget.status}</p>
-                </div>
-                 {budget.m2 && budget.m2 > 0 && (
-                    <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
-                        <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4 text-primary"/>
-                          <span>Superficie: <strong>{budget.m2} m²</strong></span>
-                        </div>
-                        <Separator orientation="vertical" className="h-4" />
-                        <div className="flex items-center gap-2">
-                           <Scaling className="h-4 w-4 text-primary"/>
-                           <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                        </div>
+      
+      {budgets.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {budgets.map(budget => (
+            <Card key={budget.id} className="flex flex-col shadow-md hover:shadow-lg transition-shadow border-border/50">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="mb-1">{budget.name}</CardTitle>
+                        <CardDescription>{clients.find(c => c.id === budget.clientId)?.name}</CardDescription>
+                        <CardDescription className="text-xs pt-1">Emitido por: {companies.find(c => c.id === budget.companyId)?.name}</CardDescription>
                     </div>
-                 )}
-            </CardContent>
-            <CardFooter className="flex justify-between items-center border-t pt-4">
-                 <div>
-                    <h4 className="font-semibold text-sm mb-2">Documentos</h4>
-                    {(budget.documents || []).length > 0 ? (
-                        <ul className="list-disc list-inside text-sm text-muted-foreground">{budget.documents.map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
-                    ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
-                 <Button variant="outline" size="sm" onClick={() => {
-                     const fileInput = document.createElement('input');
-                     fileInput.type = 'file';
-                     fileInput.onchange = (e) => {
-                         const file = (e.target as HTMLInputElement).files?.[0];
-                         if (file) {
-                            handleDocUpload(file, budget);
-                         }
-                     }
-                     fileInput.click();
-                 }} disabled={isUploading}>
-                     {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
-                 </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              </CardHeader>
+              <CardContent className="flex-grow space-y-4">
+                  <div>
+                    <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-sm text-muted-foreground">{budget.status}</p>
+                  </div>
+                   {budget.m2 && budget.m2 > 0 && (
+                      <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
+                          <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4 text-primary"/>
+                            <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                          </div>
+                          <Separator orientation="vertical" className="h-4" />
+                          <div className="flex items-center gap-2">
+                             <Scaling className="h-4 w-4 text-primary"/>
+                             <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                          </div>
+                      </div>
+                   )}
+              </CardContent>
+              <CardFooter className="flex justify-between items-center border-t pt-4">
+                   <div>
+                      <h4 className="font-semibold text-sm mb-2">Documentos</h4>
+                      {(budget.documents || []).length > 0 ? (
+                          <ul className="list-disc list-inside text-sm text-muted-foreground">{(budget.documents || []).map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                      ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
+                  </div>
+                   <Button variant="outline" size="sm" onClick={() => {
+                       const fileInput = document.createElement('input');
+                       fileInput.type = 'file';
+                       fileInput.onchange = (e) => {
+                           const file = (e.target as HTMLInputElement).files?.[0];
+                           if (file) {
+                              handleDocUpload(file, budget);
+                           }
+                       }
+                       fileInput.click();
+                   }} disabled={isUploading}>
+                       {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
+                   </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">No hay presupuestos en esta categoría.</div>
+      )}
     </div>
   );
+}
+
+// --- Componente Principal ---
+export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
+  const [activeTab, setActiveTab] = useState<BudgetCategory>('enviados');
+
+  const filteredBudgets = useMemo(() => {
+    return budgets.filter(b => (b.category || 'enviados') === activeTab);
+  }, [budgets, activeTab]);
+
+  const tabConfigs = [
+    { value: 'enviados', label: 'Enviados' },
+    { value: 'obra_nueva', label: 'Obra Nueva' },
+    { value: 'reformas', label: 'Reformas' },
+    { value: 'subcontratas', label: 'Subcontratas' },
+  ];
+
+  return (
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BudgetCategory)} className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
+        {tabConfigs.map(tab => (
+          <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+        ))}
+      </TabsList>
+      {tabConfigs.map(tab => (
+        <TabsContent key={tab.value} value={tab.value} className="mt-6">
+          <BudgetListCard
+            title={`Presupuestos de ${tab.label}`}
+            budgets={filteredBudgets}
+            clients={clients}
+            companies={companies}
+            onAddBudget={onAddBudget}
+            onUpdateBudget={onUpdateBudget}
+            onDeleteBudget={onDeleteBudget}
+            activeCategory={tab.value as BudgetCategory}
+          />
+        </TabsContent>
+      ))}
+    </Tabs>
+  )
 }

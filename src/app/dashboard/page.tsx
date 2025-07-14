@@ -158,6 +158,7 @@ export default function DashboardPage() {
       if (collectionName === 'budgets') {
         newItem = {
             ...newItem,
+            category: item.category || 'enviados',
             documents: newItem.documents || [],
         }
       }
