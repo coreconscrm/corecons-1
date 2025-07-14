@@ -21,6 +21,8 @@ export default function DashboardPage() {
   const [providers, setProviders] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [interioristas, setInterioristas] = useState<any[]>([]);
+  const [constructoras, setConstructoras] = useState<any[]>([]);
+  const [reformistas, setReformistas] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -46,6 +48,8 @@ export default function DashboardPage() {
     prices: true,
     collaborators: true,
     interioristas: true,
+    constructoras: true,
+    reformistas: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
   
@@ -67,7 +71,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -84,6 +88,8 @@ export default function DashboardPage() {
         setCollaborators(mapSnapToState(snapshots[9]));
         setPriorityCalls(mapSnapToState(snapshots[10]));
         setInterioristas(mapSnapToState(snapshots[11]));
+        setConstructoras(mapSnapToState(snapshots[12]));
+        setReformistas(mapSnapToState(snapshots[13]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -307,6 +313,16 @@ export default function DashboardPage() {
               onAddInteriorista={(interiorista) => handleCreate('interioristas', interiorista, 'Interiorista')}
               onUpdateInteriorista={(interiorista) => handleUpdate('interioristas', interiorista, 'Interiorista')}
               onDeleteInteriorista={(id) => handleDelete('interioristas', id, 'Interiorista')}
+              
+              constructoras={constructoras}
+              onAddConstructora={(constructora) => handleCreate('constructoras', constructora, 'Constructora')}
+              onUpdateConstructora={(constructora) => handleUpdate('constructoras', constructora, 'Constructora')}
+              onDeleteConstructora={(id) => handleDelete('constructoras', id, 'Constructora')}
+
+              reformistas={reformistas}
+              onAddReformista={(reformista) => handleCreate('reformistas', reformista, 'Reformista')}
+              onUpdateReformista={(reformista) => handleUpdate('reformistas', reformista, 'Reformista')}
+              onDeleteReformista={(id) => handleDelete('reformistas', id, 'Reformista')}
 
               team={team}
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}

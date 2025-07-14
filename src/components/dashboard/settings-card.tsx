@@ -12,6 +12,8 @@ type VisibleTabs = {
     providers: boolean;
     collaborators: boolean;
     interioristas: boolean;
+    constructoras: boolean;
+    reformistas: boolean;
     team: boolean;
     forms: boolean;
     budgets: boolean;
@@ -27,6 +29,8 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     providers: "Proveedores",
     collaborators: "Arquitectos",
     interioristas: "Interioristas",
+    constructoras: "Constructoras",
+    reformistas: "Reformistas",
     prices: "Precios",
     team: "Equipo",
     forms: "Formularios",

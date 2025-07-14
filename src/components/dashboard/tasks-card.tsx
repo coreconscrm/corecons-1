@@ -18,6 +18,8 @@ import { Truck, MoreHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollaboratorsListCard, type Collaborator } from "./collaborators-card";
 import { InterioristasListCard, type Interiorista } from "./interioristas-card";
+import { ConstructorasListCard, type Constructora } from "./constructoras-card";
+import { ReformistasListCard, type Reformista } from "./reformistas-card";
 
 
 const priceListItemSchema = z.object({
@@ -243,17 +245,23 @@ export function ProviderSection({
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator,
     interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista,
+    constructoras, onAddConstructora, onUpdateConstructora, onDeleteConstructora,
+    reformistas, onAddReformista, onUpdateReformista, onDeleteReformista,
     visibleTabs
 }: {
     providers: Provider[], onAddProvider: (p: any) => void, onUpdateProvider: (p: any) => void, onDeleteProvider: (id: string) => void,
     collaborators: Collaborator[], onAddCollaborator: (c: any) => void, onUpdateCollaborator: (c: any) => void, onDeleteCollaborator: (id: string) => void,
     interioristas: Interiorista[], onAddInteriorista: (c: any) => void, onUpdateInteriorista: (c: any) => void, onDeleteInteriorista: (id: string) => void,
+    constructoras: Constructora[], onAddConstructora: (c: any) => void, onUpdateConstructora: (c: any) => void, onDeleteConstructora: (id: string) => void,
+    reformistas: Reformista[], onAddReformista: (c: any) => void, onUpdateReformista: (c: any) => void, onDeleteReformista: (id: string) => void,
     visibleTabs: any
 }) {
      const tabs = [
         { value: "providers", label: "Proveedores", visible: visibleTabs.providers },
         { value: "collaborators", label: "Arquitectos", visible: visibleTabs.collaborators },
-        { value: "interioristas", label: "Interioristas", visible: visibleTabs.interioristas }
+        { value: "interioristas", label: "Interioristas", visible: visibleTabs.interioristas },
+        { value: "constructoras", label: "Constructoras", visible: visibleTabs.constructoras },
+        { value: "reformistas", label: "Reformistas", visible: visibleTabs.reformistas },
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
@@ -290,6 +298,26 @@ export function ProviderSection({
                       onAddInteriorista={onAddInteriorista}
                       onUpdateInteriorista={onUpdateInteriorista}
                       onDeleteInteriorista={onDeleteInteriorista}
+                  />
+              </TabsContent>
+            )}
+             {visibleTabs.constructoras && (
+              <TabsContent value="constructoras" className="mt-6">
+                  <ConstructorasListCard 
+                      constructoras={constructoras}
+                      onAddConstructora={onAddConstructora}
+                      onUpdateConstructora={onUpdateConstructora}
+                      onDeleteConstructora={onDeleteConstructora}
+                  />
+              </TabsContent>
+            )}
+             {visibleTabs.reformistas && (
+              <TabsContent value="reformistas" className="mt-6">
+                  <ReformistasListCard 
+                      reformistas={reformistas}
+                      onAddReformista={onAddReformista}
+                      onUpdateReformista={onUpdateReformista}
+                      onDeleteReformista={onDeleteReformista}
                   />
               </TabsContent>
             )}
