@@ -10,6 +10,7 @@ import { BudgetListCard } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { PriceListCard } from "./prices-card";
 import { ReformaListCard } from "./reformas-card";
+import { InterioristasListCard } from "./interioristas-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -18,6 +19,7 @@ export function DashboardTabs({
     projects, onAddProject, onUpdateProject, onDeleteProject,
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator,
+    interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
@@ -34,6 +36,7 @@ export function DashboardTabs({
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,
     collaborators: any[], onAddCollaborator: (c: any) => void, onUpdateCollaborator: (c: any) => void, onDeleteCollaborator: (id: string) => void,
+    interioristas: any[], onAddInteriorista: (c: any) => void, onUpdateInteriorista: (c: any) => void, onDeleteInteriorista: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
@@ -52,7 +55,7 @@ export function DashboardTabs({
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Obra Nueva</TabsTrigger>}
         {visibleTabs.reformas && <TabsTrigger value="reformas">Reformas</TabsTrigger>}
-        {(visibleTabs.providers || visibleTabs.collaborators) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
+        {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
@@ -78,7 +81,7 @@ export function DashboardTabs({
         <ReformaListCard reformas={reformas} providers={providers} onAddReforma={onAddReforma} onUpdateReforma={onUpdateReforma} onDeleteReforma={onDeleteReforma} />
       </TabsContent>}
 
-      {(visibleTabs.providers || visibleTabs.collaborators) && <TabsContent value="providers" className="mt-6">
+      {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas) && <TabsContent value="providers" className="mt-6">
          <ProviderSection
           providers={providers}
           onAddProvider={onAddProvider}
@@ -88,6 +91,10 @@ export function DashboardTabs({
           onAddCollaborator={onAddCollaborator}
           onUpdateCollaborator={onUpdateCollaborator}
           onDeleteCollaborator={onDeleteCollaborator}
+          interioristas={interioristas}
+          onAddInteriorista={onAddInteriorista}
+          onUpdateInteriorista={onUpdateInteriorista}
+          onDeleteInteriorista={onDeleteInteriorista}
           visibleTabs={visibleTabs}
         />
       </TabsContent>}

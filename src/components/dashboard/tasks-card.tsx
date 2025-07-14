@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Truck, MoreHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollaboratorsListCard, type Collaborator } from "./collaborators-card";
+import { InterioristasListCard, type Interiorista } from "./interioristas-card";
 
 
 const priceListItemSchema = z.object({
@@ -241,15 +242,18 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
 export function ProviderSection({
     providers, onAddProvider, onUpdateProvider, onDeleteProvider,
     collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator,
+    interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista,
     visibleTabs
 }: {
     providers: Provider[], onAddProvider: (p: any) => void, onUpdateProvider: (p: any) => void, onDeleteProvider: (id: string) => void,
     collaborators: Collaborator[], onAddCollaborator: (c: any) => void, onUpdateCollaborator: (c: any) => void, onDeleteCollaborator: (id: string) => void,
+    interioristas: Interiorista[], onAddInteriorista: (c: any) => void, onUpdateInteriorista: (c: any) => void, onDeleteInteriorista: (id: string) => void,
     visibleTabs: any
 }) {
      const tabs = [
         { value: "providers", label: "Proveedores", visible: visibleTabs.providers },
-        { value: "collaborators", label: "Arquitectos", visible: visibleTabs.collaborators }
+        { value: "collaborators", label: "Arquitectos", visible: visibleTabs.collaborators },
+        { value: "interioristas", label: "Interioristas", visible: visibleTabs.interioristas }
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
@@ -276,6 +280,16 @@ export function ProviderSection({
                       onAddCollaborator={onAddCollaborator}
                       onUpdateCollaborator={onUpdateCollaborator}
                       onDeleteCollaborator={onDeleteCollaborator}
+                  />
+              </TabsContent>
+            )}
+            {visibleTabs.interioristas && (
+              <TabsContent value="interioristas" className="mt-6">
+                  <InterioristasListCard 
+                      interioristas={interioristas}
+                      onAddInteriorista={onAddInteriorista}
+                      onUpdateInteriorista={onUpdateInteriorista}
+                      onDeleteInteriorista={onDeleteInteriorista}
                   />
               </TabsContent>
             )}

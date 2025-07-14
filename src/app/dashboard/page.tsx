@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [interioristas, setInterioristas] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -44,6 +45,7 @@ export default function DashboardPage() {
     companies: true,
     prices: true,
     collaborators: true,
+    interioristas: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
   
@@ -65,7 +67,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -81,6 +83,7 @@ export default function DashboardPage() {
         setDocuments(mapSnapToState(snapshots[8]));
         setCollaborators(mapSnapToState(snapshots[9]));
         setPriorityCalls(mapSnapToState(snapshots[10]));
+        setInterioristas(mapSnapToState(snapshots[11]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -296,9 +299,14 @@ export default function DashboardPage() {
               onDeleteProvider={(id) => handleDelete('providers', id, 'Proveedor')}
 
               collaborators={collaborators}
-              onAddCollaborator={(collaborator) => handleCreate('collaborators', collaborator, 'Colaborador')}
-              onUpdateCollaborator={(collaborator) => handleUpdate('collaborators', collaborator, 'Colaborador')}
-              onDeleteCollaborator={(id) => handleDelete('collaborators', id, 'Colaborador')}
+              onAddCollaborator={(collaborator) => handleCreate('collaborators', collaborator, 'Arquitecto')}
+              onUpdateCollaborator={(collaborator) => handleUpdate('collaborators', collaborator, 'Arquitecto')}
+              onDeleteCollaborator={(id) => handleDelete('collaborators', id, 'Arquitecto')}
+              
+              interioristas={interioristas}
+              onAddInteriorista={(interiorista) => handleCreate('interioristas', interiorista, 'Interiorista')}
+              onUpdateInteriorista={(interiorista) => handleUpdate('interioristas', interiorista, 'Interiorista')}
+              onDeleteInteriorista={(id) => handleDelete('interioristas', id, 'Interiorista')}
 
               team={team}
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
@@ -328,7 +336,7 @@ export default function DashboardPage() {
               onDeletePriorityCall={(id) => handleDelete('priority_calls', id, 'Llamada Prioritaria')}
 
               budgets={budgets}
-              onAddBudget={(budget) => handleCreate('budgets', {...budget, m2: budget.m2 || 0 }, 'Presupuesto')}
+              onAddBudget={(budget) => handleCreate('budgets', {...budget, m2: budget.m2 || 0, documents: budget.documents || [] }, 'Presupuesto')}
               onUpdateBudget={(budget) => handleUpdate('budgets', budget, 'Presupuesto')}
               onDeleteBudget={(id) => handleDelete('budgets', id, 'Presupuesto')}
 
