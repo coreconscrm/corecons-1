@@ -23,6 +23,7 @@ const interioristaSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
   instagram: z.string().optional(),
+  web: z.string().optional(),
 });
 
 export type Interiorista = z.infer<typeof interioristaSchema> & { id: string };
@@ -30,7 +31,7 @@ export type Interiorista = z.infer<typeof interioristaSchema> & { id: string };
 function InterioristaForm({ interiorista, onSubmit, open, onOpenChange }: { interiorista?: Interiorista, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof interioristaSchema>>({
         resolver: zodResolver(interioristaSchema),
-        defaultValues: interiorista || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "" },
+        defaultValues: interiorista || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" },
     });
     
     const handleSubmit = async (values: z.infer<typeof interioristaSchema>) => {
@@ -64,6 +65,9 @@ function InterioristaForm({ interiorista, onSubmit, open, onOpenChange }: { inte
                         )} />
                          <FormField control={form.control} name="instagram" render={({ field }) => (
                             <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@ana_diseno" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="web" render={({ field }) => (
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.anadiseno.com" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -127,6 +131,7 @@ export function InterioristasListCard({ interioristas, onAddInteriorista, onUpda
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Instagram</TableHead>
+                            <TableHead>Web</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -139,6 +144,7 @@ export function InterioristasListCard({ interioristas, onAddInteriorista, onUpda
                                 <TableCell>{interiorista.phone}</TableCell>
                                 <TableCell>{interiorista.email}</TableCell>
                                 <TableCell>{interiorista.instagram}</TableCell>
+                                <TableCell>{interiorista.web}</TableCell>
                                 <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
@@ -161,7 +167,7 @@ export function InterioristasListCard({ interioristas, onAddInteriorista, onUpda
                         ))}
                          {interioristas.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={8} className="h-24 text-center">
                                     No hay interioristas añadidos.
                                 </TableCell>
                             </TableRow>

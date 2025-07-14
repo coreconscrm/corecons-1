@@ -23,6 +23,7 @@ const collaboratorSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
   instagram: z.string().optional(),
+  web: z.string().optional(),
 });
 
 export type Collaborator = z.infer<typeof collaboratorSchema> & { id: string };
@@ -30,7 +31,7 @@ export type Collaborator = z.infer<typeof collaboratorSchema> & { id: string };
 function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { collaborator?: Collaborator, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof collaboratorSchema>>({
         resolver: zodResolver(collaboratorSchema),
-        defaultValues: collaborator || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "" },
+        defaultValues: collaborator || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" },
     });
     
     const handleSubmit = async (values: z.infer<typeof collaboratorSchema>) => {
@@ -64,6 +65,9 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
                         )} />
                          <FormField control={form.control} name="instagram" render={({ field }) => (
                             <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@ana_arquitectura" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="web" render={({ field }) => (
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.anaarquitectura.com" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -127,6 +131,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Instagram</TableHead>
+                            <TableHead>Web</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -139,6 +144,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                                 <TableCell>{collaborator.phone}</TableCell>
                                 <TableCell>{collaborator.email}</TableCell>
                                 <TableCell>{collaborator.instagram}</TableCell>
+                                <TableCell>{collaborator.web}</TableCell>
                                 <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
@@ -161,7 +167,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                         ))}
                          {collaborators.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={8} className="h-24 text-center">
                                     No hay arquitectos añadidos.
                                 </TableCell>
                             </TableRow>
