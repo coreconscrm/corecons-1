@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -23,7 +24,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     clients: "Obra Nueva",
     reformas: "Reformas",
     providers: "Proveedores",
-    collaborators: "Colaboradores",
+    collaborators: "Arquitectos",
     prices: "Precios",
     team: "Equipo",
     forms: "Formularios",

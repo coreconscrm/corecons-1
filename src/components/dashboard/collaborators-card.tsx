@@ -43,7 +43,7 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{collaborator ? "Editar Colaborador" : "Añadir Nuevo Colaborador"}</DialogTitle>
+                    <DialogTitle>{collaborator ? "Editar Arquitecto" : "Añadir Nuevo Arquitecto"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -67,7 +67,7 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                            <Button type="submit">{collaborator ? "Guardar Cambios" : "Guardar Colaborador"}</Button>
+                            <Button type="submit">{collaborator ? "Guardar Cambios" : "Guardar Arquitecto"}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -111,10 +111,10 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <CardTitle>Colaboradores</CardTitle>
+                    <CardTitle>Arquitectos</CardTitle>
                     <CardDescription>Profesionales y empresas externas que colaboran en proyectos.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Colaborador</Button>
+                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Arquitecto</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">
@@ -149,7 +149,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al arquitecto.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                                 <AlertDialogAction onClick={() => onDeleteCollaborator(collaborator.id)}>Eliminar</AlertDialogAction>
@@ -162,7 +162,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                          {collaborators.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={7} className="h-24 text-center">
-                                    No hay colaboradores añadidos.
+                                    No hay arquitectos añadidos.
                                 </TableCell>
                             </TableRow>
                         )}

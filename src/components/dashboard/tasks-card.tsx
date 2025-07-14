@@ -249,7 +249,7 @@ export function ProviderSection({
 }) {
      const tabs = [
         { value: "providers", label: "Proveedores", visible: visibleTabs.providers },
-        { value: "collaborators", label: "Colaboradores", visible: visibleTabs.collaborators }
+        { value: "collaborators", label: "Arquitectos", visible: visibleTabs.collaborators }
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
