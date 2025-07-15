@@ -94,7 +94,16 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
   useEffect(() => {
     if (open) {
       if (client) {
-        form.reset(client);
+        form.reset({
+            ...client,
+            localizacion: client.localizacion || "",
+            arquitecto: client.arquitecto || "",
+            providerId: client.providerId || "",
+            obtenido: client.obtenido,
+            infoAdicional: client.infoAdicional || "",
+            memoria: client.memoria || "",
+            planos: client.planos || "",
+        });
       } else {
         form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
       }

@@ -93,7 +93,16 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   useEffect(() => {
     if (open) {
       if (reforma) {
-        form.reset(reforma);
+        form.reset({
+            ...reforma,
+            localizacion: reforma.localizacion || "",
+            arquitecto: reforma.arquitecto || "",
+            providerId: reforma.providerId || "",
+            obtenido: reforma.obtenido,
+            infoAdicional: reforma.infoAdicional || "",
+            memoria: reforma.memoria || "",
+            planos: reforma.planos || "",
+        });
       } else {
         form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
       }
