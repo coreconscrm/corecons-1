@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Volume2 } from "lucide-react";
+import { ExternalLink, Volume2, Folder } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 type VisibleTabs = {
@@ -69,6 +69,12 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
                     <a href="https://makebyjordan.com/wb/manual-de-usuario/Podcast-manual-de-usuario-CRM-WB.mp3" target="_blank" rel="noopener noreferrer">
                     <Volume2 className="mr-2 h-4 w-4" />
                     AudioManual de Usuario
+                    </a>
+                </Button>
+                <Button variant="outline" asChild>
+                    <a href="https://drive.google.com/drive/u/0/folders/1Tr9B5ILf8NwYqN9J7-Ouz3koxVNCN24m?lfhs=2" target="_blank" rel="noopener noreferrer">
+                    <Folder className="mr-2 h-4 w-4" />
+                    Carpeta Drive
                     </a>
                 </Button>
             </div>
