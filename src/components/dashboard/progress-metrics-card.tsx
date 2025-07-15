@@ -12,6 +12,7 @@ import { PriceListCard } from "./prices-card";
 import { ReformaListCard } from "./reformas-card";
 import { InterioristasListCard } from "./interioristas-card";
 import { InmobiliariasListCard } from "./inmobiliarias-card";
+import { SeguimientoListCard } from "./seguimiento-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -31,6 +32,7 @@ export function DashboardTabs({
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
+    seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -51,6 +53,7 @@ export function DashboardTabs({
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
+    seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -58,6 +61,7 @@ export function DashboardTabs({
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="w-full justify-start overflow-x-auto md:justify-between">
+        {visibleTabs.seguimiento && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {visibleTabs.clients && <TabsTrigger value="clients">Obra Nueva</TabsTrigger>}
@@ -69,6 +73,12 @@ export function DashboardTabs({
         {visibleTabs.companies && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
+      
+      {visibleTabs.seguimiento && <TabsContent value="seguimiento">
+        <div className="mt-6">
+         <SeguimientoListCard seguimientos={seguimientos} onAddSeguimiento={onAddSeguimiento} onUpdateSeguimiento={onUpdateSeguimiento} onDeleteSeguimiento={onDeleteSeguimiento} />
+        </div>
+      </TabsContent>}
 
       {visibleTabs.projects && <TabsContent value="projects">
         <div className="mt-6">

@@ -1,0 +1,253 @@
+
+"use client"
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info } from "lucide-react";
+
+const seguimientoSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido."),
+  phone: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  informacion: z.string().optional(),
+  estado: z.enum(["primer contacto", "llamado", "falta arquitecto"], { required_error: "Debe seleccionar un estado."}),
+  porHacer: z.enum(["llamar", "buscar arquitecto", "licencia"], { required_error: "Debe seleccionar una acción." }),
+  siguienteLlamada: z.date().optional(),
+});
+
+export type Seguimiento = z.infer<typeof seguimientoSchema> & { id: string, siguienteLlamada: string };
+
+function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const form = useForm<z.infer<typeof seguimientoSchema>>({
+        resolver: zodResolver(seguimientoSchema),
+        defaultValues: { name: "", phone: "", email: "", informacion: "", estado: "primer contacto", porHacer: "llamar" },
+    });
+
+    useEffect(() => {
+        if (open) {
+            if (seguimiento) {
+                form.reset({
+                    ...seguimiento,
+                    siguienteLlamada: seguimiento.siguienteLlamada ? new Date(seguimiento.siguienteLlamada) : undefined,
+                });
+            } else {
+                form.reset({ name: "", phone: "", email: "", informacion: "", estado: "primer contacto", porHacer: "llamar", siguienteLlamada: undefined });
+            }
+        }
+    }, [seguimiento, open, form]);
+    
+    const handleSubmit = async (values: z.infer<typeof seguimientoSchema>) => {
+        const submissionData = {
+            ...seguimiento,
+            ...values,
+            siguienteLlamada: values.siguienteLlamada ? values.siguienteLlamada.toISOString() : null,
+        };
+        onSubmit(submissionData);
+        form.reset();
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{seguimiento ? "Editar Seguimiento" : "Añadir Nuevo Seguimiento"}</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="phone" render={({ field }) => (
+                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="email" render={({ field }) => (
+                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.p@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
+                        <FormField control={form.control} name="informacion" render={({ field }) => (
+                            <FormItem><FormLabel>Información</FormLabel><FormControl><Textarea placeholder="Detalles del contacto, interés, etc." {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="estado" render={({ field }) => (
+                                <FormItem><FormLabel>Estado</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="primer contacto">Primer contacto</SelectItem>
+                                            <SelectItem value="llamado">Llamado</SelectItem>
+                                            <SelectItem value="falta arquitecto">Falta arquitecto</SelectItem>
+                                        </SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="porHacer" render={({ field }) => (
+                                <FormItem><FormLabel>Por Hacer</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una acción" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="llamar">Llamar</SelectItem>
+                                            <SelectItem value="buscar arquitecto">Buscar arquitecto</SelectItem>
+                                            <SelectItem value="licencia">Licencia</SelectItem>
+                                        </SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+                        <FormField control={form.control} name="siguienteLlamada" render={({ field }) => (
+                            <FormItem className="flex flex-col"><FormLabel>Siguiente Llamada</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                {field.value ? (format(field.value, "PPP", { locale: es })) : (<span>Selecciona una fecha</span>)}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
+                                    </PopoverContent>
+                                </Popover><FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">{seguimiento ? "Guardar Cambios" : "Guardar Seguimiento"}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+export function SeguimientoListCard({ seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento }: { seguimientos: Seguimiento[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void }) {
+    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
+    const [editingSeguimiento, setEditingSeguimiento] = useState<Seguimiento | undefined>(undefined);
+    const [viewingInfo, setViewingInfo] = useState<string | null>(null);
+
+    const handleEdit = (seguimiento: Seguimiento) => {
+        setEditingSeguimiento(seguimiento);
+    };
+
+    const handleSubmit = (values: any) => {
+        if (editingSeguimiento) {
+            onUpdateSeguimiento(values);
+        } else {
+            onAddSeguimiento(values);
+        }
+        setEditingSeguimiento(undefined);
+    };
+
+    return (
+        <Card>
+            <Dialog open={!!viewingInfo} onOpenChange={() => setViewingInfo(null)}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Información Adicional</DialogTitle></DialogHeader>
+                    <div className="py-4 whitespace-pre-wrap">{viewingInfo}</div>
+                    <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <SeguimientoForm 
+              seguimiento={editingSeguimiento} 
+              onSubmit={handleSubmit} 
+              open={isAddDialogOpen || !!editingSeguimiento} 
+              onOpenChange={(open) => {
+                if(!open) {
+                  setAddDialogOpen(false);
+                  setEditingSeguimiento(undefined);
+                } else {
+                  setAddDialogOpen(true)
+                }
+              }} 
+            />
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <CardTitle>Seguimiento de Clientes</CardTitle>
+                    <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
+                </div>
+                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full overflow-x-auto rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead>Teléfono</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Información</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead>Por Hacer</TableHead>
+                            <TableHead>Próxima Llamada</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {seguimientos.map(s => (
+                            <TableRow key={s.id}>
+                                <TableCell className="font-medium">{s.name}</TableCell>
+                                <TableCell>{s.phone}</TableCell>
+                                <TableCell>{s.email}</TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => setViewingInfo(s.informacion)} disabled={!s.informacion}>
+                                        <Info className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
+                                <TableCell className="capitalize">{s.estado}</TableCell>
+                                <TableCell className="capitalize">{s.porHacer}</TableCell>
+                                <TableCell>{s.siguienteLlamada ? format(new Date(s.siguienteLlamada), "dd/MM/yyyy") : 'N/A'}</TableCell>
+                                <TableCell className="text-right">
+                                    <AlertDialog>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handleEdit(s)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el seguimiento.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteSeguimiento(s.id)}>Eliminar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                         {seguimientos.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={8} className="h-24 text-center">
+                                    No hay seguimientos añadidos.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+        </Card>
+    );
+}

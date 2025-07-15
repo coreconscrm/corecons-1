@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [forms, setForms] = useState(initialFormSubmissions);
   const [contacts, setContacts] = useState<any[]>([]);
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
+  const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
 
@@ -52,6 +53,7 @@ export default function DashboardPage() {
     constructoras: true,
     reformistas: true,
     inmobiliarias: true,
+    seguimiento: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
   
@@ -73,7 +75,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -93,6 +95,7 @@ export default function DashboardPage() {
         setConstructoras(mapSnapToState(snapshots[12]));
         setReformistas(mapSnapToState(snapshots[13]));
         setInmobiliarias(mapSnapToState(snapshots[14]));
+        setSeguimientos(mapSnapToState(snapshots[15]));
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -336,7 +339,7 @@ export default function DashboardPage() {
               team={team}
               onAddTeamMember={(member) => handleCreate('team', member, 'Miembro')}
               onUpdateTeamMember={(member) => handleUpdate('team', member, 'Miembro')}
-              onDeleteTeamMember={(id) => handleDelete('team', member, 'Miembro')}
+              onDeleteTeamMember={(id) => handleDelete('team', id, 'Miembro')}
 
               contacts={contacts}
               onAddContact={(contact) => {
@@ -373,6 +376,11 @@ export default function DashboardPage() {
               documents={documents}
               onAddDocument={(doc) => handleCreate('documents', doc, 'Documento')}
               onDeleteDocument={(id) => handleDelete('documents', id, 'Documento')}
+
+              seguimientos={seguimientos}
+              onAddSeguimiento={(seguimiento) => handleCreate('seguimientos', seguimiento, 'Seguimiento')}
+              onUpdateSeguimiento={(seguimiento) => handleUpdate('seguimientos', seguimiento, 'Seguimiento')}
+              onDeleteSeguimiento={(id) => handleDelete('seguimientos', id, 'Seguimiento')}
 
               visibleTabs={visibleTabs}
               onTabVisibilityChange={setVisibleTabs}
