@@ -1,9 +1,11 @@
 
 "use client"
 
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
 
 type VisibleTabs = {
     projects: boolean;
@@ -70,6 +72,14 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
       </CardContent>
+       <CardFooter className="border-t pt-6">
+          <Button variant="outline" asChild>
+            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Ver Manual de Usuario
+            </a>
+          </Button>
+      </CardFooter>
     </Card>
   );
 }
