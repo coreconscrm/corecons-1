@@ -25,20 +25,20 @@ type VisibleTabs = {
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
     seguimiento: "Seguimiento",
-    clients: "Obra Nueva",
-    reformas: "Reformas",
+    clients: "Clientes (Obra Nueva)",
+    reformas: "Clientes (Reformas)",
     projects: "Proyectos",
     budgets: "Presupuestos",
     providers: "Proveedores",
-    collaborators: "Arquitectos",
-    interioristas: "Interioristas",
-    constructoras: "Constructoras",
-    reformistas: "Reformistas",
-    inmobiliarias: "Inmobiliarias",
+    collaborators: "Proveedores (Arquitectos)",
+    interioristas: "Proveedores (Interioristas)",
+    constructoras: "Proveedores (Constructoras)",
+    reformistas: "Proveedores (Reformistas)",
+    inmobiliarias: "Proveedores (Inmobiliarias)",
     prices: "Precios",
-    team: "Equipo",
+    team: "Empresa (Equipo)",
     forms: "Formularios",
-    companies: "Empresa",
+    companies: "Empresa (Perfiles y Docs)",
 };
 
 export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs: VisibleTabs, onVisibilityChange: (fn: (prev: VisibleTabs) => VisibleTabs) => void }) {
@@ -47,17 +47,20 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
     onVisibilityChange(prev => ({ ...prev, [tabName]: !prev[tabName] }));
   };
 
+  // Create a sorted list of labels for consistent rendering
+  const sortedTabLabels = Object.entries(tabLabels).sort(([, a], [, b]) => a.localeCompare(b));
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Configuración de Visibilidad</CardTitle>
-        <CardDescription>Selecciona las pestañas que deseas mostrar en el panel de control.</CardDescription>
+        <CardDescription>Selecciona las pestañas y sub-pestañas que deseas mostrar en el panel de control.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-2">
-        {Object.keys(tabLabels).map(tabKey => (
+        {sortedTabLabels.map(([tabKey, label]) => (
             <div key={tabKey} className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary">
                 <Label htmlFor={`${tabKey}-switch`} className="text-base cursor-pointer">
-                    {tabLabels[tabKey as keyof VisibleTabs]}
+                    {label}
                 </Label>
                 <Switch 
                     id={`${tabKey}-switch`} 

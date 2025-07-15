@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsSection } from "@/components/dashboard/clients-section";
 import { ProjectListCard } from "@/components/dashboard/performance-chart";
 import { ProviderSection } from "@/components/dashboard/tasks-card";
-import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
 import { FormsSection } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetSection } from "@/components/dashboard/budgets-card";
@@ -66,9 +65,8 @@ export function DashboardTabs({
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
-        {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-        {visibleTabs.companies && <TabsTrigger value="companies">Empresa</TabsTrigger>}
+        {(visibleTabs.companies || visibleTabs.team) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
       
@@ -144,10 +142,6 @@ export function DashboardTabs({
       {visibleTabs.prices && <TabsContent value="prices" className="mt-6">
         <PriceListCard providers={providers} />
       </TabsContent>}
-
-      {visibleTabs.team && <TabsContent value="team" className="mt-6">
-        <TeamListCard team={team} onAddTeamMember={onAddTeamMember} onUpdateTeamMember={onUpdateTeamMember} onDeleteTeamMember={onDeleteTeamMember} />
-      </TabsContent>}
       
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
         <FormsSection 
@@ -170,7 +164,7 @@ export function DashboardTabs({
         />
       </TabsContent>}
 
-      {visibleTabs.companies && <TabsContent value="companies" className="mt-6">
+      {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">
         <CompanySection
             companies={companies}
             onAddCompany={onAddCompany}
@@ -179,6 +173,11 @@ export function DashboardTabs({
             documents={documents}
             onAddDocument={onAddDocument}
             onDeleteDocument={onDeleteDocument}
+            team={team}
+            onAddTeamMember={onAddTeamMember}
+            onUpdateTeamMember={onUpdateTeamMember}
+            onDeleteTeamMember={onDeleteTeamMember}
+            visibleTabs={visibleTabs}
         />
       </TabsContent>}
 
