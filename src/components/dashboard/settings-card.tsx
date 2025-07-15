@@ -1,11 +1,12 @@
 
 "use client"
 
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Volume2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 type VisibleTabs = {
     projects: boolean;
@@ -54,6 +55,28 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
 
   return (
     <Card>
+      <CardContent className="pt-6">
+         <div className="flex flex-col sm:flex-row items-center gap-4">
+            <h3 className="text-lg font-semibold whitespace-nowrap">Recursos de Ayuda:</h3>
+            <div className="flex flex-wrap gap-2">
+                <Button variant="outline" asChild>
+                    <a href="https://makebyjordan.com/wb/manual-de-usuario/manual-de-usuario-CRM-WB.html" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Ver Manual de Usuario
+                    </a>
+                </Button>
+                <Button variant="outline" asChild>
+                    <a href="https://makebyjordan.com/wb/manual-de-usuario/Podcast-manual-de-usuario-CRM-WB.mp3" target="_blank" rel="noopener noreferrer">
+                    <Volume2 className="mr-2 h-4 w-4" />
+                    AudioManual de Usuario
+                    </a>
+                </Button>
+            </div>
+        </div>
+      </CardContent>
+
+      <Separator />
+
       <CardHeader>
         <CardTitle>Configuración de Visibilidad</CardTitle>
         <CardDescription>Selecciona las pestañas y sub-pestañas que deseas mostrar en el panel de control.</CardDescription>
@@ -72,20 +95,6 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
       </CardContent>
-       <CardFooter className="border-t pt-6 flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <a href="https://makebyjordan.com/wb/manual-de-usuario/manual-de-usuario-CRM-WB.html" target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Ver Manual de Usuario
-            </a>
-          </Button>
-           <Button variant="outline" asChild>
-            <a href="https://makebyjordan.com/wb/manual-de-usuario/Podcast-manual-de-usuario-CRM-WB.mp3" target="_blank" rel="noopener noreferrer">
-              <Volume2 className="mr-2 h-4 w-4" />
-              AudioManual de Usuario
-            </a>
-          </Button>
-      </CardFooter>
     </Card>
   );
 }
