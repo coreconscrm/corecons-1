@@ -30,6 +30,7 @@ const reformaSchema = z.object({
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
+  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional(),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"], {
     required_error: "Debe seleccionar un estado."
   }),
@@ -86,7 +87,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {
@@ -94,7 +95,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
       if (reforma) {
         form.reset(reforma);
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [reforma, open, form]);
@@ -145,22 +146,39 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                     </FormItem>
                 )} />
             </div>
-             <FormField control={form.control} name="estado" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estado del Proyecto</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    <SelectItem value="Contactado">Contactado</SelectItem>
-                    <SelectItem value="En Progreso">En Progreso</SelectItem>
-                    <SelectItem value="En Licencia">En Licencia</SelectItem>
-                    <SelectItem value="Firmado">Firmado</SelectItem>
-                    <SelectItem value="En Construcción">En Construcción</SelectItem>
-                    <SelectItem value="Finalizado">Finalizado</SelectItem>
-                  </SelectContent>
-                </Select><FormMessage />
-              </FormItem>
-            )} />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField control={form.control} name="estado" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Estado del Proyecto</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="Contactado">Contactado</SelectItem>
+                            <SelectItem value="En Progreso">En Progreso</SelectItem>
+                            <SelectItem value="En Licencia">En Licencia</SelectItem>
+                            <SelectItem value="Firmado">Firmado</SelectItem>
+                            <SelectItem value="En Construcción">En Construcción</SelectItem>
+                            <SelectItem value="Finalizado">Finalizado</SelectItem>
+                        </SelectContent>
+                        </Select><FormMessage />
+                    </FormItem>
+                    )} />
+                <FormField control={form.control} name="obtenido" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Obtenido a través de</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="Formulario">Formulario</SelectItem>
+                            <SelectItem value="Correo">Correo</SelectItem>
+                            <SelectItem value="Whatsapp">Whatsapp</SelectItem>
+                            <SelectItem value="Promotoras">Promotoras</SelectItem>
+                            <SelectItem value="Recomendado">Recomendado</SelectItem>
+                        </SelectContent>
+                        </Select><FormMessage />
+                    </FormItem>
+                )} />
+            </div>
              <FormField control={form.control} name="infoAdicional" render={({ field }) => (
                 <FormItem><FormLabel>Información Adicional</FormLabel><FormControl><Textarea placeholder="Añade detalles importantes..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
@@ -261,6 +279,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                     <div className="space-y-1 text-muted-foreground">
                       <div className="flex justify-between"><span>Arquitecto:</span> <strong>{reforma.arquitecto || 'N/A'}</strong></div>
                       <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
+                      {reforma.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{reforma.obtenido}</strong></div>}
                     </div>
                   </div>
                    {reforma.infoAdicional && (
