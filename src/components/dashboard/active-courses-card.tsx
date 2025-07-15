@@ -258,11 +258,14 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                     </div>
                   </div>
                    {client.infoAdicional && (
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <h4 className="font-semibold">Info Adicional:</h4>
-                        <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setViewingInfo(client.infoAdicional || null)}>
-                            abre la informacion desde aqui!
-                        </Button>
+                      <div className="pt-2 border-t">
+                        <h4 className="font-semibold mb-1">Info Adicional:</h4>
+                        <p 
+                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
+                          onClick={() => setViewingInfo(client.infoAdicional || null)}
+                        >
+                          {client.infoAdicional.substring(0, 50)}{client.infoAdicional.length > 50 ? '...' : ''}
+                        </p>
                     </div>
                    )}
                 </CardContent>

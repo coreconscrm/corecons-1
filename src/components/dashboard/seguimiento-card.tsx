@@ -349,11 +349,14 @@ export function SeguimientoListCard({
                                 <TableCell>{s.phone}</TableCell>
                                 <TableCell>{s.email}</TableCell>
                                 <TableCell>
-                                    {s.informacion ? (
-                                        <Button variant="link" className="p-0 h-auto text-xs" onClick={() => setViewingInfo(s.informacion)}>
-                                            abre la informacion desde aqui!
-                                        </Button>
-                                    ) : null}
+                                    {s.informacion && (
+                                        <p 
+                                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
+                                          onClick={() => setViewingInfo(s.informacion || null)}
+                                        >
+                                          {s.informacion}
+                                        </p>
+                                    )}
                                 </TableCell>
                                 <TableCell className="capitalize">{s.estado}</TableCell>
                                 <TableCell className="capitalize">{s.porHacer}</TableCell>
