@@ -281,9 +281,10 @@ export default function DashboardPage() {
   const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
 
   const formsTotal = forms.length + contacts.length + priorityCalls.length;
-  const formsCalled = forms.filter(f => f.called).length + contacts.filter(c => c.called).length + priorityCalls.filter(pc => pc.called).length;
-  const formsPending = formsTotal - formsCalled;
-
+  const manualAndPriorityTotal = contacts.length + priorityCalls.length;
+  const manualAndPriorityCalled = contacts.filter(c => c.called).length + priorityCalls.filter(pc => pc.called).length;
+  const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
+  
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header onSettingsClick={() => setActiveTab("settings")} />
@@ -310,8 +311,8 @@ export default function DashboardPage() {
               />
               <FormOverview
                 total={formsTotal}
-                called={formsCalled}
-                pending={formsPending}
+                called={manualAndPriorityCalled}
+                pending={manualAndPriorityPending}
               />
             </div>
             

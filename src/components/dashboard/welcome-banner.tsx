@@ -65,9 +65,9 @@ export function BudgetOverview({ pending, accepted, rejected }: { pending: numbe
 
 export function FormOverview({ total, called, pending }: { total: number, called: number, pending: number }) {
   const metrics = [
-    { icon: Users, label: "Total Contactos", value: total },
-    { icon: PhoneCall, label: "Llamados", value: called },
-    { icon: PhoneOff, label: "Por Llamar", value: pending },
+    { icon: Users, label: "Total Formularios", value: total },
+    { icon: PhoneCall, label: "Llamados (Manual/Prio)", value: called },
+    { icon: PhoneOff, label: "Pendientes (Manual/Prio)", value: pending },
   ];
   return (
     <Card>
