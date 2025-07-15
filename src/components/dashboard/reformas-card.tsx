@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -27,6 +27,7 @@ const reformaSchema = z.object({
   contact: z.string().min(1, "El nombre de contacto es requerido."),
   email: z.string().email("Email inválido."),
   phone: z.string().min(1, "El teléfono es requerido."),
+  localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"], {
@@ -85,7 +86,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {
@@ -93,7 +94,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
       if (reforma) {
         form.reset(reforma);
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [reforma, open, form]);
@@ -123,9 +124,14 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                 <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-4567" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.perez@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.perez@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="localizacion" render={({ field }) => (
+                    <FormItem><FormLabel>Localización</FormLabel><FormControl><Input placeholder="Ciudad, Dirección" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="arquitecto" render={({ field }) => (
                     <FormItem><FormLabel>Arquitecto</FormLabel><FormControl><Input placeholder="Nombre del arquitecto" {...field} /></FormControl><FormMessage /></FormItem>
@@ -246,6 +252,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                       <p>{reforma.contact}</p>
                       <div className="flex items-center gap-2"><Phone size={14}/> {reforma.phone}</div>
                       <div className="flex items-center gap-2"><Mail size={14}/> {reforma.email}</div>
+                      {reforma.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {reforma.localizacion}</div>}
                     </div>
                   </div>
                   <Separator />
