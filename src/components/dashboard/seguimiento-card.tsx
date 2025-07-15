@@ -20,24 +20,134 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen } from "lucide-react";
 
 const seguimientoSchema = z.object({
   name: z.string().min(1, "El nombre es requerido."),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
   informacion: z.string().optional(),
-  estado: z.enum(["primer contacto", "llamado", "falta arquitecto"], { required_error: "Debe seleccionar un estado."}),
-  porHacer: z.enum(["llamar", "buscar arquitecto", "licencia"], { required_error: "Debe seleccionar una acción." }),
+  estado: z.string({ required_error: "Debe seleccionar un estado."}),
+  porHacer: z.string({ required_error: "Debe seleccionar una acción." }),
   siguienteLlamada: z.date().optional(),
 });
 
 export type Seguimiento = z.infer<typeof seguimientoSchema> & { id: string, siguienteLlamada: string };
 
-function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function OptionsSettingsDialog({ 
+    estadoOptions, 
+    porHacerOptions, 
+    onSave, 
+    open, 
+    onOpenChange 
+}: { 
+    estadoOptions: string[], 
+    porHacerOptions: string[], 
+    onSave: (type: 'estado' | 'porHacer', options: string[]) => void, 
+    open: boolean, 
+    onOpenChange: (o: boolean) => void 
+}) {
+    const [currentEstado, setCurrentEstado] = useState(estadoOptions);
+    const [currentPorHacer, setCurrentPorHacer] = useState(porHacerOptions);
+    const [newEstado, setNewEstado] = useState("");
+    const [newPorHacer, setNewPorHacer] = useState("");
+
+    useEffect(() => {
+        if (open) {
+            setCurrentEstado(estadoOptions);
+            setCurrentPorHacer(porHacerOptions);
+        }
+    }, [estadoOptions, porHacerOptions, open]);
+    
+    const handleSave = () => {
+        onSave('estado', currentEstado);
+        onSave('porHacer', currentPorHacer);
+        onOpenChange(false);
+    };
+    
+    const handleAddOption = (type: 'estado' | 'porHacer') => {
+        if (type === 'estado' && newEstado.trim()) {
+            setCurrentEstado([...currentEstado, newEstado.trim()]);
+            setNewEstado("");
+        } else if (type === 'porHacer' && newPorHacer.trim()) {
+            setCurrentPorHacer([...currentPorHacer, newPorHacer.trim()]);
+            setNewPorHacer("");
+        }
+    };
+
+    const handleEditOption = (type: 'estado' | 'porHacer', index: number, value: string) => {
+        if (type === 'estado') {
+            const updated = [...currentEstado];
+            updated[index] = value;
+            setCurrentEstado(updated);
+        } else {
+            const updated = [...currentPorHacer];
+            updated[index] = value;
+            setCurrentPorHacer(updated);
+        }
+    };
+    
+    const handleDeleteOption = (type: 'estado' | 'porHacer', index: number) => {
+        if (type === 'estado') {
+            setCurrentEstado(currentEstado.filter((_, i) => i !== index));
+        } else {
+            setCurrentPorHacer(currentPorHacer.filter((_, i) => i !== index));
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Configurar Opciones de Seguimiento</DialogTitle>
+                    <DialogDescription>Añade, edita o elimina las opciones de los desplegables.</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg">Opciones de Estado</h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                           {currentEstado.map((option, index) => (
+                               <div key={index} className="flex items-center gap-2">
+                                   <Input value={option} onChange={(e) => handleEditOption('estado', index, e.target.value)} />
+                                   <Button variant="ghost" size="icon" onClick={() => handleDeleteOption('estado', index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                               </div>
+                           ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Input placeholder="Nueva opción de estado" value={newEstado} onChange={(e) => setNewEstado(e.target.value)} />
+                            <Button size="icon" onClick={() => handleAddOption('estado')}><Plus className="h-4 w-4" /></Button>
+                        </div>
+                    </div>
+                     <div className="space-y-4">
+                        <h3 className="font-semibold text-lg">Opciones de "Por Hacer"</h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                           {currentPorHacer.map((option, index) => (
+                               <div key={index} className="flex items-center gap-2">
+                                   <Input value={option} onChange={(e) => handleEditOption('porHacer', index, e.target.value)} />
+                                   <Button variant="ghost" size="icon" onClick={() => handleDeleteOption('porHacer', index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                               </div>
+                           ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <Input placeholder="Nueva acción" value={newPorHacer} onChange={(e) => setNewPorHacer(e.target.value)} />
+                           <Button size="icon" onClick={() => handleAddOption('porHacer')}><Plus className="h-4 w-4" /></Button>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                    <Button onClick={handleSave}>Guardar Cambios</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
+function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[] }) {
     const form = useForm<z.infer<typeof seguimientoSchema>>({
         resolver: zodResolver(seguimientoSchema),
-        defaultValues: { name: "", phone: "", email: "", informacion: "", estado: "primer contacto", porHacer: "llamar" },
+        defaultValues: { name: "", phone: "", email: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0] },
     });
 
     useEffect(() => {
@@ -48,10 +158,10 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguim
                     siguienteLlamada: seguimiento.siguienteLlamada ? new Date(seguimiento.siguienteLlamada) : undefined,
                 });
             } else {
-                form.reset({ name: "", phone: "", email: "", informacion: "", estado: "primer contacto", porHacer: "llamar", siguienteLlamada: undefined });
+                form.reset({ name: "", phone: "", email: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
             }
         }
-    }, [seguimiento, open, form]);
+    }, [seguimiento, open, form, estadoOptions, porHacerOptions]);
     
     const handleSubmit = async (values: z.infer<typeof seguimientoSchema>) => {
         const submissionData = {
@@ -92,9 +202,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguim
                                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="primer contacto">Primer contacto</SelectItem>
-                                            <SelectItem value="llamado">Llamado</SelectItem>
-                                            <SelectItem value="falta arquitecto">Falta arquitecto</SelectItem>
+                                            {estadoOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
                                         </SelectContent>
                                     </Select><FormMessage />
                                 </FormItem>
@@ -104,9 +212,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguim
                                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una acción" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="llamar">Llamar</SelectItem>
-                                            <SelectItem value="buscar arquitecto">Buscar arquitecto</SelectItem>
-                                            <SelectItem value="licencia">Licencia</SelectItem>
+                                            {porHacerOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
                                         </SelectContent>
                                     </Select><FormMessage />
                                 </FormItem>
@@ -140,10 +246,27 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange }: { seguim
     );
 }
 
-export function SeguimientoListCard({ seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento }: { seguimientos: Seguimiento[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void }) {
+export function SeguimientoListCard({ 
+    seguimientos, 
+    onAddSeguimiento, 
+    onUpdateSeguimiento, 
+    onDeleteSeguimiento,
+    estadoOptions,
+    porHacerOptions,
+    onSeguimientoOptionsChange
+}: { 
+    seguimientos: Seguimiento[], 
+    onAddSeguimiento: (s: any) => void, 
+    onUpdateSeguimiento: (s: any) => void, 
+    onDeleteSeguimiento: (id: string) => void,
+    estadoOptions: string[],
+    porHacerOptions: string[],
+    onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
+}) {
     const [isAddDialogOpen, setAddDialogOpen] = useState(false);
     const [editingSeguimiento, setEditingSeguimiento] = useState<Seguimiento | undefined>(undefined);
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
+    const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
     const handleEdit = (seguimiento: Seguimiento) => {
         setEditingSeguimiento(seguimiento);
@@ -168,6 +291,14 @@ export function SeguimientoListCard({ seguimientos, onAddSeguimiento, onUpdateSe
                 </DialogContent>
             </Dialog>
 
+            <OptionsSettingsDialog
+                open={isOptionsOpen}
+                onOpenChange={setIsOptionsOpen}
+                estadoOptions={estadoOptions}
+                porHacerOptions={porHacerOptions}
+                onSave={onSeguimientoOptionsChange}
+            />
+
             <SeguimientoForm 
               seguimiento={editingSeguimiento} 
               onSubmit={handleSubmit} 
@@ -180,13 +311,21 @@ export function SeguimientoListCard({ seguimientos, onAddSeguimiento, onUpdateSe
                   setAddDialogOpen(true)
                 }
               }} 
+              estadoOptions={estadoOptions}
+              porHacerOptions={porHacerOptions}
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Seguimiento de Clientes</CardTitle>
                     <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setIsOptionsOpen(true)}>
+                        <Settings className="h-4 w-4" />
+                        <span className="sr-only">Configurar Opciones</span>
+                    </Button>
+                    <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+                </div>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

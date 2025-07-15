@@ -33,6 +33,7 @@ export function DashboardTabs({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
+    estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -54,6 +55,7 @@ export function DashboardTabs({
     companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
+    estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -76,7 +78,15 @@ export function DashboardTabs({
       
       {visibleTabs.seguimiento && <TabsContent value="seguimiento">
         <div className="mt-6">
-         <SeguimientoListCard seguimientos={seguimientos} onAddSeguimiento={onAddSeguimiento} onUpdateSeguimiento={onUpdateSeguimiento} onDeleteSeguimiento={onDeleteSeguimiento} />
+         <SeguimientoListCard 
+            seguimientos={seguimientos} 
+            onAddSeguimiento={onAddSeguimiento} 
+            onUpdateSeguimiento={onUpdateSeguimiento} 
+            onDeleteSeguimiento={onDeleteSeguimiento}
+            estadoOptions={estadoOptions}
+            porHacerOptions={porHacerOptions}
+            onSeguimientoOptionsChange={onSeguimientoOptionsChange}
+          />
         </div>
       </TabsContent>}
 

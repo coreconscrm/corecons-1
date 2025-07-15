@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const initialFormSubmissions: any[] = [];
+const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
+const defaultPorHacerOptions = ["llamar", "buscar arquitecto", "licencia"];
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -33,6 +35,9 @@ export default function DashboardPage() {
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
+
+  const [estadoOptions, setEstadoOptions] = useState<string[]>(defaultEstadoOptions);
+  const [porHacerOptions, setPorHacerOptions] = useState<string[]>(defaultPorHacerOptions);
 
 
   const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +62,29 @@ export default function DashboardPage() {
   });
   const [activeTab, setActiveTab] = useState("clients");
   
+  useEffect(() => {
+    try {
+      const savedEstado = localStorage.getItem('seguimientoEstadoOptions');
+      const savedPorHacer = localStorage.getItem('seguimientoPorHacerOptions');
+      if (savedEstado) setEstadoOptions(JSON.parse(savedEstado));
+      if (savedPorHacer) setPorHacerOptions(JSON.parse(savedPorHacer));
+    } catch (error) {
+      console.error("Error loading seguimiento options from localStorage", error);
+    }
+  }, []);
+
+  const handleSeguimientoOptionsChange = (type: 'estado' | 'porHacer', newOptions: string[]) => {
+    if (type === 'estado') {
+      setEstadoOptions(newOptions);
+      localStorage.setItem('seguimientoEstadoOptions', JSON.stringify(newOptions));
+    } else {
+      setPorHacerOptions(newOptions);
+      localStorage.setItem('seguimientoPorHacerOptions', JSON.stringify(newOptions));
+    }
+    toast({ title: 'Opciones guardadas', description: 'Tus cambios en las opciones de seguimiento han sido guardados.' });
+  };
+
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setForms([]); // Clear forms before fetching
@@ -162,7 +190,7 @@ export default function DashboardPage() {
         newItem = {
             ...newItem,
             category: item.category || 'enviados',
-            documents: newItem.documents || [],
+            documents: item.documents || [],
         }
       }
 
@@ -381,6 +409,9 @@ export default function DashboardPage() {
               onAddSeguimiento={(seguimiento) => handleCreate('seguimientos', seguimiento, 'Seguimiento')}
               onUpdateSeguimiento={(seguimiento) => handleUpdate('seguimientos', seguimiento, 'Seguimiento')}
               onDeleteSeguimiento={(id) => handleDelete('seguimientos', id, 'Seguimiento')}
+              estadoOptions={estadoOptions}
+              porHacerOptions={porHacerOptions}
+              onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
 
               visibleTabs={visibleTabs}
               onTabVisibilityChange={setVisibleTabs}
