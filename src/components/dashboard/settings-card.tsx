@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Volume2 } from "lucide-react";
 
 type VisibleTabs = {
     projects: boolean;
@@ -72,11 +72,17 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </div>
         ))}
       </CardContent>
-       <CardFooter className="border-t pt-6">
+       <CardFooter className="border-t pt-6 flex items-center gap-4">
           <Button variant="outline" asChild>
             <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
               Ver Manual de Usuario
+            </a>
+          </Button>
+           <Button variant="outline" asChild>
+            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+              <Volume2 className="mr-2 h-4 w-4" />
+              AudioManual de Usuario
             </a>
           </Button>
       </CardFooter>
