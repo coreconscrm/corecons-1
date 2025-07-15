@@ -393,57 +393,73 @@ export function FormsSection({
   const { toast } = useToast();
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
 
-  const allHeaders = useMemo(() => {
-    const allItems = [...forms, ...contacts, ...priorityCalls];
-    if (allItems.length === 0) return ['name', 'phone', 'email'];
-    
-    const headerSet = new Set<string>();
-    allItems.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (key !== 'id' && key !== 'called' && key !== 'status') {
-          headerSet.add(key);
-        }
-      });
-    });
-    return Array.from(headerSet);
-  }, [forms, contacts, priorityCalls]);
-  
+  const allItems = useMemo(() => [...forms, ...contacts, ...priorityCalls], [forms, contacts, priorityCalls]);
+
   const [columnConfigs, setColumnConfigs] = useState<{ [key: string]: ColumnConfig[] }>({
       forms: [],
       contacts: [],
       priority: [],
   });
 
-  useEffect(() => {
-    const getInitialConfig = (storageKey: string) => {
-      try {
-        const savedConfig = localStorage.getItem(storageKey);
-        if (savedConfig) {
-          const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
-          const headerKeys = new Set(allHeaders);
-          const finalConfig = allHeaders.map(key => {
-            return parsedConfig.find(c => c.key === key) || { key, visible: true, displayName: getDisplayName(key) };
-          });
-          return finalConfig;
-        }
-      } catch (e) {
-        console.error("Failed to parse column config from localStorage", e);
-      }
-      return allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
-    };
-    
-    if (typeof window !== 'undefined') {
-        setColumnConfigs({
-            forms: getInitialConfig('formsColumnsConfig'),
-            contacts: getInitialConfig('contactsColumnsConfig'),
-            priority: getInitialConfig('priorityColumnsConfig'),
+  const getHeadersFromItems = (items: Item[]) => {
+      const headerSet = new Set<string>();
+      items.forEach(item => {
+        Object.keys(item).forEach(key => {
+          if (key !== 'id' && key !== 'called' && key !== 'status') {
+            headerSet.add(key);
+          }
         });
-    }
-  }, [allHeaders]);
+      });
+      return Array.from(headerSet);
+  };
+  
+  useEffect(() => {
+    const loadConfigs = () => {
+        if (typeof window === 'undefined') return;
+
+        const allHeaders = getHeadersFromItems(allItems);
+
+        const getInitialConfig = (storageKey: string, currentHeaders: string[]) => {
+            try {
+                const savedConfig = localStorage.getItem(storageKey);
+                if (savedConfig) {
+                    const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
+                    const parsedHeaderKeys = new Set(parsedConfig.map(c => c.key));
+
+                    // Add new headers found in data that are not in the saved config
+                    const finalConfig = [...parsedConfig];
+                    currentHeaders.forEach(key => {
+                        if (!parsedHeaderKeys.has(key)) {
+                            finalConfig.push({ key, visible: true, displayName: getDisplayName(key) });
+                        }
+                    });
+                    
+                    // Filter out headers that are in config but not in data anymore
+                    const currentHeaderSet = new Set(currentHeaders);
+                    return finalConfig.filter(c => currentHeaderSet.has(c.key));
+                }
+            } catch (e) {
+                console.error(`Failed to parse column config from localStorage for ${storageKey}`, e);
+            }
+            // Default config if nothing is saved
+            return currentHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
+        };
+
+        setColumnConfigs({
+            forms: getInitialConfig('formsColumnsConfig', getHeadersFromItems(forms)),
+            contacts: getInitialConfig('contactsColumnsConfig', getHeadersFromItems(contacts)),
+            priority: getInitialConfig('priorityColumnsConfig', getHeadersFromItems(priorityCalls)),
+        });
+    };
+
+    loadConfigs();
+  }, [allItems, forms, contacts, priorityCalls]); // Re-run when any item list changes
 
   const handleColumnChange = (type: 'forms' | 'contacts' | 'priority', newConfig: ColumnConfig[]) => {
       setColumnConfigs(prev => ({ ...prev, [type]: newConfig }));
-      localStorage.setItem(`${type}ColumnsConfig`, JSON.stringify(newConfig));
+      if (typeof window !== 'undefined') {
+          localStorage.setItem(`${type}ColumnsConfig`, JSON.stringify(newConfig));
+      }
   };
   
   const [promotingItem, setPromotingItem] = useState<any | null>(null);
@@ -601,3 +617,6 @@ export function FormsSection({
     </Tabs>
   );
 }
+
+
+    
