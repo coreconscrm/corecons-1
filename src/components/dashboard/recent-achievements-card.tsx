@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -186,17 +186,17 @@ function DynamicTableCard({
   title, description, items,
   columnConfig, onColumnConfigChange,
   onAddItem, onUpdateItem, onDeleteItem,
-  onAddClient, onAddReforma,
+  itemActions,
+  children
 }: {
   title: string, description: string, items: any[],
   columnConfig: ColumnConfig[], onColumnConfigChange: (cols: ColumnConfig[]) => void,
   onAddItem: (item: any) => void, onUpdateItem: (item: any) => void, onDeleteItem: (id: string) => void,
-  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
+  itemActions: (item: any) => React.ReactNode,
+  children?: React.ReactNode
 }) {
-  const { toast } = useToast();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | undefined>(undefined);
-  const [promotingItem, setPromotingItem] = useState<any | null>(null);
   const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -206,34 +206,6 @@ function DynamicTableCard({
   const handleEdit = (item: any) => {
     setEditingItem(item);
     setAddDialogOpen(true);
-  };
-
-  const handlePromote = (section: 'clients' | 'reformas') => {
-    if (!promotingItem) return;
-
-    const { id, ...data } = promotingItem;
-    const contactName = data.name || data.Nombre || data.nombre || 'Nuevo Proyecto desde Contacto';
-
-    const newProjectData = {
-        name: contactName,
-        contact: contactName,
-        phone: data.phone || data.Teléfono || data.telefono || '',
-        email: data.email || data.Email || data.email_address || data['Dirección de correo electrónico'] || '',
-        estado: 'Contactado',
-        infoAdicional: `Promovido desde ${title}.\n\nDatos originales:\n${Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n')}`,
-        arquitecto: '', providerId: '', memoria: '', planos: '',
-    };
-    
-    if (section === 'clients') {
-        onAddClient(newProjectData);
-        toast({ title: "Promovido a Obra Nueva", description: `Se ha creado un nuevo proyecto para ${contactName}.` });
-    } else {
-        onAddReforma(newProjectData);
-        toast({ title: "Promovido a Reforma", description: `Se ha creado una nueva reforma para ${contactName}.` });
-    }
-    
-    onDeleteItem(id);
-    setPromotingItem(null);
   };
   
   return (
@@ -246,22 +218,7 @@ function DynamicTableCard({
           <DialogFooter><Button variant="outline" onClick={() => setViewingText(null)}>Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={!!promotingItem} onOpenChange={(open) => !open && setPromotingItem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Promover a Proyecto</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿A qué sección quieres añadir a "{promotingItem?.name || promotingItem?.Nombre || promotingItem?.nombre}"? Se creará una nueva entrada con sus datos de contacto.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-             <Button variant="outline" onClick={() => handlePromote('reformas')}>Añadir a Reformas</Button>
-             <Button onClick={() => handlePromote('clients')}>Añadir a Obra Nueva</Button>
-          </AlertDialogFooter>
-           <AlertDialogCancel className="mt-2 w-full">Cancelar</AlertDialogCancel>
-        </AlertDialogContent>
-      </AlertDialog>
-
+     
       <ItemForm 
         item={editingItem} 
         onSubmit={editingItem ? onUpdateItem : onAddItem} 
@@ -277,6 +234,7 @@ function DynamicTableCard({
             <CardDescription>{description}</CardDescription>
           </div>
           <div className="flex gap-2">
+            {children}
             <Button variant="outline" size="icon" onClick={() => setIsSettingsOpen(true)}>
               <Settings className="h-4 w-4"/>
               <span className="sr-only">Configurar columnas</span>
@@ -286,70 +244,77 @@ function DynamicTableCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <ScrollArea className="w-full">
-            <Table>
-              <TableHeader><TableRow>
-                  {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
-                  <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    {visibleHeaders.map(h => {
-                      const textValue = item[h.key]?.toString() || '';
-                      const isLongText = textValue.length > 50;
-                      return (
-                          <TableCell key={`${item.id}-${h.key}`} className="max-w-[200px]">
-                              {isLongText ? (
-                                  <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
-                                      {textValue}
-                                  </div>
-                              ) : (
-                                  textValue
-                              )}
-                          </TableCell>
-                      );
-                    })}
-                    <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
-                    <TableCell>
-                        <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
-                            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                <SelectItem value="Contactado">Contactado</SelectItem>
-                                <SelectItem value="En proceso">En proceso</SelectItem>
-                                <SelectItem value="Firmado">Firmado</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                 {items.length === 0 && (
-                    <TableRow><TableCell colSpan={visibleHeaders.length + 3} className="h-24 text-center">No hay elementos.</TableCell></TableRow>
-                 )}
-              </TableBody>
-            </Table>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-        </div>
+        {items.length > 0 ? (
+          <div className="rounded-md border">
+            <ScrollArea className="w-full">
+              <Table>
+                <TableHeader><TableRow>
+                    {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
+                    <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      {visibleHeaders.map(h => {
+                        const textValue = item[h.key]?.toString() || '';
+                        const isLongText = textValue.length > 50;
+                        return (
+                            <TableCell key={`${item.id}-${h.key}`} className="max-w-[200px]">
+                                {isLongText ? (
+                                    <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
+                                        {textValue}
+                                    </div>
+                                ) : (
+                                    textValue
+                                )}
+                            </TableCell>
+                        );
+                      })}
+                      <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
+                      <TableCell>
+                          <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
+                              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                  <SelectItem value="Contactado">Contactado</SelectItem>
+                                  <SelectItem value="En proceso">En proceso</SelectItem>
+                                  <SelectItem value="Firmado">Firmado</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              {itemActions(item)}
+                              <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+        ) : (
+           <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
+                <FileText className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No hay elementos</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Añade un elemento o carga datos desde un CSV/Google Sheet.
+                </p>
+            </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -410,26 +375,30 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
     );
 }
 
-function MainFormsCard({
-  onAddContact, onAddPriorityCall,
+export function FormsSection({
+  contacts, onAddContact, onUpdateContact, onDeleteContact,
+  onAddClient, onAddReforma,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
-  sheetUrl, onSaveSheetUrl
+  sheetUrl, onSaveSheetUrl,
+  priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall
 }: {
-  onAddContact: (contact: any) => void, onAddPriorityCall: (call: any) => void,
+  contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
+  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-  sheetUrl: string, onSaveSheetUrl: (url: string) => void
+  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
+  priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void
 }) {
-  const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const { toast } = useToast();
-  
-  const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
 
-  const headers = useMemo(() => {
-    if (forms.length === 0) return [];
+  const allHeaders = useMemo(() => {
+    const allItems = [...forms, ...contacts, ...priorityCalls];
+    if (allItems.length === 0) return ['name', 'phone', 'email'];
+    
     const headerSet = new Set<string>();
-    forms.forEach(item => {
+    allItems.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key !== 'id' && key !== 'called' && key !== 'status') {
           headerSet.add(key);
@@ -437,8 +406,78 @@ function MainFormsCard({
       });
     });
     return Array.from(headerSet);
-  }, [forms]);
+  }, [forms, contacts, priorityCalls]);
+  
+  const [columnConfigs, setColumnConfigs] = useState<{ [key: string]: ColumnConfig[] }>({
+      forms: [],
+      contacts: [],
+      priority: [],
+  });
 
+  useEffect(() => {
+    const getInitialConfig = (storageKey: string) => {
+      try {
+        const savedConfig = localStorage.getItem(storageKey);
+        if (savedConfig) {
+          const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
+          const headerKeys = new Set(allHeaders);
+          const finalConfig = allHeaders.map(key => {
+            return parsedConfig.find(c => c.key === key) || { key, visible: true, displayName: getDisplayName(key) };
+          });
+          return finalConfig;
+        }
+      } catch (e) {
+        console.error("Failed to parse column config from localStorage", e);
+      }
+      return allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
+    };
+    
+    if (typeof window !== 'undefined') {
+        setColumnConfigs({
+            forms: getInitialConfig('formsColumnsConfig'),
+            contacts: getInitialConfig('contactsColumnsConfig'),
+            priority: getInitialConfig('priorityColumnsConfig'),
+        });
+    }
+  }, [allHeaders]);
+
+  const handleColumnChange = (type: 'forms' | 'contacts' | 'priority', newConfig: ColumnConfig[]) => {
+      setColumnConfigs(prev => ({ ...prev, [type]: newConfig }));
+      localStorage.setItem(`${type}ColumnsConfig`, JSON.stringify(newConfig));
+  };
+  
+  const [promotingItem, setPromotingItem] = useState<any | null>(null);
+
+  const handlePromote = (section: 'clients' | 'reformas') => {
+    if (!promotingItem) return;
+
+    const { id, ...data } = promotingItem;
+    const contactName = data.name || data.Nombre || data.nombre || 'Nuevo Proyecto desde Contacto';
+
+    const newProjectData = {
+        name: contactName,
+        contact: contactName,
+        phone: data.phone || data.Teléfono || data.telefono || '',
+        email: data.email || data.Email || data.email_address || data['Dirección de correo electrónico'] || '',
+        estado: 'Contactado',
+        infoAdicional: `Promovido desde un contacto.\n\nDatos originales:\n${Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n')}`,
+        arquitecto: '', providerId: '', memoria: '', planos: '',
+    };
+    
+    if (section === 'clients') {
+        onAddClient(newProjectData);
+        toast({ title: "Promovido a Obra Nueva", description: `Se ha creado un nuevo proyecto para ${contactName}.` });
+    } else {
+        onAddReforma(newProjectData);
+        toast({ title: "Promovido a Reforma", description: `Se ha creado una nueva reforma para ${contactName}.` });
+    }
+    
+    if (contacts.some(c => c.id === id)) onDeleteContact(id);
+    if (priorityCalls.some(p => p.id === id)) onDeletePriorityCall(id);
+    
+    setPromotingItem(null);
+  };
+  
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -463,16 +502,10 @@ function MainFormsCard({
   };
 
   const triggerFileUpload = () => fileInputRef.current?.click();
-  
+
   const mapAndTransferData = (form: any, destination: 'contacts' | 'priority') => {
       const { id, ...originalData } = form;
-      // All data is copied, ensuring no loss.
-      const dataToMove = {
-          ...originalData,
-          called: form.called || false,
-          status: form.status || 'Pendiente'
-      };
-
+      const dataToMove = { ...originalData, called: form.called || false, status: form.status || 'Pendiente' };
       if (destination === 'contacts') {
           onAddContact(dataToMove);
           toast({ title: "Guardado como Contacto", description: `El contacto ha sido añadido a la lista de contactos manuales.` });
@@ -480,28 +513,27 @@ function MainFormsCard({
           onAddPriorityCall(dataToMove);
           toast({ title: "Movido a Llamada Prioritaria", description: `El contacto ha sido añadido a la lista prioritaria.` });
       }
-
       onDeleteForm(form.id);
   };
 
   return (
-    <Card>
-      <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Texto Completo</DialogTitle>
-            </DialogHeader>
-            <ScrollArea className="max-h-[60vh] my-4">
-                 <div className="whitespace-pre-wrap break-words pr-4">
-                    {viewingText}
-                </div>
-            </ScrollArea>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setViewingText(null)}>Cerrar</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
+    <Tabs defaultValue="main" className="w-full">
+       <AlertDialog open={!!promotingItem} onOpenChange={(open) => !open && setPromotingItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Promover a Proyecto</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿A qué sección quieres añadir a "{promotingItem?.name || promotingItem?.Nombre || promotingItem?.nombre}"? Se creará una nueva entrada con sus datos de contacto.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+             <Button variant="outline" onClick={() => handlePromote('reformas')}>Añadir a Reformas</Button>
+             <Button onClick={() => handlePromote('clients')}>Añadir a Obra Nueva</Button>
+          </AlertDialogFooter>
+           <AlertDialogCancel className="mt-2 w-full">Cancelar</AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <GoogleSheetDialog 
         open={isSheetDialogOpen}
         onOpenChange={setIsSheetDialogOpen}
@@ -509,179 +541,6 @@ function MainFormsCard({
         onSave={onSaveSheetUrl}
       />
 
-      <CardHeader>
-        <CardTitle>Formularios Externos</CardTitle>
-        <CardDescription>Gestiona las respuestas de tus formularios y añade contactos manualmente.</CardDescription>
-      </CardHeader>
-
-      <CardContent>
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-              <div>
-                  <h3 className="text-lg font-semibold">Cargar y Sincronizar</h3>
-                  <p className="text-sm text-muted-foreground">Carga un CSV o conecta una hoja de Google Sheets.</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                  <Button onClick={triggerFileUpload}><Upload className="mr-2 h-4 w-4"/>Cargar CSV</Button>
-                  <Button variant="outline" onClick={() => setIsSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4"/>{sheetUrl ? "Cambiar Sheet" : "Conectar Sheet"}</Button>
-                  <Button variant="outline" asChild><a href={formUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Abrir Formulario</a></Button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden"/>
-              </div>
-          </div>
-          {forms.length > 0 ? (
-              <ScrollArea className="w-full rounded-md border">
-                  <Table>
-                      <TableHeader>
-                          <TableRow>
-                              <TableHead>Llamado</TableHead>
-                              <TableHead>Estado</TableHead>
-                              {headers.map(header => <TableHead key={header} className="capitalize">{header.replace(/_/g, ' ')}</TableHead>)}
-                              <TableHead className="text-right sticky right-0 bg-card">Acciones</TableHead>
-                          </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                          {forms.map(sub => (
-                          <TableRow key={sub.id}>
-                              <TableCell><Checkbox checked={sub.called} onCheckedChange={(checked) => onUpdateForm({ ...sub, called: !!checked })}/></TableCell>
-                              <TableCell>
-                                  <Select value={sub.status} onValueChange={(status) => onUpdateForm({ ...sub, status })}>
-                                      <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                          <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                          <SelectItem value="Contactado">Contactado</SelectItem>
-                                          <SelectItem value="En proceso">En proceso</SelectItem>
-                                          <SelectItem value="Firmado">Firmado</SelectItem>
-                                      </SelectContent>
-                                  </Select>
-                              </TableCell>
-                              {headers.map(header => {
-                                const textValue = sub[header]?.toString() || '';
-                                const isLongText = textValue.length > 50;
-                                return (
-                                    <TableCell key={`${sub.id}-${header}`} className="max-w-[200px]">
-                                        {isLongText ? (
-                                            <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
-                                                {textValue}
-                                            </div>
-                                        ) : (
-                                            textValue
-                                        )}
-                                    </TableCell>
-                                );
-                              })}
-                              <TableCell className="text-right sticky right-0 bg-card">
-                               <AlertDialog>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuItem onSelect={() => mapAndTransferData(sub, 'priority')}><Star className="mr-2"/>Mover a Prioritarios</DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={() => mapAndTransferData(sub, 'contacts')}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
-                                      <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la respuesta del formulario.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDeleteForm(sub.id)}>Eliminar</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </TableCell>
-                          </TableRow>
-                          ))}
-                      </TableBody>
-                  </Table>
-                  <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-          ) : (
-              <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
-                  <FileText className="h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No hay datos de formularios</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                      Carga un CSV o conecta una hoja de Google Sheets para ver las respuestas.
-                  </p>
-              </div>
-          )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function FormsSection({
-  contacts, onAddContact, onUpdateContact, onDeleteContact,
-  onAddClient, onAddReforma,
-  forms, onLoadForms, onUpdateForm, onDeleteForm,
-  sheetUrl, onSaveSheetUrl,
-  priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall
-}: {
-  contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
-  onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
-  forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-  sheetUrl: string, onSaveSheetUrl: (url: string) => void,
-  priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void
-}) {
-  const allHeaders = useMemo(() => {
-    const allItems = [...forms, ...contacts, ...priorityCalls];
-    if (allItems.length === 0) return ['name', 'phone', 'email'];
-    
-    const headerSet = new Set<string>();
-    allItems.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (key !== 'id' && key !== 'called' && key !== 'status') {
-          headerSet.add(key);
-        }
-      });
-    });
-    return Array.from(headerSet);
-  }, [forms, contacts, priorityCalls]);
-  
-  const [contactsColumns, setContactsColumns] = useState<ColumnConfig[]>([]);
-  const [priorityColumns, setPriorityColumns] = useState<ColumnConfig[]>([]);
-
-  // Load from localStorage on mount and when allHeaders change
-  useEffect(() => {
-    const getInitialConfig = (storageKey: string) => {
-      try {
-        const savedConfig = localStorage.getItem(storageKey);
-        if (savedConfig) {
-          const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
-          // Sync with current headers - add new ones, remove old ones
-          const headerKeys = new Set(allHeaders);
-          const configKeys = new Set(parsedConfig.map(c => c.key));
-          
-          const finalConfig = allHeaders.map(key => {
-            return parsedConfig.find(c => c.key === key) || { key, visible: true, displayName: getDisplayName(key) };
-          });
-
-          return finalConfig;
-        }
-      } catch (e) {
-        console.error("Failed to parse column config from localStorage", e);
-      }
-      // Default config if nothing is saved
-      return allHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
-    };
-    
-    if (typeof window !== 'undefined') {
-        setContactsColumns(getInitialConfig('contactsColumnsConfig'));
-        setPriorityColumns(getInitialConfig('priorityColumnsConfig'));
-    }
-
-  }, [allHeaders]);
-
-  const handleContactsColumnChange = (newConfig: ColumnConfig[]) => {
-      setContactsColumns(newConfig);
-      localStorage.setItem('contactsColumnsConfig', JSON.stringify(newConfig));
-  };
-  
-  const handlePriorityColumnChange = (newConfig: ColumnConfig[]) => {
-      setPriorityColumns(newConfig);
-      localStorage.setItem('priorityColumnsConfig', JSON.stringify(newConfig));
-  };
-
-
-  return (
-    <Tabs defaultValue="main" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="main">Formularios y Contactos</TabsTrigger>
           <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
@@ -692,24 +551,36 @@ export function FormsSection({
                 title="Contactos Manuales"
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
-                columnConfig={contactsColumns}
-                onColumnConfigChange={handleContactsColumnChange}
+                columnConfig={columnConfigs.contacts}
+                onColumnConfigChange={(newConfig) => handleColumnChange('contacts', newConfig)}
                 onAddItem={onAddContact}
                 onUpdateItem={onUpdateContact}
                 onDeleteItem={onDeleteContact}
-                onAddClient={onAddClient}
-                onAddReforma={onAddReforma}
+                itemActions={(item) => (
+                    <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                )}
             />
-            <MainFormsCard 
-                onAddContact={onAddContact} 
-                onAddPriorityCall={onAddPriorityCall}
-                forms={forms} 
-                onLoadForms={onLoadForms} 
-                onUpdateForm={onUpdateForm} 
-                onDeleteForm={onDeleteForm}
-                sheetUrl={sheetUrl} 
-                onSaveSheetUrl={onSaveSheetUrl}
-            />
+            <DynamicTableCard
+                title="Formularios Externos"
+                description="Gestiona las respuestas de tus formularios y añade contactos manualmente."
+                items={forms}
+                columnConfig={columnConfigs.forms}
+                onColumnConfigChange={(newConfig) => handleColumnChange('forms', newConfig)}
+                onAddItem={() => toast({ variant: 'destructive', title: 'Acción no permitida', description: 'Usa "Cargar CSV" o añade contactos manuales.'})}
+                onUpdateItem={onUpdateForm}
+                onDeleteItem={onDeleteForm}
+                itemActions={(item) => (
+                    <>
+                        <DropdownMenuItem onSelect={() => mapAndTransferData(item, 'priority')}><Star className="mr-2"/>Mover a Prioritarios</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => mapAndTransferData(item, 'contacts')}><UserPlus className="mr-2"/>Guardar como Contacto</DropdownMenuItem>
+                    </>
+                )}
+            >
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden"/>
+                <Button onClick={triggerFileUpload}><Upload className="mr-2 h-4 w-4"/>Cargar CSV</Button>
+                <Button variant="outline" onClick={() => setIsSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4"/>{sheetUrl ? "Cambiar Sheet" : "Conectar Sheet"}</Button>
+                <Button variant="outline" asChild><a href={formUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Abrir Formulario</a></Button>
+            </DynamicTableCard>
         </div>
       </TabsContent>
       <TabsContent value="priority" className="mt-6">
@@ -717,17 +588,16 @@ export function FormsSection({
               title="Llamada Prioritaria"
               description="Contactos marcados como prioritarios desde la bandeja de entrada de formularios."
               items={priorityCalls}
-              columnConfig={priorityColumns}
-              onColumnConfigChange={handlePriorityColumnChange}
+              columnConfig={columnConfigs.priority}
+              onColumnConfigChange={(newConfig) => handleColumnChange('priority', newConfig)}
               onAddItem={onAddPriorityCall}
               onUpdateItem={onUpdatePriorityCall}
               onDeleteItem={onDeletePriorityCall}
-              onAddClient={onAddClient}
-              onAddReforma={onAddReforma}
+              itemActions={(item) => (
+                 <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+              )}
           />
       </TabsContent>
     </Tabs>
   );
 }
-
-    
