@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, Home, Scaling, Move } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, TrendingDown, Home, Scaling, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
@@ -171,10 +171,56 @@ function PercentageDialog({ open, onOpenChange, onApply }: { open: boolean, onOp
   );
 }
 
+function DecreasePercentageDialog({ open, onOpenChange, onApply }: { open: boolean, onOpenChange: (open: boolean) => void, onApply: (percentage: number) => void }) {
+  const form = useForm<z.infer<typeof percentageSchema>>({
+    resolver: zodResolver(percentageSchema),
+    defaultValues: { percentage: 0 },
+  });
+
+  const handleSubmit = (values: z.infer<typeof percentageSchema>) => {
+    onApply(values.percentage);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Disminuir Precios</DialogTitle>
+          <DialogDescription>
+            Introduce el porcentaje que quieres restar a todos los precios unitarios.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="percentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Porcentaje de Disminución (%)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Ej: 10" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit">Aplicar Disminución</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 // --- Componente de Formulario de Presupuesto ---
 function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, activeCategory }: { budget?: Budget, clients: any[], companies: any[], onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, activeCategory: BudgetCategory }) {
-  const [isPercentageDialogOpen, setPercentageDialogOpen] = useState(false);
+  const [isIncreaseDialogOpen, setIncreaseDialogOpen] = useState(false);
+  const [isDecreaseDialogOpen, setDecreaseDialogOpen] = useState(false);
   
   const form = useForm<z.infer<typeof budgetSchema>>({
     resolver: zodResolver(budgetSchema),
@@ -206,11 +252,20 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
     }, 0);
   }, [watchedLineItems]);
 
-  const handleApplyPercentage = (percentage: number) => {
+  const handleApplyIncrease = (percentage: number) => {
     const currentItems = form.getValues("lineItems");
     const updatedItems = currentItems.map(item => ({
       ...item,
       unitPrice: item.unitPrice * (1 + percentage / 100)
+    }));
+    form.setValue("lineItems", updatedItems, { shouldDirty: true, shouldValidate: true });
+  };
+  
+  const handleApplyDecrease = (percentage: number) => {
+    const currentItems = form.getValues("lineItems");
+    const updatedItems = currentItems.map(item => ({
+      ...item,
+      unitPrice: item.unitPrice * (1 - percentage / 100)
     }));
     form.setValue("lineItems", updatedItems, { shouldDirty: true, shouldValidate: true });
   };
@@ -243,7 +298,8 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <PercentageDialog open={isPercentageDialogOpen} onOpenChange={setPercentageDialogOpen} onApply={handleApplyPercentage} />
+      <PercentageDialog open={isIncreaseDialogOpen} onOpenChange={setIncreaseDialogOpen} onApply={handleApplyIncrease} />
+      <DecreasePercentageDialog open={isDecreaseDialogOpen} onOpenChange={setDecreaseDialogOpen} onApply={handleApplyDecrease} />
       <DialogContent className="max-w-4xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{budget ? 'Editar Presupuesto' : 'Crear Nuevo Presupuesto'}</DialogTitle>
@@ -305,9 +361,14 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Líneas del Presupuesto</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={() => setPercentageDialogOpen(true)}>
-                  <TrendingUp className="mr-2 h-4 w-4" /> Incrementar Precios
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setDecreaseDialogOpen(true)}>
+                    <TrendingDown className="mr-2 h-4 w-4" /> Disminuir Precios
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIncreaseDialogOpen(true)}>
+                    <TrendingUp className="mr-2 h-4 w-4" /> Incrementar Precios
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
