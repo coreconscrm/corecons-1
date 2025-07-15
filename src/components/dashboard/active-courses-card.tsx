@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -178,6 +179,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
 export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[] }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
+  const [viewingInfo, setViewingInfo] = useState<string | null>(null);
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
@@ -191,6 +193,13 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
 
   return (
     <Card>
+      <Dialog open={!!viewingInfo} onOpenChange={() => setViewingInfo(null)}>
+        <DialogContent>
+            <DialogHeader><DialogTitle>Información Adicional</DialogTitle></DialogHeader>
+            <div className="py-4 whitespace-pre-wrap">{viewingInfo}</div>
+            <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ClientForm client={editingClient} onSubmit={editingClient ? onUpdateClient : onAddClient} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} providers={providers} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -249,9 +258,11 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                     </div>
                   </div>
                    {client.infoAdicional && (
-                      <div>
-                        <h4 className="font-semibold mb-1">Info Adicional:</h4>
-                        <p className="p-2 text-xs bg-muted rounded-md text-muted-foreground whitespace-pre-wrap">{client.infoAdicional}</p>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">Info Adicional:</h4>
+                        <Button variant="ghost" size="icon" onClick={() => setViewingInfo(client.infoAdicional || null)}>
+                            <Info className="h-4 w-4" />
+                        </Button>
                     </div>
                    )}
                 </CardContent>
