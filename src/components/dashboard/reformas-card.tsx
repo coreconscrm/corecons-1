@@ -30,7 +30,7 @@ const reformaSchema = z.object({
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
-  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional(),
+  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional().or(z.literal('')),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
@@ -100,14 +100,14 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             localizacion: reforma.localizacion || "",
             arquitecto: reforma.arquitecto || "",
             providerId: reforma.providerId || "",
-            obtenido: reforma.obtenido,
-            estado: reforma.estado,
+            obtenido: reforma.obtenido || undefined,
+            estado: reforma.estado || undefined,
             infoAdicional: reforma.infoAdicional || "",
             memoria: reforma.memoria || "",
             planos: reforma.planos || "",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [reforma, open, form]);

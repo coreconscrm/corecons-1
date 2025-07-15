@@ -30,7 +30,7 @@ const clientSchema = z.object({
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
-  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional(),
+  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional().or(z.literal('')),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
@@ -101,14 +101,14 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             localizacion: client.localizacion || "",
             arquitecto: client.arquitecto || "",
             providerId: client.providerId || "",
-            obtenido: client.obtenido,
-            estado: client.estado,
+            obtenido: client.obtenido || undefined,
+            estado: client.estado || undefined,
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [client, open, form]);
