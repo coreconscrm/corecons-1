@@ -34,6 +34,8 @@ type ColumnConfig = {
 const columnDisplayNames: Record<string, string> = {
     'Columna 12': 'Info de llamada',
     'Columna 12 1': 'Fecha Llamada',
+    'called': 'Llamado',
+    'status': 'Estado',
 };
 
 function getDisplayName(key: string) {
@@ -225,7 +227,7 @@ function DynamicTableCard({
         open={isAddDialogOpen} 
         onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
         title={title}
-        headers={allHeaders}
+        headers={allHeaders.filter(h => h !== 'called' && h !== 'status')}
       />
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -250,17 +252,34 @@ function DynamicTableCard({
               <Table>
                 <TableHeader><TableRow>
                     {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
-                    <TableHead>Llamado</TableHead><TableHead>Estado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
                       {visibleHeaders.map(h => {
+                        const cellKey = `${item.id}-${h.key}`;
+                        if (h.key === 'called') {
+                            return <TableCell key={cellKey}><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
+                        }
+                        if (h.key === 'status') {
+                            return <TableCell key={cellKey}>
+                                <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
+                                    <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                        <SelectItem value="Contactado">Contactado</SelectItem>
+                                        <SelectItem value="En proceso">En proceso</SelectItem>
+                                        <SelectItem value="Firmado">Firmado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
+                        }
+                        
                         const textValue = item[h.key]?.toString() || '';
                         const isLongText = textValue.length > 50;
                         return (
-                            <TableCell key={`${item.id}-${h.key}`} className="max-w-[200px]">
+                            <TableCell key={cellKey} className="max-w-[200px]">
                                 {isLongText ? (
                                     <div className="truncate cursor-pointer hover:underline" onClick={() => setViewingText(textValue)}>
                                         {textValue}
@@ -271,18 +290,6 @@ function DynamicTableCard({
                             </TableCell>
                         );
                       })}
-                      <TableCell><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
-                      <TableCell>
-                          <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
-                              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                  <SelectItem value="Contactado">Contactado</SelectItem>
-                                  <SelectItem value="En proceso">En proceso</SelectItem>
-                                  <SelectItem value="Firmado">Firmado</SelectItem>
-                              </SelectContent>
-                          </Select>
-                      </TableCell>
                       <TableCell className="text-right">
                         <AlertDialog>
                           <DropdownMenu>
@@ -405,7 +412,7 @@ export function FormsSection({
       const headerSet = new Set<string>();
       items.forEach(item => {
         Object.keys(item).forEach(key => {
-          if (key !== 'id' && key !== 'called' && key !== 'status') {
+          if (key !== 'id') {
             headerSet.add(key);
           }
         });
@@ -417,43 +424,46 @@ export function FormsSection({
     const loadConfigs = () => {
         if (typeof window === 'undefined') return;
 
-        const allHeaders = getHeadersFromItems(allItems);
-
         const getInitialConfig = (storageKey: string, currentHeaders: string[]) => {
             try {
                 const savedConfig = localStorage.getItem(storageKey);
                 if (savedConfig) {
                     const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
                     const parsedHeaderKeys = new Set(parsedConfig.map(c => c.key));
-
-                    // Add new headers found in data that are not in the saved config
                     const finalConfig = [...parsedConfig];
+                    
                     currentHeaders.forEach(key => {
                         if (!parsedHeaderKeys.has(key)) {
                             finalConfig.push({ key, visible: true, displayName: getDisplayName(key) });
                         }
                     });
                     
-                    // Filter out headers that are in config but not in data anymore
                     const currentHeaderSet = new Set(currentHeaders);
                     return finalConfig.filter(c => currentHeaderSet.has(c.key));
                 }
             } catch (e) {
                 console.error(`Failed to parse column config from localStorage for ${storageKey}`, e);
             }
-            // Default config if nothing is saved
             return currentHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
         };
+        
+        const allContactHeaders = getHeadersFromItems(contacts);
+        if (!allContactHeaders.includes('called')) allContactHeaders.push('called');
+        if (!allContactHeaders.includes('status')) allContactHeaders.push('status');
+
+        const allPriorityHeaders = getHeadersFromItems(priorityCalls);
+        if (!allPriorityHeaders.includes('called')) allPriorityHeaders.push('called');
+        if (!allPriorityHeaders.includes('status')) allPriorityHeaders.push('status');
 
         setColumnConfigs({
             forms: getInitialConfig('formsColumnsConfig', getHeadersFromItems(forms)),
-            contacts: getInitialConfig('contactsColumnsConfig', getHeadersFromItems(contacts)),
-            priority: getInitialConfig('priorityColumnsConfig', getHeadersFromItems(priorityCalls)),
+            contacts: getInitialConfig('contactsColumnsConfig', allContactHeaders),
+            priority: getInitialConfig('priorityColumnsConfig', allPriorityHeaders),
         });
     };
 
     loadConfigs();
-  }, [allItems, forms, contacts, priorityCalls]); // Re-run when any item list changes
+  }, [allItems, forms, contacts, priorityCalls]);
 
   const handleColumnChange = (type: 'forms' | 'contacts' | 'priority', newConfig: ColumnConfig[]) => {
       setColumnConfigs(prev => ({ ...prev, [type]: newConfig }));
