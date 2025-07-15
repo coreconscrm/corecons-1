@@ -23,17 +23,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 const clientSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  contact: z.string().min(1, "El nombre de contacto es requerido."),
-  email: z.string().email("Email inválido."),
-  phone: z.string().min(1, "El teléfono es requerido."),
+  name: z.string().optional(),
+  contact: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  phone: z.string().optional(),
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional(),
-  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"], {
-    required_error: "Debe seleccionar un estado."
-  }),
+  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
@@ -96,10 +94,15 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
       if (client) {
         form.reset({
             ...client,
+            name: client.name || "",
+            contact: client.contact || "",
+            email: client.email || "",
+            phone: client.phone || "",
             localizacion: client.localizacion || "",
             arquitecto: client.arquitecto || "",
             providerId: client.providerId || "",
             obtenido: client.obtenido,
+            estado: client.estado,
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
@@ -253,7 +256,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="mb-1">{client.name}</CardTitle>
-                      <Badge variant="secondary">{client.estado}</Badge>
+                      {client.estado && <Badge variant="secondary">{client.estado}</Badge>}
                     </div>
                     <AlertDialog>
                       <DropdownMenu>
