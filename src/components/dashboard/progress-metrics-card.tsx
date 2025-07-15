@@ -7,7 +7,6 @@ import { FormsSection } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
-import { PriceListCard } from "./prices-card";
 import { SeguimientoListCard } from "./seguimiento-card";
 
 export function DashboardTabs({
@@ -63,8 +62,7 @@ export function DashboardTabs({
         {(visibleTabs.clients || visibleTabs.reformas) && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
-        {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
-        {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
+        {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas || visibleTabs.prices) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
         {(visibleTabs.companies || visibleTabs.team) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
@@ -109,7 +107,7 @@ export function DashboardTabs({
         <BudgetSection budgets={budgets} clients={[...clients, ...reformas]} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
       </TabsContent>}
 
-      {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas) && <TabsContent value="providers" className="mt-6">
+      {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.prices) && <TabsContent value="providers" className="mt-6">
          <ProviderSection
           providers={providers}
           onAddProvider={onAddProvider}
@@ -137,10 +135,6 @@ export function DashboardTabs({
           onDeleteInmobiliaria={onDeleteInmobiliaria}
           visibleTabs={visibleTabs}
         />
-      </TabsContent>}
-      
-      {visibleTabs.prices && <TabsContent value="prices" className="mt-6">
-        <PriceListCard providers={providers} />
       </TabsContent>}
       
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">

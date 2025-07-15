@@ -35,7 +35,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     constructoras: "Proveedores (Constructoras)",
     reformistas: "Proveedores (Reformistas)",
     inmobiliarias: "Proveedores (Inmobiliarias)",
-    prices: "Precios",
+    prices: "Proveedores (Base de Precios)",
     team: "Empresa (Equipo)",
     forms: "Formularios",
     companies: "Empresa (Perfiles y Docs)",

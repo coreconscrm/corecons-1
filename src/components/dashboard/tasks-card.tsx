@@ -21,6 +21,7 @@ import { InterioristasListCard, type Interiorista } from "./interioristas-card";
 import { ConstructorasListCard, type Constructora } from "./constructoras-card";
 import { ReformistasListCard, type Reformista } from "./reformistas-card";
 import { InmobiliariasListCard, type Inmobiliaria } from "./inmobiliarias-card";
+import { PriceListCard } from "./prices-card";
 
 
 const priceListItemSchema = z.object({
@@ -266,13 +267,14 @@ export function ProviderSection({
         { value: "constructoras", label: "Constructoras", visible: visibleTabs.constructoras },
         { value: "reformistas", label: "Reformistas", visible: visibleTabs.reformistas },
         { value: "inmobiliarias", label: "Inmobiliarias", visible: visibleTabs.inmobiliarias },
+        { value: "prices", label: "Base de Precios", visible: visibleTabs.prices },
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
     
     return (
         <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)` }}>
                 {tabs.map(tab => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
             </TabsList>
             {visibleTabs.providers && (
@@ -333,6 +335,11 @@ export function ProviderSection({
                       onUpdateInmobiliaria={onUpdateInmobiliaria}
                       onDeleteInmobiliaria={onDeleteInmobiliaria}
                   />
+              </TabsContent>
+            )}
+            {visibleTabs.prices && (
+              <TabsContent value="prices" className="mt-6">
+                  <PriceListCard providers={providers} />
               </TabsContent>
             )}
         </Tabs>
