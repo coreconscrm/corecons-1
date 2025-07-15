@@ -1,14 +1,15 @@
+
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, StickyNote } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/logo.png';
 
-export function Header({ onSettingsClick }: { onSettingsClick: () => void }) {
+export function Header({ onSettingsClick, onNotepadClick }: { onSettingsClick: () => void, onNotepadClick: () => void }) {
   const { toast } = useToast();
 
   return (
@@ -20,6 +21,10 @@ export function Header({ onSettingsClick }: { onSettingsClick: () => void }) {
         </h1>
       </Link>
       <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={onNotepadClick}>
+          <StickyNote className="h-5 w-5" />
+          <span className="sr-only">Bloc de notas</span>
+        </Button>
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>

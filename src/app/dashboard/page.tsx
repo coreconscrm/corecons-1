@@ -11,6 +11,7 @@ import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
@@ -61,6 +62,9 @@ export default function DashboardPage() {
     seguimiento: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
+
+  const [isNotepadOpen, setNotepadOpen] = useState(false);
+  const [notepadContent, setNotepadContent] = useState("");
   
   useEffect(() => {
     try {
@@ -287,7 +291,8 @@ export default function DashboardPage() {
   
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onSettingsClick={() => setActiveTab("settings")} />
+      <Header onSettingsClick={() => setActiveTab("settings")} onNotepadClick={() => setNotepadOpen(true)} />
+      <NotepadSheet open={isNotepadOpen} onOpenChange={setNotepadOpen} content={notepadContent} onContentChange={setNotepadContent} />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
