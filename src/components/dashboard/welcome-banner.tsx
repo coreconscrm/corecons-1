@@ -8,7 +8,11 @@ import {
     ThumbsDown, 
     Users, 
     PhoneCall, 
-    PhoneOff 
+    PhoneOff,
+    Building,
+    Map,
+    CalendarCheck,
+    ListTodo
 } from "lucide-react";
 
 function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: number }) {
@@ -23,16 +27,17 @@ function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, labe
   );
 }
 
-export function ProjectOverview({ signed, inProgress, completed }: { signed: number, inProgress: number, completed: number }) {
+export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrecerArquitecto, buscarTerreno }: { llamarEstaSemana: number, totalSeguimientos: number, ofrecerArquitecto: number, buscarTerreno: number }) {
   const metrics = [
-    { icon: FileSignature, label: "Proyectos Firmados", value: signed },
-    { icon: Construction, label: "En Proceso", value: inProgress },
-    { icon: CheckCircle, label: "Finalizados", value: completed },
+    { icon: CalendarCheck, label: "Llamar esta Semana", value: llamarEstaSemana },
+    { icon: ListTodo, label: "Seguimiento Total", value: totalSeguimientos },
+    { icon: Building, label: "Ofrecer Arquitecto", value: ofrecerArquitecto },
+    { icon: Map, label: "Buscar Terreno", value: buscarTerreno },
   ];
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Resumen de Proyectos</CardTitle>
+        <CardTitle>Resumen de Seguimiento</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
         <div className="flex flex-wrap justify-center gap-4 text-center">
@@ -42,6 +47,7 @@ export function ProjectOverview({ signed, inProgress, completed }: { signed: num
     </Card>
   );
 }
+
 
 export function BudgetOverview({ pending, accepted, rejected }: { pending: number, accepted: number, rejected: number }) {
   const metrics = [

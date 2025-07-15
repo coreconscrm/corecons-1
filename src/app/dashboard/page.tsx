@@ -6,12 +6,13 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, getDoc } from "firebase/firestore";
 import Papa from 'papaparse';
 import { Header } from "@/components/dashboard/header";
-import { ProjectOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
+import { SeguimientoOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
+import { isWithinInterval, addDays } from 'date-fns';
 
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
@@ -276,19 +277,29 @@ export default function DashboardPage() {
     }
   };
   
-  const projectsSigned = projects.filter(p => p.status === 'Firmados').length;
-  const projectsInProgress = projects.filter(p => p.status === 'En proceso').length;
-  const projectsCompleted = projects.filter(p => p.status === 'Finalizados').length;
-
+  // Metrics for Budget Overview
   const budgetsPending = budgets.filter(b => b.status === 'Pendiente').length;
   const budgetsAccepted = budgets.filter(b => b.status === 'Aceptado').length;
   const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
 
+  // Metrics for Form Overview
   const formsTotal = forms.length;
   const manualAndPriorityTotal = contacts.length + priorityCalls.length;
   const manualAndPriorityCalled = contacts.filter(c => c.called).length + priorityCalls.filter(pc => pc.called).length;
   const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
-  
+
+  // Metrics for Seguimiento Overview
+  const totalSeguimientos = seguimientos.length;
+  const llamarEstaSemana = seguimientos.filter(s => {
+      if (!s.siguienteLlamada) return false;
+      const nextCallDate = new Date(s.siguienteLlamada);
+      const today = new Date();
+      const nextWeek = addDays(today, 7);
+      return isWithinInterval(nextCallDate, { start: today, end: nextWeek });
+  }).length;
+  const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase() === 'buscar arquitecto').length;
+  const buscarTerreno = seguimientos.filter(s => s.porHacer?.toLowerCase() === 'buscar terreno').length;
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header onSettingsClick={() => setActiveTab("settings")} onNotepadClick={() => setNotepadOpen(true)} />
@@ -304,10 +315,11 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold">Panel de Control</h1>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <ProjectOverview
-                signed={projectsSigned}
-                inProgress={projectsInProgress}
-                completed={projectsCompleted}
+              <SeguimientoOverview
+                llamarEstaSemana={llamarEstaSemana}
+                totalSeguimientos={totalSeguimientos}
+                ofrecerArquitecto={ofrecerArquitecto}
+                buscarTerreno={buscarTerreno}
               />
               <BudgetOverview
                 pending={budgetsPending}
