@@ -110,7 +110,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   }, [reforma, open, form]);
 
   const handleSubmit = (values: z.infer<typeof reformaSchema>) => {
-    onSubmit({ ...reforma, ...values });
+    onSubmit({ ...reforma, ...values, obtenido: values.obtenido || '' });
     form.reset();
     onOpenChange(false);
   };
@@ -124,31 +124,31 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Nombre del Proyecto</FormLabel><FormControl><Input placeholder="Proyecto de reforma" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Nombre del Proyecto</FormLabel><FormControl><Input placeholder="Proyecto de reforma" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="contact" render={({ field }) => (
-                <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-4567" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-4567" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.perez@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.perez@email.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="localizacion" render={({ field }) => (
-                    <FormItem><FormLabel>Localización</FormLabel><FormControl><Input placeholder="Ciudad, Dirección" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Localización</FormLabel><FormControl><Input placeholder="Ciudad, Dirección" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                 )} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="arquitecto" render={({ field }) => (
-                    <FormItem><FormLabel>Arquitecto</FormLabel><FormControl><Input placeholder="Nombre del arquitecto" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Arquitecto</FormLabel><FormControl><Input placeholder="Nombre del arquitecto" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="providerId" render={({ field }) => (
                     <FormItem><FormLabel>Proveedor Asignado</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un proveedor" /></SelectTrigger></FormControl>
                             <SelectContent>{providers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                         </Select><FormMessage />
@@ -159,7 +159,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                  <FormField control={form.control} name="estado" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Estado del Proyecto</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                         <SelectContent>
                             <SelectItem value="Contactado">Contactado</SelectItem>
@@ -175,7 +175,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                 <FormField control={form.control} name="obtenido" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Obtenido a través de</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen" /></SelectTrigger></FormControl>
                         <SelectContent>
                             <SelectItem value="Formulario">Formulario</SelectItem>
@@ -189,7 +189,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                 )} />
             </div>
              <FormField control={form.control} name="infoAdicional" render={({ field }) => (
-                <FormItem><FormLabel>Información Adicional</FormLabel><FormControl><Textarea placeholder="Añade detalles importantes..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Información Adicional</FormLabel><FormControl><Textarea placeholder="Añade detalles importantes..." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
