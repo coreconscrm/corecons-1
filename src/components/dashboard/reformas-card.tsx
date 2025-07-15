@@ -257,10 +257,10 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                     </div>
                   </div>
                    {reforma.infoAdicional && (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between pt-2 border-t">
                         <h4 className="font-semibold">Info Adicional:</h4>
-                        <Button variant="ghost" size="icon" onClick={() => setViewingInfo(reforma.infoAdicional || null)}>
-                            <Info className="h-4 w-4" />
+                        <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setViewingInfo(reforma.infoAdicional || null)}>
+                           abre la informacion desde aqui!
                         </Button>
                     </div>
                    )}
