@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -75,6 +74,12 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
                     <a href="https://drive.google.com/drive/u/0/folders/1Tr9B5ILf8NwYqN9J7-Ouz3koxVNCN24m?lfhs=2" target="_blank" rel="noopener noreferrer">
                     <Folder className="mr-2 h-4 w-4" />
                     Carpeta Drive
+                    </a>
+                </Button>
+                 <Button variant="outline" asChild>
+                    <a href="https://drive.google.com/drive/u/0/folders/1piSqDZTPKZcqBTNI4bnaazLa0m-tah8K41fVz3r0YZ5GciI4RIQ_7awrYNUzM0z0ekr_g_nH?lfhs=2" target="_blank" rel="noopener noreferrer">
+                    <Folder className="mr-2 h-4 w-4" />
+                    Archivos enviados por Formulario
                     </a>
                 </Button>
             </div>
