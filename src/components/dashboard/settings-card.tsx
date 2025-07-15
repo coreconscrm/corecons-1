@@ -80,7 +80,7 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
             </a>
           </Button>
            <Button variant="outline" asChild>
-            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://makebyjordan.com/wb/manual-de-usuario/Podcast-manual-de-usuario-CRM-WB.mp3" target="_blank" rel="noopener noreferrer">
               <Volume2 className="mr-2 h-4 w-4" />
               AudioManual de Usuario
             </a>
