@@ -74,7 +74,7 @@ export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs:
       </CardContent>
        <CardFooter className="border-t pt-6 flex items-center gap-4">
           <Button variant="outline" asChild>
-            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://makebyjordan.com/wb/manual-de-usuario/manual-de-usuario-CRM-WB.html" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
               Ver Manual de Usuario
             </a>
