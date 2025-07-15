@@ -280,7 +280,7 @@ export default function DashboardPage() {
   const budgetsAccepted = budgets.filter(b => b.status === 'Aceptado').length;
   const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
 
-  const formsTotal = forms.length + contacts.length + priorityCalls.length;
+  const formsTotal = forms.length;
   const manualAndPriorityTotal = contacts.length + priorityCalls.length;
   const manualAndPriorityCalled = contacts.filter(c => c.called).length + priorityCalls.filter(pc => pc.called).length;
   const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
