@@ -1,6 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientListCard } from "@/components/dashboard/active-courses-card";
+import { ClientsSection } from "@/components/dashboard/clients-section";
 import { ProjectListCard } from "@/components/dashboard/performance-chart";
 import { ProviderSection } from "@/components/dashboard/tasks-card";
 import { TeamListCard } from "@/components/dashboard/study-time-analysis-card";
@@ -9,9 +9,6 @@ import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { PriceListCard } from "./prices-card";
-import { ReformaListCard } from "./reformas-card";
-import { InterioristasListCard } from "./interioristas-card";
-import { InmobiliariasListCard } from "./inmobiliarias-card";
 import { SeguimientoListCard } from "./seguimiento-card";
 
 export function DashboardTabs({
@@ -64,10 +61,9 @@ export function DashboardTabs({
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="w-full justify-start overflow-x-auto md:justify-between">
         {visibleTabs.seguimiento && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
+        {(visibleTabs.clients || visibleTabs.reformas) && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
-        {visibleTabs.clients && <TabsTrigger value="clients">Obra Nueva</TabsTrigger>}
-        {visibleTabs.reformas && <TabsTrigger value="reformas">Reformas</TabsTrigger>}
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.prices && <TabsTrigger value="prices">Precios</TabsTrigger>}
         {visibleTabs.team && <TabsTrigger value="team">Equipo</TabsTrigger>}
@@ -90,22 +86,29 @@ export function DashboardTabs({
         </div>
       </TabsContent>}
 
+      {(visibleTabs.clients || visibleTabs.reformas) && <TabsContent value="clients" className="mt-6">
+        <ClientsSection
+            clients={clients}
+            providers={providers}
+            onAddClient={onAddClient}
+            onUpdateClient={onUpdateClient}
+            onDeleteClient={onDeleteClient}
+            reformas={reformas}
+            onAddReforma={onAddReforma}
+            onUpdateReforma={onUpdateReforma}
+            onDeleteReforma={onDeleteReforma}
+            visibleTabs={visibleTabs}
+        />
+      </TabsContent>}
+
       {visibleTabs.projects && <TabsContent value="projects">
         <div className="mt-6">
-         <ProjectListCard projects={projects} clients={clients} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
+         <ProjectListCard projects={projects} clients={[...clients, ...reformas]} providers={providers} onAddProject={onAddProject} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} />
         </div>
       </TabsContent>}
 
       {visibleTabs.budgets && <TabsContent value="budgets" className="mt-6">
         <BudgetSection budgets={budgets} clients={[...clients, ...reformas]} companies={companies} onAddBudget={onAddBudget} onUpdateBudget={onUpdateBudget} onDeleteBudget={onDeleteBudget} />
-      </TabsContent>}
-      
-      {visibleTabs.clients && <TabsContent value="clients" className="mt-6">
-        <ClientListCard clients={clients} providers={providers} onAddClient={onAddClient} onUpdateClient={onUpdateClient} onDeleteClient={onDeleteClient} />
-      </TabsContent>}
-      
-      {visibleTabs.reformas && <TabsContent value="reformas" className="mt-6">
-        <ReformaListCard reformas={reformas} providers={providers} onAddReforma={onAddReforma} onUpdateReforma={onUpdateReforma} onDeleteReforma={onDeleteReforma} />
       </TabsContent>}
 
       {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas) && <TabsContent value="providers" className="mt-6">

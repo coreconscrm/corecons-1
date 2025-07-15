@@ -25,10 +25,10 @@ type VisibleTabs = {
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
     seguimiento: "Seguimiento",
-    projects: "Proyectos",
-    budgets: "Presupuestos",
     clients: "Obra Nueva",
     reformas: "Reformas",
+    projects: "Proyectos",
+    budgets: "Presupuestos",
     providers: "Proveedores",
     collaborators: "Arquitectos",
     interioristas: "Interioristas",
