@@ -72,6 +72,20 @@
     --sidebar-accent-foreground: oklch(0.9299 0.0334 272.7879);
     --sidebar-border: oklch(0.2827 0.1351 291.0894);
     --sidebar-ring: oklch(0.6056 0.2189 292.7172);
+
+    /* Glow Effect */
+    --glow: oklch(0.8 0.2 90 / 0.5);
+  }
+}
+
+@layer components {
+  .dark .card {
+    border-color: oklch(0.8 0.2 90 / 0.15);
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  }
+  .dark .card:hover {
+    border-color: var(--glow);
+    box-shadow: 0 0 10px 0 var(--glow);
   }
 }
 
