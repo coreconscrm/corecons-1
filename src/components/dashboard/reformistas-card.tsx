@@ -37,7 +37,15 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformis
     useEffect(() => {
         if(open) {
             if(reformista) {
-                form.reset(reformista);
+                form.reset({
+                    name: reformista.name || "",
+                    role: reformista.role || "",
+                    localidad: reformista.localidad || "",
+                    phone: reformista.phone || "",
+                    email: reformista.email || "",
+                    instagram: reformista.instagram || "",
+                    web: reformista.web || "",
+                });
             } else {
                 form.reset({ name: "", role: "Reformista", localidad: "", phone: "", email: "", instagram: "", web: "" });
             }

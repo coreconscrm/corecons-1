@@ -55,7 +55,15 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
     useEffect(() => {
         if (open) {
             if (provider) {
-                form.reset({ ...provider, priceList: provider.priceList || [] });
+                form.reset({ 
+                    ...provider,
+                    name: provider.name || "",
+                    contact: provider.contact || "",
+                    phone: provider.phone || "",
+                    discount: provider.discount || "",
+                    specialization: provider.specialization || "",
+                    priceList: provider.priceList || [] 
+                });
             } else {
                 form.reset({ name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] });
             }
@@ -77,19 +85,19 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre del Proveedor</FormLabel><FormControl><Input placeholder="Cementos Fortaleza" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Nombre del Proveedor</FormLabel><FormControl><Input placeholder="Cementos Fortaleza" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="contact" render={({ field }) => (
-                            <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Carlos Ruiz" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Carlos Ruiz" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-876-5432" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-876-5432" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                          <FormField control={form.control} name="specialization" render={({ field }) => (
-                            <FormItem><FormLabel>Especialidad</FormLabel><FormControl><Input placeholder="Estructuras, fontanería..." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Especialidad</FormLabel><FormControl><Input placeholder="Estructuras, fontanería..." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="discount" render={({ field }) => (
-                            <FormItem><FormLabel>Descuento Acordado</FormLabel><FormControl><Input placeholder="10%" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Descuento Acordado</FormLabel><FormControl><Input placeholder="10%" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         
                         <Card>

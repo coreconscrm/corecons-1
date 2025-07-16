@@ -37,7 +37,15 @@ function InmobiliariaForm({ inmobiliaria, onSubmit, open, onOpenChange }: { inmo
      useEffect(() => {
         if(open) {
             if(inmobiliaria) {
-                form.reset(inmobiliaria);
+                form.reset({
+                    name: inmobiliaria.name || "",
+                    role: inmobiliaria.role || "",
+                    localidad: inmobiliaria.localidad || "",
+                    phone: inmobiliaria.phone || "",
+                    email: inmobiliaria.email || "",
+                    instagram: inmobiliaria.instagram || "",
+                    web: inmobiliaria.web || "",
+                });
             } else {
                 form.reset({ name: "", role: "Inmobiliaria", localidad: "", phone: "", email: "", instagram: "", web: "" });
             }

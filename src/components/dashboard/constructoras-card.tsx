@@ -37,7 +37,15 @@ function ConstructoraForm({ constructora, onSubmit, open, onOpenChange }: { cons
     useEffect(() => {
         if(open) {
             if(constructora) {
-                form.reset(constructora);
+                form.reset({
+                    name: constructora.name || "",
+                    role: constructora.role || "",
+                    localidad: constructora.localidad || "",
+                    phone: constructora.phone || "",
+                    email: constructora.email || "",
+                    instagram: constructora.instagram || "",
+                    web: constructora.web || "",
+                });
             } else {
                 form.reset({ name: "", role: "Constructora", localidad: "", phone: "", email: "", instagram: "", web: "" });
             }

@@ -37,7 +37,15 @@ function InterioristaForm({ interiorista, onSubmit, open, onOpenChange }: { inte
      useEffect(() => {
         if(open) {
             if(interiorista) {
-                form.reset(interiorista);
+                form.reset({
+                    name: interiorista.name || "",
+                    role: interiorista.role || "",
+                    localidad: interiorista.localidad || "",
+                    phone: interiorista.phone || "",
+                    email: interiorista.email || "",
+                    instagram: interiorista.instagram || "",
+                    web: interiorista.web || "",
+                });
             } else {
                 form.reset({ name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" });
             }
