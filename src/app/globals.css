@@ -79,11 +79,11 @@
 }
 
 @layer components {
-  .dark .card {
+  .dark .overview-card {
     border-color: oklch(from var(--glow) l c h / 0.4);
     transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   }
-  .dark .card:hover {
+  .dark .overview-card:hover {
     border-color: oklch(from var(--glow) l c h / 1);
     box-shadow: 0 0 10px 0 oklch(from var(--glow) l c h / 0.5);
   }

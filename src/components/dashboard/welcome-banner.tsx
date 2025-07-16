@@ -14,6 +14,8 @@ import {
     CalendarCheck,
     ListTodo
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 
 function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: number }) {
   return (
@@ -35,7 +37,7 @@ export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrec
     { icon: Map, label: "Buscar Terreno", value: buscarTerreno },
   ];
   return (
-    <Card>
+    <Card className="overview-card">
       <CardHeader>
         <CardTitle>Resumen de Seguimiento</CardTitle>
       </CardHeader>
@@ -56,7 +58,7 @@ export function BudgetOverview({ pending, accepted, rejected }: { pending: numbe
     { icon: ThumbsDown, label: "Rechazados", value: rejected },
   ];
   return (
-    <Card>
+    <Card className="overview-card">
       <CardHeader>
         <CardTitle>Resumen de Presupuestos</CardTitle>
       </CardHeader>
@@ -76,7 +78,7 @@ export function FormOverview({ total, called, pending }: { total: number, called
     { icon: PhoneOff, label: "Pendientes (Manual/Prio)", value: pending },
   ];
   return (
-    <Card>
+    <Card className="overview-card">
       <CardHeader>
         <CardTitle>Resumen de Formularios</CardTitle>
       </CardHeader>
