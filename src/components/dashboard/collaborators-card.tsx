@@ -37,7 +37,15 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
     useEffect(() => {
         if(open) {
             if(collaborator) {
-                form.reset(collaborator);
+                form.reset({
+                    name: collaborator.name || "",
+                    role: collaborator.role || "",
+                    localidad: collaborator.localidad || "",
+                    phone: collaborator.phone || "",
+                    email: collaborator.email || "",
+                    instagram: collaborator.instagram || "",
+                    web: collaborator.web || "",
+                });
             } else {
                 form.reset({ name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" });
             }
