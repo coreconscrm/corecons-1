@@ -251,7 +251,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
           {clients.map(client => {
             const provider = providers.find(p => p.id === client.providerId);
             return (
-              <Card key={client.id} className="flex flex-col">
+              <Card key={client.id} className="flex flex-col overview-card">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>

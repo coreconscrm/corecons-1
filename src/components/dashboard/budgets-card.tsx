@@ -584,7 +584,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
       {budgets.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {budgets.map(budget => (
-            <Card key={budget.id} className="flex flex-col shadow-md hover:shadow-lg transition-shadow border-border/50">
+            <Card key={budget.id} className="flex flex-col overview-card">
               <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>

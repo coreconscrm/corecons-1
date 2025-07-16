@@ -453,7 +453,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
                     const progress = project.budget > 0 ? (totalProviderCost / project.budget) * 100 : 0;
 
                     return (
-                        <Card key={project.id} className="flex flex-col shadow-md border-border/50">
+                        <Card key={project.id} className="flex flex-col overview-card">
                             <CardHeader>
                                 <div className="flex justify-between items-start">
                                     <div>

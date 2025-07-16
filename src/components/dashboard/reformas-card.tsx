@@ -250,7 +250,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
           {reformas.map(reforma => {
             const provider = providers.find(p => p.id === reforma.providerId);
             return (
-              <Card key={reforma.id} className="flex flex-col">
+              <Card key={reforma.id} className="flex flex-col overview-card">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
