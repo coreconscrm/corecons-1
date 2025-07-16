@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,8 +17,8 @@ import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 
 const collaboratorSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  role: z.string().min(1, "El rol es requerido."),
+  name: z.string().optional(),
+  role: z.string().optional(),
   localidad: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
@@ -31,9 +31,19 @@ export type Collaborator = z.infer<typeof collaboratorSchema> & { id: string };
 function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { collaborator?: Collaborator, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof collaboratorSchema>>({
         resolver: zodResolver(collaboratorSchema),
-        defaultValues: collaborator || { name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" },
+        defaultValues: { name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" },
     });
     
+    useEffect(() => {
+        if(open) {
+            if(collaborator) {
+                form.reset(collaborator);
+            } else {
+                form.reset({ name: "", role: "", localidad: "", phone: "", email: "", instagram: "", web: "" });
+            }
+        }
+    }, [collaborator, open, form]);
+
     const handleSubmit = async (values: z.infer<typeof collaboratorSchema>) => {
         onSubmit({ ...collaborator, ...values });
         form.reset();
@@ -49,25 +59,25 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ana Torres" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ana Torres" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="role" render={({ field }) => (
-                            <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Arquitecto Técnico" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Arquitecto Técnico" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="localidad" render={({ field }) => (
-                            <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input placeholder="Barcelona" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input placeholder="Barcelona" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="ana.t@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="ana.t@email.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                          <FormField control={form.control} name="instagram" render={({ field }) => (
-                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@ana_arquitectura" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@ana_arquitectura" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="web" render={({ field }) => (
-                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.anaarquitectura.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.anaarquitectura.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -109,6 +119,7 @@ export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpda
                   setAddDialogOpen(false);
                   setEditingCollaborator(undefined);
                 } else {
+                  setEditingCollaborator(undefined);
                   setAddDialogOpen(true)
                 }
               }} 

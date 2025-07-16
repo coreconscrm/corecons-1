@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -25,15 +26,15 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebas
 
 // Schemas
 const projectSchema = z.object({
-  name: z.string().min(1, "El nombre del proyecto es requerido."),
-  clientId: z.string().min(1, "Debe seleccionar un cliente."),
-  budget: z.coerce.number().min(0, "El presupuesto debe ser un número positivo."),
-  status: z.string().min(1, "El estado es requerido."),
+  name: z.string().optional(),
+  clientId: z.string().optional(),
+  budget: z.coerce.number().optional(),
+  status: z.string().optional(),
   providerIds: z.array(z.string()).optional(),
-  costs: z.record(z.string(), z.coerce.number().min(0, "El coste debe ser positivo").optional()).optional(),
+  costs: z.record(z.string(), z.coerce.number().optional()).optional(),
 });
 const uploadSchema = z.object({ file: z.any().refine((files) => files?.length === 1, 'Se requiere un archivo.') });
-const ganttTaskSchema = z.object({ name: z.string().min(1, "Nombre de tarea requerido"), days: z.coerce.number().min(1, "Duración debe ser al menos 1 día") });
+const ganttTaskSchema = z.object({ name: z.string().optional(), days: z.coerce.number().optional() });
 
 // Tipos
 type Project = {
@@ -72,8 +73,8 @@ function GanttChartDialog({ project, onSave, open, onOpenChange }: { project: Pr
     const chartData = useMemo(() => {
         let accumulatedDays = 0;
         return tasks.map(task => {
-            const range = [accumulatedDays, accumulatedDays + task.days];
-            accumulatedDays += task.days;
+            const range = [accumulatedDays, accumulatedDays + (task.days || 0)];
+            accumulatedDays += (task.days || 0);
             return { name: task.name, range };
         });
     }, [tasks]);
@@ -228,8 +229,8 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
 
     useEffect(() => {
         if (project && open) { // Check for `open` ensures this runs only when dialog becomes visible
-            const costs = project.assignedProviders.reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
-            const providerIds = project.assignedProviders.map(p => p.id);
+            const costs = (project.assignedProviders || []).reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
+            const providerIds = (project.assignedProviders || []).map(p => p.id);
             form.reset({ ...project, providerIds, costs });
         } else if (!project) { // Reset for new project form
             form.reset({

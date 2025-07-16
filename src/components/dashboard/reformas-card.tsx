@@ -30,7 +30,7 @@ const reformaSchema = z.object({
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
-  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional().or(z.literal('')),
+  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
@@ -85,7 +85,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {

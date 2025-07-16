@@ -25,17 +25,17 @@ import { PriceListCard } from "./prices-card";
 
 
 const priceListItemSchema = z.object({
-  description: z.string().min(1, "La descripción es requerida."),
-  unit: z.enum(["ud", "m", "pa", "m2", "m3"]),
-  price: z.coerce.number().min(0, "El precio debe ser un número positivo."),
+  description: z.string().optional(),
+  unit: z.enum(["ud", "m", "pa", "m2", "m3"]).optional(),
+  price: z.coerce.number().optional(),
 });
 
 const providerSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  contact: z.string().min(1, "El contacto es requerido."),
-  phone: z.string().min(1, "El teléfono es requerido."),
-  discount: z.string().min(1, "El descuento es requerido."),
-  specialization: z.string().min(1, "La especialidad es requerida."),
+  name: z.string().optional(),
+  contact: z.string().optional(),
+  phone: z.string().optional(),
+  discount: z.string().optional(),
+  specialization: z.string().optional(),
   priceList: z.array(priceListItemSchema).optional(),
 });
 
@@ -44,7 +44,7 @@ type Provider = z.infer<typeof providerSchema> & { id: string };
 function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: Provider, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof providerSchema>>({
         resolver: zodResolver(providerSchema),
-        defaultValues: provider || { name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] },
+        defaultValues: { name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] },
     });
 
     const { fields, append, remove } = useFieldArray({
@@ -54,7 +54,11 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
 
     useEffect(() => {
         if (open) {
-            form.reset(provider ? { ...provider, priceList: provider.priceList || [] } : { name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] });
+            if (provider) {
+                form.reset({ ...provider, priceList: provider.priceList || [] });
+            } else {
+                form.reset({ name: "", contact: "", phone: "", discount: "", specialization: "", priceList: [] });
+            }
         }
     }, [provider, open, form]);
 
@@ -182,7 +186,8 @@ export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, o
                   setAddDialogOpen(false);
                   setEditingProvider(undefined);
                 } else {
-                  setAddDialogOpen(true)
+                  setEditingProvider(undefined);
+                  setAddDialogOpen(true);
                 }
               }} 
             />

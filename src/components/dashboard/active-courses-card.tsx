@@ -30,7 +30,7 @@ const clientSchema = z.object({
   localizacion: z.string().optional(),
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
-  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado"]).optional().or(z.literal('')),
+  obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
   estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
@@ -86,7 +86,7 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "Contactado", arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {

@@ -26,23 +26,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Schemas
 const lineItemSchema = z.object({
-  description: z.string().min(1, "La descripción es requerida."),
-  quantity: z.coerce.number().min(0, "La medición debe ser positiva."),
-  unit: z.enum(["m", "m2", "m3", "pa", "ud", "cap"]),
-  unitPrice: z.coerce.number().min(0, "El precio debe ser positivo."),
+  description: z.string().optional(),
+  quantity: z.coerce.number().optional(),
+  unit: z.enum(["m", "m2", "m3", "pa", "ud", "cap"]).optional(),
+  unitPrice: z.coerce.number().optional(),
 });
 
 const budgetSchema = z.object({
-  name: z.string().min(1, "El nombre del presupuesto es requerido."),
-  clientId: z.string().min(1, "Debe seleccionar un cliente."),
-  companyId: z.string().min(1, "Debe seleccionar una empresa."),
-  status: z.string().min(1, "El estado es requerido."),
-  m2: z.coerce.number().min(0, "Los metros cuadrados deben ser un número positivo.").optional(),
-  lineItems: z.array(lineItemSchema).min(1, "Debe añadir al menos una línea."),
-  category: z.enum(["enviados", "obra_nueva", "reformas", "subcontratas"], {
-    required_error: "Debe seleccionar una categoría."
-  }),
+  name: z.string().optional(),
+  clientId: z.string().optional(),
+  companyId: z.string().optional(),
+  status: z.string().optional(),
+  m2: z.coerce.number().optional(),
+  lineItems: z.array(lineItemSchema).optional(),
+  category: z.enum(["enviados", "obra_nueva", "reformas", "subcontratas"]).optional(),
 });
+
 
 const percentageSchema = z.object({
   percentage: z.coerce.number().min(0, "El porcentaje no puede ser negativo."),
@@ -256,7 +255,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
     const currentItems = form.getValues("lineItems");
     const updatedItems = currentItems.map(item => ({
       ...item,
-      unitPrice: item.unitPrice * (1 + percentage / 100)
+      unitPrice: (item.unitPrice || 0) * (1 + percentage / 100)
     }));
     form.setValue("lineItems", updatedItems, { shouldDirty: true, shouldValidate: true });
   };
@@ -265,7 +264,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
     const currentItems = form.getValues("lineItems");
     const updatedItems = currentItems.map(item => ({
       ...item,
-      unitPrice: item.unitPrice * (1 - percentage / 100)
+      unitPrice: (item.unitPrice || 0) * (1 - percentage / 100)
     }));
     form.setValue("lineItems", updatedItems, { shouldDirty: true, shouldValidate: true });
   };
@@ -290,7 +289,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   }, [budget, open, form, activeCategory]);
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
-    const total = values.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const total = (values.lineItems || []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
     onSubmit({ ...(budget || {}), ...values, total, id: budget?.id || `bud-${Date.now()}` });
     form.reset();
     onOpenChange(false);
@@ -544,15 +543,15 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {viewingBudget.lineItems.map((item, index) => {
-                                const lineTotal = item.quantity * item.unitPrice;
+                            {(viewingBudget.lineItems || []).map((item, index) => {
+                                const lineTotal = (item.quantity || 0) * (item.unitPrice || 0);
                                 const costPerM2 = (viewingBudget.m2 && viewingBudget.m2 > 0) ? lineTotal / viewingBudget.m2 : 0;
                                 return (
                                     <TableRow key={index}>
                                         <TableCell>{item.description}</TableCell>
                                         <TableCell className="text-right">{item.quantity}</TableCell>
                                         <TableCell>{item.unit}</TableCell>
-                                        <TableCell className="text-right font-mono">€{item.unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell className="text-right font-mono">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         <TableCell className="text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
                                             <TableCell className="text-right font-mono">

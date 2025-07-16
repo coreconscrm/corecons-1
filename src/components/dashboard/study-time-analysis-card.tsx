@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,8 +20,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 
 const teamMemberSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  role: z.string().min(1, "El rol es requerido."),
+  name: z.string().optional(),
+  role: z.string().optional(),
   avatar: z.string().url("URL de avatar inválida").optional().or(z.literal('')),
 });
 
@@ -30,13 +30,25 @@ type TeamMember = z.infer<typeof teamMemberSchema> & { id: string, hint?: string
 function TeamMemberForm({ member, onSubmit, open, onOpenChange }: { member?: TeamMember, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof teamMemberSchema>>({
         resolver: zodResolver(teamMemberSchema),
-        defaultValues: member ? { ...member, avatar: member.avatar || '' } : { name: "", role: "", avatar: "" },
+        defaultValues: { name: "", role: "", avatar: "" },
     });
 
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(member?.avatar || null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const { toast } = useToast();
+    
+    useEffect(() => {
+        if(open) {
+            if (member) {
+                form.reset({ ...member, avatar: member.avatar || '' });
+                setPreviewUrl(member.avatar || null);
+            } else {
+                form.reset({ name: "", role: "", avatar: "" });
+                setPreviewUrl(null);
+            }
+        }
+    }, [member, open, form]);
 
     const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];

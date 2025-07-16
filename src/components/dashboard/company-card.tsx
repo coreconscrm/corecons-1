@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,15 +25,15 @@ import { TeamListCard } from "./study-time-analysis-card";
 
 
 const companySchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  address: z.string().min(1, "La dirección es requerida."),
-  cif: z.string().min(1, "El CIF es requerido."),
-  phone: z.string().min(1, "El teléfono es requerido."),
-  email: z.string().email("Email inválido."),
-  web: z.string().url("URL de web inválida.").or(z.literal('')),
+  name: z.string().optional(),
+  address: z.string().optional(),
+  cif: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  web: z.string().url("URL de web inválida.").optional().or(z.literal('')),
   logo: z.string().url("URL de logo inválida.").optional().or(z.literal('')),
-  validity: z.string().min(1, "La validez es requerida."),
-  paymentMethods: z.string().min(1, "Las formas de pago son requeridas."),
+  validity: z.string().optional(),
+  paymentMethods: z.string().optional(),
 });
 
 export type Company = z.infer<typeof companySchema> & { id: string };
@@ -41,13 +41,25 @@ export type Company = z.infer<typeof companySchema> & { id: string };
 function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Company, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof companySchema>>({
         resolver: zodResolver(companySchema),
-        defaultValues: company || { name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." },
+        defaultValues: { name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." },
     });
     
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(company?.logo || null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const { toast } = useToast();
+    
+    useEffect(() => {
+        if (open) {
+            if (company) {
+                form.reset(company);
+                setPreviewUrl(company.logo || null);
+            } else {
+                form.reset({ name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." });
+                setPreviewUrl(null);
+            }
+        }
+    }, [company, open, form]);
 
     const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -100,25 +112,25 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="WinnBuilders" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="WinnBuilders" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                              <FormField control={form.control} name="cif" render={({ field }) => (
-                                <FormItem><FormLabel>CIF</FormLabel><FormControl><Input placeholder="B-12345678" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>CIF</FormLabel><FormControl><Input placeholder="B-12345678" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
                         <FormField control={form.control} name="address" render={({ field }) => (
-                            <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Parque Tecnológico de Barcelona, C/ Marie Curie, 8" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Parque Tecnológico de Barcelona, C/ Marie Curie, 8" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <FormField control={form.control} name="phone" render={({ field }) => (
-                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="+34 930 000 000" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="+34 930 000 000" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="info@winnbuilders.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="info@winnbuilders.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
                         <FormField control={form.control} name="web" render={({ field }) => (
-                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="https://www.winnbuilders.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="https://www.winnbuilders.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormItem>
                             <FormLabel>Logo de la Empresa</FormLabel>
@@ -130,10 +142,10 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                             </div>
                         </FormItem>
                         <FormField control={form.control} name="validity" render={({ field }) => (
-                            <FormItem><FormLabel>Validez del Presupuesto</FormLabel><FormControl><Textarea placeholder="Validez del presupuesto: 30 días." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Validez del Presupuesto</FormLabel><FormControl><Textarea placeholder="Validez del presupuesto: 30 días." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="paymentMethods" render={({ field }) => (
-                            <FormItem><FormLabel>Formas de Pago</FormLabel><FormControl><Textarea placeholder="Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Formas de Pago</FormLabel><FormControl><Textarea placeholder="Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>

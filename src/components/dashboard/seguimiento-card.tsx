@@ -23,12 +23,12 @@ import { es } from "date-fns/locale";
 import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen } from "lucide-react";
 
 const seguimientoSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
+  name: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
   informacion: z.string().optional(),
-  estado: z.string({ required_error: "Debe seleccionar un estado."}),
-  porHacer: z.string({ required_error: "Debe seleccionar una acción." }),
+  estado: z.string().optional(),
+  porHacer: z.string().optional(),
   siguienteLlamada: z.date().optional(),
 });
 
@@ -308,6 +308,7 @@ export function SeguimientoListCard({
                   setAddDialogOpen(false);
                   setEditingSeguimiento(undefined);
                 } else {
+                  setEditingSeguimiento(undefined);
                   setAddDialogOpen(true)
                 }
               }} 

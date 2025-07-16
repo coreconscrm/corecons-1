@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,8 +17,8 @@ import { UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 
 const reformistaSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido."),
-  role: z.string().min(1, "El rol es requerido."),
+  name: z.string().optional(),
+  role: z.string().optional(),
   localidad: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
@@ -31,9 +31,19 @@ export type Reformista = z.infer<typeof reformistaSchema> & { id: string };
 function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformista?: Reformista, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof reformistaSchema>>({
         resolver: zodResolver(reformistaSchema),
-        defaultValues: reformista || { name: "", role: "Reformista", localidad: "", phone: "", email: "", instagram: "", web: "" },
+        defaultValues: { name: "", role: "Reformista", localidad: "", phone: "", email: "", instagram: "", web: "" },
     });
     
+    useEffect(() => {
+        if(open) {
+            if(reformista) {
+                form.reset(reformista);
+            } else {
+                form.reset({ name: "", role: "Reformista", localidad: "", phone: "", email: "", instagram: "", web: "" });
+            }
+        }
+    }, [reformista, open, form]);
+
     const handleSubmit = async (values: z.infer<typeof reformistaSchema>) => {
         onSubmit({ ...reformista, ...values });
         form.reset();
@@ -49,25 +59,25 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformis
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Reformas Integrales" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Reformas Integrales" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="role" render={({ field }) => (
-                            <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Reformas de baños y cocinas" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Reformas de baños y cocinas" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="localidad" render={({ field }) => (
-                            <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input placeholder="Valencia" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input placeholder="Valencia" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="contacto@reformas.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="contacto@reformas.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                          <FormField control={form.control} name="instagram" render={({ field }) => (
-                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@reformas" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@reformas" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="web" render={({ field }) => (
-                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.reformas.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.reformas.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -108,6 +118,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                   setAddDialogOpen(false);
                   setEditingReformista(undefined);
                 } else {
+                  setEditingReformista(undefined);
                   setAddDialogOpen(true)
                 }
               }} 
