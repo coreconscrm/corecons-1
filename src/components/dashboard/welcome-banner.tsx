@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: number }) {
   return (
-    <div className="p-4 rounded-lg bg-secondary/50 dark:bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 hover:shadow-md flex-1 basis-28">
+    <div className="p-4 rounded-lg bg-secondary/50 dark:bg-secondary space-y-2 transition-transform duration-200 hover:scale-105 flex-1 basis-28 border border-transparent metric-box">
       <Icon className="h-8 w-8 text-primary mx-auto" />
       <p className="text-3xl font-bold text-foreground">
         {value}
