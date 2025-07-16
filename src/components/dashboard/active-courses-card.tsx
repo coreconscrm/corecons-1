@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin, FilePlus2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -31,7 +31,7 @@ const clientSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
+  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
@@ -86,14 +86,13 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {
     if (open) {
       if (client) {
         form.reset({
-            ...client,
             name: client.name || "",
             contact: client.contact || "",
             email: client.email || "",
@@ -101,14 +100,14 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             localizacion: client.localizacion || "",
             arquitecto: client.arquitecto || "",
             providerId: client.providerId || "",
-            obtenido: client.obtenido || undefined,
-            estado: client.estado || undefined,
+            obtenido: client.obtenido || "",
+            estado: client.estado || "",
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [client, open, form]);
@@ -212,7 +211,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
   );
 }
 
-export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[] }) {
+export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers, onCreateBudgetFromClient }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any) => void }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -263,6 +262,9 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client)}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>

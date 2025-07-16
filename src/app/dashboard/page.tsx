@@ -243,6 +243,32 @@ export default function DashboardPage() {
         toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar. Error: ${(error as Error).message}`});
     }
   };
+  
+  const handleCreateBudgetFromClient = (client: any) => {
+    const budgetDocs = [];
+    if (client.memoria) {
+      budgetDocs.push({ name: 'Memoria', url: client.memoria });
+    }
+    if (client.planos) {
+      budgetDocs.push({ name: 'Planos', url: client.planos });
+    }
+
+    const newBudget = {
+      name: `Presupuesto para ${client.name}`,
+      clientId: client.id,
+      documents: budgetDocs,
+      status: 'Pendiente',
+      total: 0,
+      lineItems: [],
+      category: 'enviados'
+    };
+
+    handleCreate('budgets', newBudget, 'Presupuesto');
+    toast({
+      title: 'Presupuesto Creado',
+      description: `Se ha creado un nuevo presupuesto para ${client.name}. Ve a la pestaña de Presupuestos para editarlo.`,
+    });
+  };
 
   const handleLoadForms = (data: any[]) => {
     const dataWithIdsAndStatus = data.map((item, index) => ({
@@ -341,6 +367,7 @@ export default function DashboardPage() {
               onAddClient={(client) => handleCreate('clients', client, 'Obra Nueva')}
               onUpdateClient={(client) => handleUpdate('clients', client, 'Obra Nueva')}
               onDeleteClient={(id) => handleDelete('clients', id, 'Obra Nueva')}
+              onCreateBudgetFromClient={handleCreateBudgetFromClient}
               
               reformas={reformas}
               onAddReforma={(reforma) => handleCreate('reformas', reforma, 'Reforma')}

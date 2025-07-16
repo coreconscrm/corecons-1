@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -31,7 +31,7 @@ const reformaSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado"]).optional(),
+  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
@@ -85,14 +85,13 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" },
   });
 
   useEffect(() => {
     if (open) {
       if (reforma) {
         form.reset({
-            ...reforma,
             name: reforma.name || "",
             contact: reforma.contact || "",
             email: reforma.email || "",
@@ -100,14 +99,14 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             localizacion: reforma.localizacion || "",
             arquitecto: reforma.arquitecto || "",
             providerId: reforma.providerId || "",
-            obtenido: reforma.obtenido || undefined,
-            estado: reforma.estado || undefined,
+            obtenido: reforma.obtenido || "",
+            estado: reforma.estado || "",
             infoAdicional: reforma.infoAdicional || "",
             memoria: reforma.memoria || "",
             planos: reforma.planos || "",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: undefined, arquitecto: "", providerId: "", obtenido: undefined, infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" });
       }
     }
   }, [reforma, open, form]);
@@ -211,7 +210,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   );
 }
 
-export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[] }) {
+export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any) => void }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingReforma, setEditingReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -262,6 +261,9 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma)}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                           <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
