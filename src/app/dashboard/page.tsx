@@ -61,6 +61,7 @@ export default function DashboardPage() {
     reformistas: true,
     inmobiliarias: true,
     seguimiento: true,
+    ia: true,
   });
   const [activeTab, setActiveTab] = useState("clients");
 

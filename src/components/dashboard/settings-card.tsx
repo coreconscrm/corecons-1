@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -23,6 +24,7 @@ type VisibleTabs = {
     companies: boolean;
     prices: boolean;
     seguimiento: boolean;
+    ia: boolean;
 }
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
@@ -41,6 +43,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     team: "Empresa (Equipo)",
     forms: "Formularios",
     companies: "Empresa (Perfiles y Docs)",
+    ia: "Inteligencia Artificial",
 };
 
 export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs: VisibleTabs, onVisibilityChange: (fn: (prev: VisibleTabs) => VisibleTabs) => void }) {
