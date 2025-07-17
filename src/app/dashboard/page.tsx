@@ -10,9 +10,10 @@ import { SeguimientoOverview, BudgetOverview, FormOverview } from "@/components/
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { isWithinInterval, addDays } from 'date-fns';
+import { Button } from "@/components/ui/button";
 
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
@@ -67,6 +68,7 @@ export default function DashboardPage() {
 
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
+  const [showOverviewPanels, setShowOverviewPanels] = useState(true);
   
   useEffect(() => {
     try {
@@ -339,26 +341,34 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold">Panel de Control</h1>
-            
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <SeguimientoOverview
-                llamarEstaSemana={llamarEstaSemana}
-                totalSeguimientos={totalSeguimientos}
-                ofrecerArquitecto={ofrecerArquitecto}
-                buscarTerreno={buscarTerreno}
-              />
-              <BudgetOverview
-                pending={budgetsPending}
-                accepted={budgetsAccepted}
-                rejected={budgetsRejected}
-              />
-              <FormOverview
-                total={formsTotal}
-                called={manualAndPriorityCalled}
-                pending={manualAndPriorityPending}
-              />
+            <div className="flex items-center gap-4">
+                <h1 className="text-3xl font-bold">Panel de Control</h1>
+                <Button variant="ghost" size="icon" onClick={() => setShowOverviewPanels(!showOverviewPanels)} className="text-muted-foreground hover:text-foreground">
+                    {showOverviewPanels ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
+                    <span className="sr-only">Ocultar/Mostrar paneles de resumen</span>
+                </Button>
             </div>
+            
+            {showOverviewPanels && (
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <SeguimientoOverview
+                    llamarEstaSemana={llamarEstaSemana}
+                    totalSeguimientos={totalSeguimientos}
+                    ofrecerArquitecto={ofrecerArquitecto}
+                    buscarTerreno={buscarTerreno}
+                />
+                <BudgetOverview
+                    pending={budgetsPending}
+                    accepted={budgetsAccepted}
+                    rejected={budgetsRejected}
+                />
+                <FormOverview
+                    total={formsTotal}
+                    called={manualAndPriorityCalled}
+                    pending={manualAndPriorityPending}
+                />
+                </div>
+            )}
             
             <DashboardTabs
               activeTab={activeTab}
