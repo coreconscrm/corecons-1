@@ -1,3 +1,4 @@
+
 "use client";
 
 import { initializeApp, getApp, getApps, type FirebaseApp } from "firebase/app";
@@ -11,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCzeGtW-b-CI-_CPjth_fRXbLE62Smio2A",
   authDomain: "study-hub-dashboard.firebaseapp.com",
   projectId: "study-hub-dashboard",
-  storageBucket: "study-hub-dashboard.firebasestorage.app",
+  storageBucket: "study-hub-dashboard.appspot.com",
   messagingSenderId: "955037422201",
   appId: "1:955037422201:web:ac9276c258fec58929baa8"
 };
