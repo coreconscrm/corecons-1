@@ -183,23 +183,23 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Juan Pérez" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="phone" render={({ field }) => (
-                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="555-123-456" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.p@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.p@email.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
                         <FormField control={form.control} name="informacion" render={({ field }) => (
-                            <FormItem><FormLabel>Información</FormLabel><FormControl><Textarea placeholder="Detalles del contacto, interés, etc." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Información</FormLabel><FormControl><Textarea placeholder="Detalles del contacto, interés, etc." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="estado" render={({ field }) => (
                                 <FormItem><FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {estadoOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
@@ -209,7 +209,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                             )} />
                             <FormField control={form.control} name="porHacer" render={({ field }) => (
                                 <FormItem><FormLabel>Por Hacer</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una acción" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {porHacerOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
@@ -333,6 +333,7 @@ export function SeguimientoListCard({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>Acciones</TableHead>
                             <TableHead>Nombre</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
@@ -340,29 +341,12 @@ export function SeguimientoListCard({
                             <TableHead>Estado</TableHead>
                             <TableHead>Por Hacer</TableHead>
                             <TableHead>Próxima Llamada</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {seguimientos.map(s => (
                             <TableRow key={s.id}>
-                                <TableCell className="font-medium">{s.name}</TableCell>
-                                <TableCell>{s.phone}</TableCell>
-                                <TableCell>{s.email}</TableCell>
                                 <TableCell>
-                                    {s.informacion && (
-                                        <p 
-                                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
-                                          onClick={() => setViewingInfo(s.informacion || null)}
-                                        >
-                                          {s.informacion}
-                                        </p>
-                                    )}
-                                </TableCell>
-                                <TableCell className="capitalize">{s.estado}</TableCell>
-                                <TableCell className="capitalize">{s.porHacer}</TableCell>
-                                <TableCell>{s.siguienteLlamada ? format(new Date(s.siguienteLlamada), "dd/MM/yyyy") : 'N/A'}</TableCell>
-                                <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
@@ -380,6 +364,22 @@ export function SeguimientoListCard({
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </TableCell>
+                                <TableCell className="font-medium">{s.name}</TableCell>
+                                <TableCell>{s.phone}</TableCell>
+                                <TableCell>{s.email}</TableCell>
+                                <TableCell>
+                                    {s.informacion && (
+                                        <p 
+                                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
+                                          onClick={() => setViewingInfo(s.informacion || null)}
+                                        >
+                                          {s.informacion}
+                                        </p>
+                                    )}
+                                </TableCell>
+                                <TableCell className="capitalize">{s.estado}</TableCell>
+                                <TableCell className="capitalize">{s.porHacer}</TableCell>
+                                <TableCell>{s.siguienteLlamada ? format(new Date(s.siguienteLlamada), "dd/MM/yyyy") : 'N/A'}</TableCell>
                             </TableRow>
                         ))}
                          {seguimientos.length === 0 && (

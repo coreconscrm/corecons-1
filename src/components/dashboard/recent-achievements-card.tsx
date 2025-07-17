@@ -251,12 +251,28 @@ function DynamicTableCard({
             <ScrollArea className="w-full">
               <Table>
                 <TableHeader><TableRow>
+                    <TableHead>Acciones</TableHead>
                     {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
-                    <TableHead className="text-right">Acciones</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
+                       <TableCell>
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              {itemActions(item)}
+                              <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
                       {visibleHeaders.map(h => {
                         const cellKey = `${item.id}-${h.key}`;
                         if (h.key === 'called') {
@@ -290,22 +306,6 @@ function DynamicTableCard({
                             </TableCell>
                         );
                       })}
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              {itemActions(item)}
-                              <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
