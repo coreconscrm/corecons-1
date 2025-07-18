@@ -323,15 +323,9 @@ export default function DashboardPage() {
   const totalSeguimientos = seguimientos.length;
   const llamarEstaSemana = seguimientos.filter(s => {
     if (!s.siguienteLlamada || typeof s.siguienteLlamada !== 'string') return false;
-
-    let nextCallDate: Date;
-    // Check if the date is in ISO format
-    if (s.siguienteLlamada.includes('T')) {
-        nextCallDate = new Date(s.siguienteLlamada);
-    } else {
-        // Assume "dd/MM/yyyy" format and parse it
-        nextCallDate = parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date());
-    }
+    
+    // Assume "dd/MM/yyyy" format and parse it
+    const nextCallDate = parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date());
 
     if (!isValid(nextCallDate)) return false;
 

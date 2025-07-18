@@ -168,7 +168,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
         const submissionData = {
             ...seguimiento,
             ...values,
-            siguienteLlamada: values.siguienteLlamada ? values.siguienteLlamada.toISOString() : null,
+            siguienteLlamada: values.siguienteLlamada ? format(values.siguienteLlamada, "dd/MM/yyyy") : null,
         };
         onSubmit(submissionData);
         form.reset();
@@ -234,7 +234,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                         </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
                                     </PopoverContent>
                                 </Popover><FormMessage />
                             </FormItem>
@@ -385,7 +385,7 @@ export function SeguimientoListCard({
                                 </TableCell>
                                 <TableCell className="capitalize">{s.estado}</TableCell>
                                 <TableCell className="capitalize">{s.porHacer}</TableCell>
-                                <TableCell>{s.siguienteLlamada ? format(new Date(s.siguienteLlamada), "dd/MM/yyyy") : 'N/A'}</TableCell>
+                                <TableCell>{s.siguienteLlamada || 'N/A'}</TableCell>
                             </TableRow>
                         ))}
                          {seguimientos.length === 0 && (
@@ -402,4 +402,5 @@ export function SeguimientoListCard({
         </Card>
     );
 }
+
 
