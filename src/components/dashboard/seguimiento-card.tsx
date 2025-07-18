@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen } from "lucide-react";
 
@@ -30,10 +30,10 @@ const seguimientoSchema = z.object({
   informacion: z.string().optional(),
   estado: z.string().optional(),
   porHacer: z.string().optional(),
-  siguienteLlamada: z.date().optional(),
+  siguienteLlamada: z.date().optional().nullable(),
 });
 
-export type Seguimiento = z.infer<typeof seguimientoSchema> & { id: string, siguienteLlamada: string };
+export type Seguimiento = z.infer<typeof seguimientoSchema> & { id: string, siguienteLlamada: string | null };
 
 function OptionsSettingsDialog({ 
     estadoOptions, 
@@ -154,9 +154,12 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
     useEffect(() => {
         if (open) {
             if (seguimiento) {
+                 const callDate = seguimiento.siguienteLlamada 
+                    ? parse(seguimiento.siguienteLlamada, 'dd/MM/yyyy', new Date())
+                    : null;
                 form.reset({
                     ...seguimiento,
-                    siguienteLlamada: seguimiento.siguienteLlamada ? new Date(seguimiento.siguienteLlamada) : undefined,
+                    siguienteLlamada: callDate && !isNaN(callDate.getTime()) ? callDate : null,
                 });
             } else {
                 form.reset({ name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
@@ -402,5 +405,6 @@ export function SeguimientoListCard({
         </Card>
     );
 }
+
 
 
