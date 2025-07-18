@@ -2,13 +2,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientListCard } from "./active-courses-card";
 import { ReformaListCard } from "./reformas-card";
+import type { BudgetCategory } from "./budgets-card";
 
 export function ClientsSection({
     clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient,
     reformas, onAddReforma, onUpdateReforma, onDeleteReforma,
     visibleTabs
 }: {
-    clients: any[], providers: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any) => void,
+    clients: any[], providers: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void,
     reformas: any[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: any) => void,
     visibleTabs: any
 }) {

@@ -9,6 +9,7 @@ import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { SeguimientoListCard } from "./seguimiento-card";
 import { AiSection } from "./ai-section";
+import type { BudgetCategory } from "./budgets-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -34,7 +35,7 @@ export function DashboardTabs({
     sheetUrl, onSaveSheetUrl
 }: {
     activeTab: string, onTabChange: (tab: string) => void,
-    clients: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any) => void,
+    clients: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void,
     reformas: any[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: any) => void,
     projects: any[], onAddProject: (project: any) => void, onUpdateProject: (project: any) => void, onDeleteProject: (id: any) => void,
     providers: any[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: any) => void,

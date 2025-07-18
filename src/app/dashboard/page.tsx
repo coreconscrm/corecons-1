@@ -14,6 +14,8 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { isWithinInterval, addDays } from 'date-fns';
 import { Button } from "@/components/ui/button";
+import type { BudgetCategory } from '@/components/dashboard/budgets-card';
+
 
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
@@ -247,7 +249,7 @@ export default function DashboardPage() {
     }
   };
   
-  const handleCreateBudgetFromClient = (client: any) => {
+  const handleCreateBudgetFromClient = (client: any, category: BudgetCategory = 'enviados') => {
     const budgetDocs = [];
     if (client.memoria) {
       budgetDocs.push({ name: 'Memoria', url: client.memoria });
@@ -263,7 +265,7 @@ export default function DashboardPage() {
       status: 'Pendiente',
       total: 0,
       lineItems: [],
-      category: 'enviados'
+      category: category,
     };
 
     handleCreate('budgets', newBudget, 'Presupuesto');

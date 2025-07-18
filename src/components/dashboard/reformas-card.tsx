@@ -14,13 +14,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2 } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2, Copy } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import type { BudgetCategory } from "./budgets-card";
 
 const reformaSchema = z.object({
   name: z.string().optional(),
@@ -210,7 +211,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   );
 }
 
-export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any) => void }) {
+export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingReforma, setEditingReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -262,7 +263,8 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                         <DropdownMenuContent>
                           <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma)}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'reformas')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
                            <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                         </DropdownMenuContent>
