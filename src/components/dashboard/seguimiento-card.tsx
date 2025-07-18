@@ -158,7 +158,13 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                     ? parse(seguimiento.siguienteLlamada, 'dd/MM/yyyy', new Date())
                     : null;
                 form.reset({
-                    ...seguimiento,
+                    name: seguimiento.name || "",
+                    phone: seguimiento.phone || "",
+                    email: seguimiento.email || "",
+                    localizacion: seguimiento.localizacion || "",
+                    informacion: seguimiento.informacion || "",
+                    estado: seguimiento.estado || estadoOptions[0],
+                    porHacer: seguimiento.porHacer || porHacerOptions[0],
                     siguienteLlamada: callDate && isValid(callDate) ? callDate : null,
                 });
             } else {
@@ -331,7 +337,10 @@ export function SeguimientoListCard({
               seguimiento={activeSeguimiento} 
               onSubmit={handleSubmit} 
               open={isFormOpen} 
-              onOpenChange={setFormOpen}
+              onOpenChange={(isOpen) => {
+                  if(!isOpen) setActiveSeguimiento(undefined);
+                  setFormOpen(isOpen);
+              }}
               estadoOptions={estadoOptions}
               porHacerOptions={porHacerOptions}
             />
