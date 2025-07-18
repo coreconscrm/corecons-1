@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, TrendingDown, Home, Scaling, Move } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Upload, Eye, Printer, Loader2, TrendingUp, TrendingDown, Home, Scaling, Move, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
@@ -22,6 +22,8 @@ import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Separator } from "../ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "../ui/badge";
 
 
 // Schemas
@@ -518,7 +520,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
 
 
   return (
-    <div>
+    <Card>
        <div className="printable-area">
         <BudgetPrintLayout 
           budget={printingBudget}
@@ -586,90 +588,103 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
           </Dialog>
       )}
       
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold">{title}</h2>
         <Button onClick={handleAddBudget}><PlusCircle className="mr-2 h-4 w-4" />Crear Presupuesto</Button>
-      </div>
+      </CardHeader>
       
-      {budgets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {budgets.map(budget => (
-            <Card key={budget.id} className="flex flex-col overview-card">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="mb-1">{budget.name}</CardTitle>
-                        <CardDescription>{clients.find(c => c.id === budget.clientId)?.name}</CardDescription>
-                        <CardDescription className="text-xs pt-1">Emitido por: {companies.find(c => c.id === budget.companyId)?.name}</CardDescription>
-                    </div>
-                    <AlertDialog>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
-                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                  <div>
-                    <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    <p className="text-sm text-muted-foreground">{budget.status}</p>
-                  </div>
-                   {budget.m2 && budget.m2 > 0 && (
-                      <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
-                          <div className="flex items-center gap-2">
-                            <Home className="h-4 w-4 text-primary"/>
-                            <span>Superficie: <strong>{budget.m2} m²</strong></span>
-                          </div>
-                          <Separator orientation="vertical" className="h-4" />
-                          <div className="flex items-center gap-2">
-                             <Scaling className="h-4 w-4 text-primary"/>
-                             <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                          </div>
-                      </div>
-                   )}
-              </CardContent>
-              <CardFooter className="flex justify-between items-center border-t pt-4">
-                   <div>
-                      <h4 className="font-semibold text-sm mb-2">Documentos</h4>
-                      {(budget.documents || []).length > 0 ? (
-                          <ul className="list-disc list-inside text-sm text-muted-foreground">{(budget.documents || []).map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
-                      ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
-                  </div>
-                   <Button variant="outline" size="sm" onClick={() => {
-                       const fileInput = document.createElement('input');
-                       fileInput.type = 'file';
-                       fileInput.onchange = (e) => {
-                           const file = (e.target as HTMLInputElement).files?.[0];
-                           if (file) {
-                              handleDocUpload(file, budget);
-                           }
-                       }
-                       fileInput.click();
-                   }} disabled={isUploading}>
-                       {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
-                   </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">No hay presupuestos en esta categoría.</div>
-      )}
-    </div>
+       <CardContent>
+            {budgets.length > 0 ? (
+                <Accordion type="single" collapsible className="w-full space-y-4">
+                    {budgets.map(budget => {
+                        const client = clients.find(c => c.id === budget.clientId);
+                        const company = companies.find(c => c.id === budget.companyId);
+
+                        return (
+                            <AccordionItem value={budget.id} key={budget.id} className="border-none">
+                                <Card className="flex flex-col overview-card">
+                                    <CardHeader className="flex flex-row items-center justify-between p-4">
+                                        <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                                            <div className="text-left">
+                                                <h3 className="font-semibold text-lg">{budget.name}</h3>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                     {budget.status && <Badge variant="secondary">{budget.status}</Badge>}
+                                                     <span className="text-sm text-muted-foreground">{client?.name}</span>
+                                                </div>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </CardHeader>
+                                    <AccordionContent className="px-6 pb-6 pt-0">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                <p className="text-sm text-muted-foreground">Emitido por: {company?.name || 'N/A'}</p>
+                                            </div>
+                                            {budget.m2 && budget.m2 > 0 && (
+                                                <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Home className="h-4 w-4 text-primary"/>
+                                                        <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                                                    </div>
+                                                    <Separator orientation="vertical" className="h-4" />
+                                                    <div className="flex items-center gap-2">
+                                                        <Scaling className="h-4 w-4 text-primary"/>
+                                                        <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center border-t pt-4">
+                                                <div>
+                                                    <h4 className="font-semibold text-sm mb-2">Documentos</h4>
+                                                    {(budget.documents || []).length > 0 ? (
+                                                        <ul className="list-disc list-inside text-sm text-muted-foreground">{(budget.documents || []).map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                                                    ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
+                                                </div>
+                                                <Button variant="outline" size="sm" onClick={() => {
+                                                    const fileInput = document.createElement('input');
+                                                    fileInput.type = 'file';
+                                                    fileInput.onchange = (e) => {
+                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                        if (file) {
+                                                        handleDocUpload(file, budget);
+                                                        }
+                                                    }
+                                                    fileInput.click();
+                                                }} disabled={isUploading}>
+                                                    {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
+            ) : (
+                <div className="text-center py-12 text-muted-foreground">No hay presupuestos en esta categoría.</div>
+            )}
+        </CardContent>
+    </Card>
   );
 }
 
