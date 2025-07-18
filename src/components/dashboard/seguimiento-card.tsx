@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { format, parse } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen } from "lucide-react";
 
@@ -159,7 +159,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                     : null;
                 form.reset({
                     ...seguimiento,
-                    siguienteLlamada: callDate && !isNaN(callDate.getTime()) ? callDate : null,
+                    siguienteLlamada: callDate && isValid(callDate) ? callDate : null,
                 });
             } else {
                 form.reset({ name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
@@ -237,7 +237,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                         </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
+                                        <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
                                     </PopoverContent>
                                 </Popover><FormMessage />
                             </FormItem>
@@ -405,6 +405,7 @@ export function SeguimientoListCard({
         </Card>
     );
 }
+
 
 
 
