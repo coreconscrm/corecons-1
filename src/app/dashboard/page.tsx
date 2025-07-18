@@ -325,11 +325,13 @@ export default function DashboardPage() {
       if (!s.siguienteLlamada) return false;
       const nextCallDate = new Date(s.siguienteLlamada);
       const today = new Date();
+      // Set hours to 0 to compare dates only
+      today.setHours(0, 0, 0, 0);
       const nextWeek = addDays(today, 7);
       return isWithinInterval(nextCallDate, { start: today, end: nextWeek });
   }).length;
-  const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase() === 'buscar arquitecto').length;
-  const buscarTerreno = seguimientos.filter(s => s.porHacer?.toLowerCase() === 'buscar terreno').length;
+  const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar arquitecto').length;
+  const buscarTerreno = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar terreno').length;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
