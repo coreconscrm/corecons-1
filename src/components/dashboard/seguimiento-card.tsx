@@ -287,6 +287,22 @@ export function SeguimientoListCard({
         }
         setEditingSeguimiento(undefined);
     };
+    
+    const formatDisplayDate = (dateString: string | null): string => {
+        if (!dateString) return 'N/A';
+        // Intenta parsear como dd/MM/yyyy primero
+        let date = parse(dateString, 'dd/MM/yyyy', new Date());
+        // Si no es válido, intenta parsear como ISO string
+        if (!isValid(date)) {
+            date = new Date(dateString);
+        }
+        // Si sigue sin ser válido, devuelve el string original o N/A
+        if (!isValid(date)) {
+            return dateString;
+        }
+        return format(date, 'dd/MM/yyyy');
+    };
+
 
     return (
         <Card>
@@ -388,7 +404,7 @@ export function SeguimientoListCard({
                                 </TableCell>
                                 <TableCell className="capitalize">{s.estado}</TableCell>
                                 <TableCell className="capitalize">{s.porHacer}</TableCell>
-                                <TableCell>{s.siguienteLlamada || 'N/A'}</TableCell>
+                                <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
                             </TableRow>
                         ))}
                          {seguimientos.length === 0 && (
@@ -406,6 +422,4 @@ export function SeguimientoListCard({
     );
 }
 
-
-
-
+    
