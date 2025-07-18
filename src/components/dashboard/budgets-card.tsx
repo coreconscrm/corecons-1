@@ -473,8 +473,7 @@ function BudgetAccordionItem({
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
-    const handleDocUpload = async (file: File, budget: Budget) => {
-        if (!budget) return;
+    const handleDocUpload = async (file: File) => {
         setIsUploading(true);
     
         const storageRef = ref(storage, `budgets/${budget.id}/documents/${file.name}`);
@@ -567,7 +566,7 @@ function BudgetAccordionItem({
                                 fileInput.onchange = (e) => {
                                     const file = (e.target as HTMLInputElement).files?.[0];
                                     if (file) {
-                                    handleDocUpload(file, budget);
+                                    handleDocUpload(file);
                                     }
                                 }
                                 fileInput.click();
