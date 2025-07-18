@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2, Copy } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -212,7 +212,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   );
 }
 
-export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void }) {
+export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void }) {
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeReforma, setActiveReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -273,6 +273,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent>
                             <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(reforma)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'reformas')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>

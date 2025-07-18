@@ -303,6 +303,25 @@ export default function DashboardPage() {
     });
   };
 
+  const handleCreateSeguimientoFromClient = (client: any) => {
+    const newSeguimiento = {
+        name: client.name || 'Sin nombre',
+        phone: client.phone || '',
+        email: client.email || '',
+        localizacion: client.localizacion || '',
+        informacion: `Cliente existente - ${client.name}`,
+        estado: 'primer contacto',
+        porHacer: 'llamar',
+        siguienteLlamada: null
+    };
+    handleCreate('seguimientos', newSeguimiento, 'Seguimiento');
+    toast({
+      title: 'Movido a Seguimiento',
+      description: `${client.name} ha sido añadido a la lista de seguimiento.`,
+    });
+  };
+
+
   const handleLoadForms = (data: any[]) => {
     const dataWithIdsAndStatus = data.map((item, index) => ({
       ...item,
@@ -417,6 +436,7 @@ export default function DashboardPage() {
               onUpdateClient={(client) => handleUpdate('clients', client, 'Obra Nueva')}
               onDeleteClient={(id) => handleDelete('clients', id, 'Obra Nueva')}
               onCreateBudgetFromClient={handleCreateBudgetFromClient}
+              onCreateSeguimientoFromClient={handleCreateSeguimientoFromClient}
               
               reformas={reformas}
               onAddReforma={(reforma) => handleCreate('reformas', reforma, 'Reforma')}

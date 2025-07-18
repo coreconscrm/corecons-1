@@ -5,11 +5,11 @@ import { ReformaListCard } from "./reformas-card";
 import type { BudgetCategory } from "./budgets-card";
 
 export function ClientsSection({
-    clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient,
+    clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient, onCreateSeguimientoFromClient,
     reformas, onAddReforma, onUpdateReforma, onDeleteReforma,
     visibleTabs
 }: {
-    clients: any[], providers: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void,
+    clients: any[], providers: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void,
     reformas: any[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: any) => void,
     visibleTabs: any
 }) {
@@ -37,6 +37,7 @@ export function ClientsSection({
                         onUpdateClient={onUpdateClient} 
                         onDeleteClient={onDeleteClient} 
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
+                        onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
                     />
                 </TabsContent>
             )}
@@ -50,6 +51,7 @@ export function ClientsSection({
                         onUpdateReforma={onUpdateReforma} 
                         onDeleteReforma={onDeleteReforma}
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
+                        onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
                     />
                 </TabsContent>
             )}
