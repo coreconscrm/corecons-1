@@ -73,26 +73,21 @@ export default function DashboardPage() {
   const [notepadContent, setNotepadContent] = useState("");
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
   
-  useEffect(() => {
+  const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer', newOptions: string[]) => {
     try {
-      const savedEstado = localStorage.getItem('seguimientoEstadoOptions');
-      const savedPorHacer = localStorage.getItem('seguimientoPorHacerOptions');
-      if (savedEstado) setEstadoOptions(JSON.parse(savedEstado));
-      if (savedPorHacer) setPorHacerOptions(JSON.parse(savedPorHacer));
+        const optionsDocRef = doc(db, 'config', 'seguimientoOptions');
+        if (type === 'estado') {
+            setEstadoOptions(newOptions);
+            await setDoc(optionsDocRef, { estadoOptions: newOptions }, { merge: true });
+        } else {
+            setPorHacerOptions(newOptions);
+            await setDoc(optionsDocRef, { porHacerOptions: newOptions }, { merge: true });
+        }
+        toast({ title: 'Opciones guardadas', description: 'Tus cambios en las opciones de seguimiento han sido guardados en la base de datos.' });
     } catch (error) {
-      console.error("Error loading seguimiento options from localStorage", error);
+        console.error("Error saving seguimiento options to Firestore", error);
+        toast({ variant: 'destructive', title: `Error al guardar`, description: `No se pudieron guardar las opciones. Error: ${(error as Error).message}`});
     }
-  }, []);
-
-  const handleSeguimientoOptionsChange = (type: 'estado' | 'porHacer', newOptions: string[]) => {
-    if (type === 'estado') {
-      setEstadoOptions(newOptions);
-      localStorage.setItem('seguimientoEstadoOptions', JSON.stringify(newOptions));
-    } else {
-      setPorHacerOptions(newOptions);
-      localStorage.setItem('seguimientoPorHacerOptions', JSON.stringify(newOptions));
-    }
-    toast({ title: 'Opciones guardadas', description: 'Tus cambios en las opciones de seguimiento han sido guardados.' });
   };
 
 
@@ -135,6 +130,15 @@ export default function DashboardPage() {
         setReformistas(mapSnapToState(snapshots[13]));
         setInmobiliarias(mapSnapToState(snapshots[14]));
         setSeguimientos(mapSnapToState(snapshots[15]));
+        
+        // Fetch config options
+        const configOptionsRef = doc(db, 'config', 'seguimientoOptions');
+        const configOptionsSnap = await getDoc(configOptionsRef);
+        if (configOptionsSnap.exists()) {
+            const optionsData = configOptionsSnap.data();
+            if(optionsData.estadoOptions) setEstadoOptions(optionsData.estadoOptions);
+            if(optionsData.porHacerOptions) setPorHacerOptions(optionsData.porHacerOptions);
+        }
 
         // Fetch Google Sheet config and data
         const configDocRef = doc(db, 'config', 'googleSheet');
@@ -493,3 +497,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
+
+    
