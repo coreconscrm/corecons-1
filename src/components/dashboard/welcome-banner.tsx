@@ -51,11 +51,13 @@ export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrec
 }
 
 
-export function BudgetOverview({ pending, accepted, rejected }: { pending: number, accepted: number, rejected: number }) {
+export function BudgetOverview({ pending, accepted, rejected, done, sent }: { pending: number, accepted: number, rejected: number, done: number, sent: number }) {
   const metrics = [
     { icon: FileClock, label: "Pendientes", value: pending },
+    { icon: FileSignature, label: "Enviados", value: sent },
     { icon: ThumbsUp, label: "Aceptados", value: accepted },
     { icon: ThumbsDown, label: "Rechazados", value: rejected },
+    { icon: CheckCircle, label: "Hechos", value: done },
   ];
   return (
     <Card className="overview-card">

@@ -336,8 +336,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                       <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
+                        <SelectItem value="Enviados">Enviados</SelectItem>
                         <SelectItem value="Aceptado">Aceptado</SelectItem>
                         <SelectItem value="Rechazado">Rechazado</SelectItem>
+                        <SelectItem value="Hechos">Hechos</SelectItem>
                       </SelectContent>
                     </Select><FormMessage />
                   </FormItem>

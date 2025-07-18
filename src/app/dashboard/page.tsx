@@ -359,6 +359,8 @@ export default function DashboardPage() {
   const budgetsPending = budgets.filter(b => b.status === 'Pendiente').length;
   const budgetsAccepted = budgets.filter(b => b.status === 'Aceptado').length;
   const budgetsRejected = budgets.filter(b => b.status === 'Rechazado').length;
+  const budgetsDone = budgets.filter(b => b.status === 'Hechos').length;
+  const budgetsSent = budgets.filter(b => b.status === 'Enviados').length;
 
   // Metrics for Form Overview
   const formsTotal = forms.length;
@@ -377,8 +379,8 @@ export default function DashboardPage() {
     if (!isValid(nextCallDate)) return false;
 
     const today = new Date();
-    const startOfThisWeek = startOfWeek(today, { locale: es });
-    const endOfThisWeek = endOfWeek(today, { locale: es });
+    const startOfThisWeek = startOfWeek(today, { locale: es, weekStartsOn: 1 });
+    const endOfThisWeek = endOfWeek(today, { locale: es, weekStartsOn: 1 });
     
     return isWithinInterval(nextCallDate, { start: startOfThisWeek, end: endOfThisWeek });
   }).length;
@@ -418,6 +420,8 @@ export default function DashboardPage() {
                     pending={budgetsPending}
                     accepted={budgetsAccepted}
                     rejected={budgetsRejected}
+                    done={budgetsDone}
+                    sent={budgetsSent}
                 />
                 <FormOverview
                     total={formsTotal}
