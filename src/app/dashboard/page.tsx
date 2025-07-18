@@ -12,13 +12,13 @@ import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
-import { isWithinInterval, addDays } from 'date-fns';
+import { isWithinInterval, addDays, isValid } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import type { BudgetCategory } from '@/components/dashboard/budgets-card';
 
 
 const initialFormSubmissions: any[] = [];
-const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto"];
+const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto", "buscar terreno"];
 const defaultPorHacerOptions = ["llamar", "buscar arquitecto", "licencia"];
 
 export default function DashboardPage() {
@@ -324,14 +324,14 @@ export default function DashboardPage() {
   const llamarEstaSemana = seguimientos.filter(s => {
       if (!s.siguienteLlamada) return false;
       const nextCallDate = new Date(s.siguienteLlamada);
+      if (!isValid(nextCallDate)) return false; // Check if the date is valid
       const today = new Date();
-      // Set hours to 0 to compare dates only
       today.setHours(0, 0, 0, 0);
       const nextWeek = addDays(today, 7);
       return isWithinInterval(nextCallDate, { start: today, end: nextWeek });
   }).length;
   const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar arquitecto').length;
-  const buscarTerreno = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar terreno').length;
+  const buscarTerreno = seguimientos.filter(s => s.estado?.toLowerCase().trim() === 'buscar terreno').length;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
