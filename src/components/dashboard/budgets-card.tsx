@@ -293,7 +293,6 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
     onSubmit({ ...(budget || {}), ...values, total, id: budget?.id || `bud-${Date.now()}` });
-    form.reset();
     onOpenChange(false);
   };
 
@@ -308,12 +307,12 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Nombre del Presupuesto</FormLabel><FormControl><Input placeholder="Reforma integral vivienda" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Nombre del Presupuesto</FormLabel><FormControl><Input placeholder="Reforma integral vivienda" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormField control={form.control} name="clientId" render={({ field }) => (
                 <FormItem><FormLabel>Cliente</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger></FormControl>
                     <SelectContent>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -321,20 +320,20 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
               )} />
               <FormField control={form.control} name="companyId" render={({ field }) => (
                 <FormItem><FormLabel>Empresa Emisora</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una empresa" /></SelectTrigger></FormControl>
                     <SelectContent>{companies.map(company => (<SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="m2" render={({ field }) => (
-                <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>
               )} />
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <FormField control={form.control} name="status" render={({ field }) => (
                   <FormItem><FormLabel>Estado</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
@@ -348,7 +347,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                 )} />
                 <FormField control={form.control} name="category" render={({ field }) => (
                   <FormItem><FormLabel>Categoría</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una categoría" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {budgetCategories.map(cat => (
@@ -392,10 +391,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                         return (
                             <TableRow key={field.id}>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => <Input {...field} placeholder="Demolición tabiquería" />} />
+                                <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => <Input {...field} placeholder="Demolición tabiquería" value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} />
+                                <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell>
                                 <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
@@ -413,7 +412,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                                 )} />
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} />} />
+                                <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell className="font-mono text-right">
                                 €{itemTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -449,6 +448,141 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
 }
 
 
+// --- Componente de item de acordeón de presupuesto ---
+function BudgetAccordionItem({
+    budget,
+    clients,
+    companies,
+    setViewingBudget,
+    setMovingBudget,
+    setPrintingBudget,
+    handleEditBudget,
+    onDeleteBudget,
+    onUpdateBudget
+}: {
+    budget: Budget,
+    clients: any[],
+    companies: Company[],
+    setViewingBudget: (b: Budget | undefined) => void,
+    setMovingBudget: (b: Budget | undefined) => void,
+    setPrintingBudget: (b: Budget | null) => void,
+    handleEditBudget: (b: Budget) => void,
+    onDeleteBudget: (id: string) => void,
+    onUpdateBudget: (b: any) => void
+}) {
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
+
+    const handleDocUpload = async (file: File, budget: Budget) => {
+        if (!budget) return;
+        setIsUploading(true);
+    
+        const storageRef = ref(storage, `budgets/${budget.id}/documents/${file.name}`);
+        
+        try {
+            const snapshot = await uploadBytesResumable(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+    
+            const newDoc = { name: file.name, url: downloadURL };
+            const updatedBudget = {
+                ...budget,
+                documents: [...(budget.documents || []), newDoc],
+            };
+    
+            onUpdateBudget(updatedBudget);
+            toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
+        } catch (error) {
+            console.error("Error uploading document: ", error);
+            toast({ variant: 'destructive', title: "Error al subir", description: `No se pudo subir el archivo. Error: ${(error as Error).message}` });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const client = clients.find(c => c.id === budget.clientId);
+    const company = companies.find(c => c.id === budget.companyId);
+
+    return (
+        <AccordionItem value={budget.id} key={budget.id} className="border-none">
+            <Card className="flex flex-col overview-card">
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                        <div className="text-left">
+                            <h3 className="font-semibold text-lg">{budget.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                    {budget.status && <Badge variant="secondary">{budget.status}</Badge>}
+                                    <span className="text-sm text-muted-foreground">{client?.name}</span>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
+                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardHeader>
+                <AccordionContent className="px-6 pb-6 pt-0">
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-sm text-muted-foreground">Emitido por: {company?.name || 'N/A'}</p>
+                        </div>
+                        {budget.m2 && budget.m2 > 0 && (
+                            <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
+                                <div className="flex items-center gap-2">
+                                    <Home className="h-4 w-4 text-primary"/>
+                                    <span>Superficie: <strong>{budget.m2} m²</strong></span>
+                                </div>
+                                <Separator orientation="vertical" className="h-4" />
+                                <div className="flex items-center gap-2">
+                                    <Scaling className="h-4 w-4 text-primary"/>
+                                    <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center border-t pt-4">
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2">Documentos</h4>
+                                {(budget.documents || []).length > 0 ? (
+                                    <ul className="list-disc list-inside text-sm text-muted-foreground">{(budget.documents || []).map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
+                                ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => {
+                                const fileInput = document.createElement('input');
+                                fileInput.type = 'file';
+                                fileInput.onchange = (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) {
+                                    handleDocUpload(file, budget);
+                                    }
+                                }
+                                fileInput.click();
+                            }} disabled={isUploading}>
+                                {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
+                            </Button>
+                        </div>
+                    </div>
+                </AccordionContent>
+            </Card>
+        </AccordionItem>
+    );
+}
+
+
 // --- Componente de lista ---
 function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget, activeCategory }: { title: string, budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void, activeCategory: BudgetCategory }) {
   const [isAddBudgetOpen, setAddBudgetOpen] = useState(false);
@@ -456,8 +590,6 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
   const [movingBudget, setMovingBudget] = useState<Budget | undefined>(undefined);
   const [printingBudget, setPrintingBudget] = useState<Budget | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (printingBudget) {
@@ -468,32 +600,6 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
       return () => clearTimeout(timer);
     }
   }, [printingBudget]);
-
-  const handleDocUpload = async (file: File, budget: Budget) => {
-    if (!budget) return;
-    setIsUploading(true);
-
-    const storageRef = ref(storage, `budgets/${budget.id}/documents/${file.name}`);
-    
-    try {
-        const snapshot = await uploadBytesResumable(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-
-        const newDoc = { name: file.name, url: downloadURL };
-        const updatedBudget = {
-            ...budget,
-            documents: [...(budget.documents || []), newDoc],
-        };
-
-        onUpdateBudget(updatedBudget);
-        toast({ title: "Documento subido", description: `El archivo ${newDoc.name} ha sido añadido.` });
-    } catch (error) {
-        console.error("Error uploading document: ", error);
-        toast({ variant: 'destructive', title: "Error al subir", description: `No se pudo subir el archivo. Error: ${(error as Error).message}` });
-    } finally {
-        setIsUploading(false);
-    }
-  };
 
   const handleEditBudget = (budget: Budget) => {
     setEditingBudget(budget);
@@ -516,6 +622,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
     } else {
         onAddBudget(values);
     }
+    setAddBudgetOpen(false);
   }
 
 
@@ -596,89 +703,20 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
        <CardContent>
             {budgets.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full space-y-4">
-                    {budgets.map(budget => {
-                        const client = clients.find(c => c.id === budget.clientId);
-                        const company = companies.find(c => c.id === budget.companyId);
-
-                        return (
-                            <AccordionItem value={budget.id} key={budget.id} className="border-none">
-                                <Card className="flex flex-col overview-card">
-                                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                                        <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                                            <div className="text-left">
-                                                <h3 className="font-semibold text-lg">{budget.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                     {budget.status && <Badge variant="secondary">{budget.status}</Badge>}
-                                                     <span className="text-sm text-muted-foreground">{client?.name}</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AlertDialog>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
-                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteBudget(budget.id)}>Eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </CardHeader>
-                                    <AccordionContent className="px-6 pb-6 pt-0">
-                                        <div className="space-y-4">
-                                            <div>
-                                                <p className="text-2xl font-bold font-mono text-primary">€{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                                <p className="text-sm text-muted-foreground">Emitido por: {company?.name || 'N/A'}</p>
-                                            </div>
-                                            {budget.m2 && budget.m2 > 0 && (
-                                                <div className="flex items-center text-sm text-muted-foreground gap-4 border-t pt-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <Home className="h-4 w-4 text-primary"/>
-                                                        <span>Superficie: <strong>{budget.m2} m²</strong></span>
-                                                    </div>
-                                                    <Separator orientation="vertical" className="h-4" />
-                                                    <div className="flex items-center gap-2">
-                                                        <Scaling className="h-4 w-4 text-primary"/>
-                                                        <span>€/m²: <strong>{(budget.total / budget.m2).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="flex justify-between items-center border-t pt-4">
-                                                <div>
-                                                    <h4 className="font-semibold text-sm mb-2">Documentos</h4>
-                                                    {(budget.documents || []).length > 0 ? (
-                                                        <ul className="list-disc list-inside text-sm text-muted-foreground">{(budget.documents || []).map((doc: any, i: number) => <li key={i}><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{doc.name}</a></li>)}</ul>
-                                                    ) : <p className="text-sm text-muted-foreground">No hay documentos.</p>}
-                                                </div>
-                                                <Button variant="outline" size="sm" onClick={() => {
-                                                    const fileInput = document.createElement('input');
-                                                    fileInput.type = 'file';
-                                                    fileInput.onchange = (e) => {
-                                                        const file = (e.target as HTMLInputElement).files?.[0];
-                                                        if (file) {
-                                                        handleDocUpload(file, budget);
-                                                        }
-                                                    }
-                                                    fileInput.click();
-                                                }} disabled={isUploading}>
-                                                    {isUploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />} Subir
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </AccordionContent>
-                                </Card>
-                            </AccordionItem>
-                        )
-                    })}
+                    {budgets.map(budget => (
+                        <BudgetAccordionItem
+                            key={budget.id}
+                            budget={budget}
+                            clients={clients}
+                            companies={companies}
+                            setViewingBudget={setViewingBudget}
+                            setMovingBudget={setMovingBudget}
+                            setPrintingBudget={setPrintingBudget}
+                            handleEditBudget={handleEditBudget}
+                            onDeleteBudget={onDeleteBudget}
+                            onUpdateBudget={onUpdateBudget}
+                        />
+                    ))}
                 </Accordion>
             ) : (
                 <div className="text-center py-12 text-muted-foreground">No hay presupuestos en esta categoría.</div>
