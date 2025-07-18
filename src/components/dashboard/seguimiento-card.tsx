@@ -26,6 +26,7 @@ const seguimientoSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  localizacion: z.string().optional(),
   informacion: z.string().optional(),
   estado: z.string().optional(),
   porHacer: z.string().optional(),
@@ -147,7 +148,7 @@ function OptionsSettingsDialog({
 function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[] }) {
     const form = useForm<z.infer<typeof seguimientoSchema>>({
         resolver: zodResolver(seguimientoSchema),
-        defaultValues: { name: "", phone: "", email: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0] },
+        defaultValues: { name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0] },
     });
 
     useEffect(() => {
@@ -158,7 +159,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                     siguienteLlamada: seguimiento.siguienteLlamada ? new Date(seguimiento.siguienteLlamada) : undefined,
                 });
             } else {
-                form.reset({ name: "", phone: "", email: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
+                form.reset({ name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
             }
         }
     }, [seguimiento, open, form, estadoOptions, porHacerOptions]);
@@ -193,6 +194,9 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="juan.p@email.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
+                        <FormField control={form.control} name="localizacion" render={({ field }) => (
+                            <FormItem><FormLabel>Localización</FormLabel><FormControl><Input placeholder="Ciudad, Provincia" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                        )} />
                         <FormField control={form.control} name="informacion" render={({ field }) => (
                             <FormItem><FormLabel>Información</FormLabel><FormControl><Textarea placeholder="Detalles del contacto, interés, etc." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -337,6 +341,7 @@ export function SeguimientoListCard({
                             <TableHead>Nombre</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Localización</TableHead>
                             <TableHead>Información</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead>Por Hacer</TableHead>
@@ -367,6 +372,7 @@ export function SeguimientoListCard({
                                 <TableCell className="font-medium">{s.name}</TableCell>
                                 <TableCell>{s.phone}</TableCell>
                                 <TableCell>{s.email}</TableCell>
+                                <TableCell>{s.localizacion}</TableCell>
                                 <TableCell>
                                     {s.informacion && (
                                         <p 
@@ -384,7 +390,7 @@ export function SeguimientoListCard({
                         ))}
                          {seguimientos.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">
+                                <TableCell colSpan={9} className="h-24 text-center">
                                     No hay seguimientos añadidos.
                                 </TableCell>
                             </TableRow>
@@ -396,3 +402,4 @@ export function SeguimientoListCard({
         </Card>
     );
 }
+
