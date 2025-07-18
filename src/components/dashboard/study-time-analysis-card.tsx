@@ -130,24 +130,37 @@ function TeamMemberForm({ member, onSubmit, open, onOpenChange }: { member?: Tea
 }
 
 export function TeamListCard({ team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember }: { team: TeamMember[], onAddTeamMember: (m: any) => void, onUpdateTeamMember: (m: any) => void, onDeleteTeamMember: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingMember, setEditingMember] = useState<TeamMember | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeMember, setActiveMember] = useState<TeamMember | undefined>(undefined);
+    
+    const handleEdit = (member: TeamMember) => {
+        setActiveMember(member);
+        setFormOpen(true);
+    };
+
+    const handleAdd = () => {
+        setActiveMember(undefined);
+        setFormOpen(true);
+    };
+    
+    const handleSubmit = (values: any) => {
+        if(activeMember) {
+            onUpdateTeamMember(values);
+        } else {
+            onAddTeamMember(values);
+        }
+    };
 
     return (
         <Card>
-            {editingMember && <TeamMemberForm member={editingMember} onSubmit={onUpdateTeamMember} open={!!editingMember} onOpenChange={() => setEditingMember(undefined)} />}
-            <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <CardTitle>Equipo de Administración</CardTitle>
-                        <CardDescription>Personal clave en la gestión de WinnBuilders.</CardDescription>
-                    </div>
-                    <DialogTrigger asChild>
-                        <Button><UserPlus className="mr-2" /> Añadir Miembro</Button>
-                    </DialogTrigger>
-                </CardHeader>
-                <TeamMemberForm onSubmit={onAddTeamMember} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
-            </Dialog>
+            <TeamMemberForm member={activeMember} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} />
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <CardTitle>Equipo de Administración</CardTitle>
+                    <CardDescription>Personal clave en la gestión de WinnBuilders.</CardDescription>
+                </div>
+                <Button onClick={handleAdd}><UserPlus className="mr-2" /> Añadir Miembro</Button>
+            </CardHeader>
             <CardContent className="space-y-2 pt-4">
                 {team.map(member => (
                     <div key={member.id} className="flex items-center justify-between gap-4 p-2 rounded-lg hover:bg-secondary">
@@ -165,7 +178,7 @@ export function TeamListCard({ team, onAddTeamMember, onUpdateTeamMember, onDele
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={() => setEditingMember(member)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleEdit(member)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
                                     <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                 </DropdownMenuContent>
                             </DropdownMenu>

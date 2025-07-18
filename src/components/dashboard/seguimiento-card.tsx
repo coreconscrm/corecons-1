@@ -270,22 +270,27 @@ export function SeguimientoListCard({
     porHacerOptions: string[],
     onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
 }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingSeguimiento, setEditingSeguimiento] = useState<Seguimiento | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeSeguimiento, setActiveSeguimiento] = useState<Seguimiento | undefined>(undefined);
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
     const handleEdit = (seguimiento: Seguimiento) => {
-        setEditingSeguimiento(seguimiento);
+        setActiveSeguimiento(seguimiento);
+        setFormOpen(true);
     };
 
+    const handleAdd = () => {
+        setActiveSeguimiento(undefined);
+        setFormOpen(true);
+    }
+
     const handleSubmit = (values: any) => {
-        if (editingSeguimiento) {
+        if (activeSeguimiento) {
             onUpdateSeguimiento(values);
         } else {
             onAddSeguimiento(values);
         }
-        setEditingSeguimiento(undefined);
     };
     
     const formatDisplayDate = (dateString: string | null): string => {
@@ -323,18 +328,10 @@ export function SeguimientoListCard({
             />
 
             <SeguimientoForm 
-              seguimiento={editingSeguimiento} 
+              seguimiento={activeSeguimiento} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingSeguimiento} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingSeguimiento(undefined);
-                } else {
-                  setEditingSeguimiento(undefined);
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen}
               estadoOptions={estadoOptions}
               porHacerOptions={porHacerOptions}
             />
@@ -348,7 +345,7 @@ export function SeguimientoListCard({
                         <Settings className="h-4 w-4" />
                         <span className="sr-only">Configurar Opciones</span>
                     </Button>
-                    <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+                    <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
                 </div>
             </CardHeader>
             <CardContent>

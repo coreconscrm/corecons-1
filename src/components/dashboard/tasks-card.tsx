@@ -162,42 +162,34 @@ function ProviderForm({ provider, onSubmit, onOpenChange, open }: { provider?: P
 }
 
 export function ProviderListCard({ providers, onAddProvider, onUpdateProvider, onDeleteProvider }: { providers: Provider[], onAddProvider: (provider: any) => void, onUpdateProvider: (provider: any) => void, onDeleteProvider: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeProvider, setActiveProvider] = useState<Provider | undefined>(undefined);
 
     const handleEdit = (provider: Provider) => {
-      setEditingProvider(provider);
+      setActiveProvider(provider);
+      setFormOpen(true);
     };
 
     const handleAdd = () => {
-      setEditingProvider(undefined);
-      setAddDialogOpen(true);
+      setActiveProvider(undefined);
+      setFormOpen(true);
     };
 
     const handleSubmit = (values: any) => {
-        if(editingProvider) {
+        if(activeProvider) {
             onUpdateProvider(values);
         } else {
             onAddProvider(values);
         }
-        setEditingProvider(undefined);
     };
 
     return (
         <Card>
             <ProviderForm 
-              provider={editingProvider} 
+              provider={activeProvider} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingProvider} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingProvider(undefined);
-                } else {
-                  setEditingProvider(undefined);
-                  setAddDialogOpen(true);
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>

@@ -214,19 +214,27 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
 }
 
 export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers, onCreateBudgetFromClient }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void }) {
-  const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [activeClient, setActiveClient] = useState<Client | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
 
   const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setAddDialogOpen(true);
+    setActiveClient(client);
+    setFormOpen(true);
   }
   
   const handleAdd = () => {
-    setEditingClient(undefined);
-    setAddDialogOpen(true);
+    setActiveClient(undefined);
+    setFormOpen(true);
   }
+
+  const handleSubmit = (values: any) => {
+    if (activeClient) {
+      onUpdateClient(values);
+    } else {
+      onAddClient(values);
+    }
+  };
 
   return (
     <Card>
@@ -237,7 +245,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
             <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
-      <ClientForm client={editingClient} onSubmit={editingClient ? onUpdateClient : onAddClient} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} providers={providers} />
+      <ClientForm client={activeClient} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

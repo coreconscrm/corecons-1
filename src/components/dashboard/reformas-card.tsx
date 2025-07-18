@@ -213,19 +213,27 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
 }
 
 export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void }) {
-  const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-  const [editingReforma, setEditingReforma] = useState<Reforma | undefined>(undefined);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [activeReforma, setActiveReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
 
   const handleEdit = (reforma: Reforma) => {
-    setEditingReforma(reforma);
-    setAddDialogOpen(true);
+    setActiveReforma(reforma);
+    setFormOpen(true);
   }
   
   const handleAdd = () => {
-    setEditingReforma(undefined);
-    setAddDialogOpen(true);
+    setActiveReforma(undefined);
+    setFormOpen(true);
   }
+  
+  const handleSubmit = (values: any) => {
+    if (activeReforma) {
+      onUpdateReforma(values);
+    } else {
+      onAddReforma(values);
+    }
+  };
 
   return (
     <Card>
@@ -236,7 +244,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
             <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
-      <ReformaForm reforma={editingReforma} onSubmit={editingReforma ? onUpdateReforma : onAddReforma} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} providers={providers} />
+      <ReformaForm reforma={activeReforma} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

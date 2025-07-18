@@ -99,44 +99,41 @@ function InmobiliariaForm({ inmobiliaria, onSubmit, open, onOpenChange }: { inmo
 }
 
 export function InmobiliariasListCard({ inmobiliarias, onAddInmobiliaria, onUpdateInmobiliaria, onDeleteInmobiliaria }: { inmobiliarias: Inmobiliaria[], onAddInmobiliaria: (m: any) => void, onUpdateInmobiliaria: (m: any) => void, onDeleteInmobiliaria: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingInmobiliaria, setEditingInmobiliaria] = useState<Inmobiliaria | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeInmobiliaria, setActiveInmobiliaria] = useState<Inmobiliaria | undefined>(undefined);
 
     const handleEdit = (inmobiliaria: Inmobiliaria) => {
-        setEditingInmobiliaria(inmobiliaria);
+        setActiveInmobiliaria(inmobiliaria);
+        setFormOpen(true);
+    };
+
+    const handleAdd = () => {
+        setActiveInmobiliaria(undefined);
+        setFormOpen(true);
     };
 
     const handleSubmit = (values: any) => {
-        if (editingInmobiliaria) {
+        if (activeInmobiliaria) {
             onUpdateInmobiliaria(values);
         } else {
             onAddInmobiliaria(values);
         }
-        setEditingInmobiliaria(undefined);
     };
 
     return (
         <Card>
             <InmobiliariaForm 
-              inmobiliaria={editingInmobiliaria} 
+              inmobiliaria={activeInmobiliaria} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingInmobiliaria} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingInmobiliaria(undefined);
-                } else {
-                  setEditingInmobiliaria(undefined)
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Inmobiliarias</CardTitle>
                     <CardDescription>Empresas inmobiliarias que colaboran en proyectos.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Inmobiliaria</Button>
+                 <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Inmobiliaria</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

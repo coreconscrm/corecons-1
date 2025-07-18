@@ -99,45 +99,42 @@ function InterioristaForm({ interiorista, onSubmit, open, onOpenChange }: { inte
 }
 
 export function InterioristasListCard({ interioristas, onAddInteriorista, onUpdateInteriorista, onDeleteInteriorista }: { interioristas: Interiorista[], onAddInteriorista: (m: any) => void, onUpdateInteriorista: (m: any) => void, onDeleteInteriorista: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingInteriorista, setEditingInteriorista] = useState<Interiorista | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeInteriorista, setActiveInteriorista] = useState<Interiorista | undefined>(undefined);
 
     const handleEdit = (interiorista: Interiorista) => {
-        setEditingInteriorista(interiorista);
+        setActiveInteriorista(interiorista);
+        setFormOpen(true);
+    };
+
+    const handleAdd = () => {
+        setActiveInteriorista(undefined);
+        setFormOpen(true);
     };
 
     const handleSubmit = (values: any) => {
-        if (editingInteriorista) {
+        if (activeInteriorista) {
             onUpdateInteriorista(values);
         } else {
             onAddInteriorista(values);
         }
-        setEditingInteriorista(undefined);
     };
 
 
     return (
         <Card>
             <InterioristaForm 
-              interiorista={editingInteriorista} 
+              interiorista={activeInteriorista} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingInteriorista} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingInteriorista(undefined);
-                } else {
-                  setEditingInteriorista(undefined);
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Interioristas</CardTitle>
                     <CardDescription>Profesionales y empresas externas de diseño de interiores.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Interiorista</Button>
+                 <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Interiorista</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

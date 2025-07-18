@@ -162,24 +162,37 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
 }
 
 function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDeleteCompany }: { companies: Company[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingCompany, setEditingCompany] = useState<Company | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeCompany, setActiveCompany] = useState<Company | undefined>(undefined);
+    
+    const handleEdit = (company: Company) => {
+        setActiveCompany(company);
+        setFormOpen(true);
+    };
+
+    const handleAdd = () => {
+        setActiveCompany(undefined);
+        setFormOpen(true);
+    };
+    
+    const handleSubmit = (values: any) => {
+        if(activeCompany) {
+            onUpdateCompany(values);
+        } else {
+            onAddCompany(values);
+        }
+    }
 
     return (
         <Card>
-            {editingCompany && <CompanyForm company={editingCompany} onSubmit={onUpdateCompany} open={!!editingCompany} onOpenChange={() => setEditingCompany(undefined)} />}
-            <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <CardTitle>Perfiles de Empresa</CardTitle>
-                        <CardDescription>Gestiona los perfiles de empresa para emitir presupuestos.</CardDescription>
-                    </div>
-                    <DialogTrigger asChild>
-                        <Button><Building className="mr-2 h-4 w-4" />Añadir Empresa</Button>
-                    </DialogTrigger>
-                </CardHeader>
-                <CompanyForm onSubmit={onAddCompany} open={isAddDialogOpen} onOpenChange={setAddDialogOpen} />
-            </Dialog>
+            <CompanyForm company={activeCompany} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} />
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <CardTitle>Perfiles de Empresa</CardTitle>
+                    <CardDescription>Gestiona los perfiles de empresa para emitir presupuestos.</CardDescription>
+                </div>
+                <Button onClick={handleAdd}><Building className="mr-2 h-4 w-4" />Añadir Empresa</Button>
+            </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto">
                 <Table>
@@ -204,7 +217,7 @@ function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDelet
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setEditingCompany(company)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleEdit(company)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
                                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

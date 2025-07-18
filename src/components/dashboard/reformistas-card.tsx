@@ -99,44 +99,41 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformis
 }
 
 export function ReformistasListCard({ reformistas, onAddReformista, onUpdateReformista, onDeleteReformista }: { reformistas: Reformista[], onAddReformista: (m: any) => void, onUpdateReformista: (m: any) => void, onDeleteReformista: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingReformista, setEditingReformista] = useState<Reformista | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeReformista, setActiveReformista] = useState<Reformista | undefined>(undefined);
 
     const handleEdit = (reformista: Reformista) => {
-        setEditingReformista(reformista);
+        setActiveReformista(reformista);
+        setFormOpen(true);
     };
+    
+    const handleAdd = () => {
+        setActiveReformista(undefined);
+        setFormOpen(true);
+    }
 
     const handleSubmit = (values: any) => {
-        if (editingReformista) {
+        if (activeReformista) {
             onUpdateReformista(values);
         } else {
             onAddReformista(values);
         }
-        setEditingReformista(undefined);
     };
 
     return (
         <Card>
             <ReformistaForm 
-              reformista={editingReformista} 
+              reformista={activeReformista} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingReformista} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingReformista(undefined);
-                } else {
-                  setEditingReformista(undefined);
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Reformistas</CardTitle>
                     <CardDescription>Empresas reformistas que colaboran en proyectos.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Reformista</Button>
+                 <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Reformista</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

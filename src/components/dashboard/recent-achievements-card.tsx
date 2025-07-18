@@ -139,7 +139,7 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item
       });
       defaultValues.called = item?.called || false;
       defaultValues.status = item?.status || 'Pendiente';
-      form.reset(defaultValues);
+      form.reset(item ? { ...defaultValues, ...item } : defaultValues);
     }
   }, [item, open, form, headers]);
 
@@ -210,6 +210,14 @@ function DynamicTableCard({
     setAddDialogOpen(true);
   };
   
+  const handleSubmit = (values: any) => {
+    if(editingItem) {
+      onUpdateItem(values);
+    } else {
+      onAddItem(values);
+    }
+  }
+
   return (
     <Card>
       <ColumnSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} columns={columnConfig} onSave={onColumnConfigChange} />
@@ -223,7 +231,7 @@ function DynamicTableCard({
      
       <ItemForm 
         item={editingItem} 
-        onSubmit={editingItem ? onUpdateItem : onAddItem} 
+        onSubmit={handleSubmit} 
         open={isAddDialogOpen} 
         onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
         title={title}

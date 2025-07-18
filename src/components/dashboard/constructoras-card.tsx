@@ -99,44 +99,41 @@ function ConstructoraForm({ constructora, onSubmit, open, onOpenChange }: { cons
 }
 
 export function ConstructorasListCard({ constructoras, onAddConstructora, onUpdateConstructora, onDeleteConstructora }: { constructoras: Constructora[], onAddConstructora: (m: any) => void, onUpdateConstructora: (m: any) => void, onDeleteConstructora: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingConstructora, setEditingConstructora] = useState<Constructora | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeConstructora, setActiveConstructora] = useState<Constructora | undefined>(undefined);
 
     const handleEdit = (constructora: Constructora) => {
-        setEditingConstructora(constructora);
+        setActiveConstructora(constructora);
+        setFormOpen(true);
     };
+    
+    const handleAdd = () => {
+        setActiveConstructora(undefined);
+        setFormOpen(true);
+    }
 
     const handleSubmit = (values: any) => {
-        if (editingConstructora) {
+        if (activeConstructora) {
             onUpdateConstructora(values);
         } else {
             onAddConstructora(values);
         }
-        setEditingConstructora(undefined);
     };
 
     return (
         <Card>
             <ConstructoraForm 
-              constructora={editingConstructora} 
+              constructora={activeConstructora} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingConstructora} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingConstructora(undefined);
-                } else {
-                  setEditingConstructora(undefined)
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Constructoras</CardTitle>
                     <CardDescription>Empresas constructoras que colaboran en proyectos.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Constructora</Button>
+                 <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Constructora</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

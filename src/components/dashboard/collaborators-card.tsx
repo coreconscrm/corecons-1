@@ -99,45 +99,42 @@ function CollaboratorForm({ collaborator, onSubmit, open, onOpenChange }: { coll
 }
 
 export function CollaboratorsListCard({ collaborators, onAddCollaborator, onUpdateCollaborator, onDeleteCollaborator }: { collaborators: Collaborator[], onAddCollaborator: (m: any) => void, onUpdateCollaborator: (m: any) => void, onDeleteCollaborator: (id: string) => void }) {
-    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | undefined>(undefined);
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [activeCollaborator, setActiveCollaborator] = useState<Collaborator | undefined>(undefined);
 
     const handleEdit = (collaborator: Collaborator) => {
-        setEditingCollaborator(collaborator);
+        setActiveCollaborator(collaborator);
+        setFormOpen(true);
     };
 
+    const handleAdd = () => {
+        setActiveCollaborator(undefined);
+        setFormOpen(true);
+    }
+
     const handleSubmit = (values: any) => {
-        if (editingCollaborator) {
+        if (activeCollaborator) {
             onUpdateCollaborator(values);
         } else {
             onAddCollaborator(values);
         }
-        setEditingCollaborator(undefined);
     };
 
 
     return (
         <Card>
             <CollaboratorForm 
-              collaborator={editingCollaborator} 
+              collaborator={activeCollaborator} 
               onSubmit={handleSubmit} 
-              open={isAddDialogOpen || !!editingCollaborator} 
-              onOpenChange={(open) => {
-                if(!open) {
-                  setAddDialogOpen(false);
-                  setEditingCollaborator(undefined);
-                } else {
-                  setEditingCollaborator(undefined);
-                  setAddDialogOpen(true)
-                }
-              }} 
+              open={isFormOpen} 
+              onOpenChange={setFormOpen} 
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Arquitectos</CardTitle>
                     <CardDescription>Profesionales y empresas externas que colaboran en proyectos.</CardDescription>
                 </div>
-                 <Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" />Añadir Arquitecto</Button>
+                 <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Arquitecto</Button>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto rounded-md border">

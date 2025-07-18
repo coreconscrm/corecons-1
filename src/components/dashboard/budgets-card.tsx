@@ -493,6 +493,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
 
   const handleEditBudget = (budget: Budget) => {
     setEditingBudget(budget);
+    setAddBudgetOpen(true);
   };
   
   const handleAddBudget = () => {
@@ -503,6 +504,14 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const handleMoveBudget = (category: BudgetCategory) => {
     if (!movingBudget) return;
     onUpdateBudget({ ...movingBudget, category });
+  }
+
+  const handleSubmit = (values: any) => {
+    if(editingBudget) {
+        onUpdateBudget(values);
+    } else {
+        onAddBudget(values);
+    }
   }
 
 
@@ -517,8 +526,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
       </div>
 
       {/* Diálogos */}
-      <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={onUpdateBudget} open={!!editingBudget} onOpenChange={() => setEditingBudget(undefined)} activeCategory={activeCategory} />
-      <BudgetForm clients={clients} companies={companies} onSubmit={onAddBudget} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} activeCategory={activeCategory} />
+      <BudgetForm budget={editingBudget} clients={clients} companies={companies} onSubmit={handleSubmit} open={isAddBudgetOpen} onOpenChange={setAddBudgetOpen} activeCategory={activeCategory} />
       {movingBudget && <MoveBudgetDialog budget={movingBudget} open={!!movingBudget} onOpenChange={() => setMovingBudget(undefined)} onMove={handleMoveBudget} />}
       
       {viewingBudget && (

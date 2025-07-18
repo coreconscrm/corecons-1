@@ -228,19 +228,21 @@ function ProjectForm({ project, clients, providers, onSubmit, open, onOpenChange
     });
 
     useEffect(() => {
-        if (project && open) { // Check for `open` ensures this runs only when dialog becomes visible
-            const costs = (project.assignedProviders || []).reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
-            const providerIds = (project.assignedProviders || []).map(p => p.id);
-            form.reset({ ...project, providerIds, costs });
-        } else if (!project) { // Reset for new project form
-            form.reset({
-                name: "",
-                clientId: "",
-                budget: 0,
-                status: "Firmados",
-                providerIds: [],
-                costs: {}
-            });
+        if (open) {
+            if (project) {
+                const costs = (project.assignedProviders || []).reduce((acc, p) => ({ ...acc, [p.id]: p.cost }), {});
+                const providerIds = (project.assignedProviders || []).map(p => p.id);
+                form.reset({ ...project, providerIds, costs });
+            } else {
+                form.reset({
+                    name: "",
+                    clientId: "",
+                    budget: 0,
+                    status: "Firmados",
+                    providerIds: [],
+                    costs: {}
+                });
+            }
         }
     }, [project, open, form]);
     
@@ -375,9 +377,12 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
         setActiveDialog({ type: 'edit', project });
     };
     
-    const handleUpdate = (project: Project) => {
+    const handleSubmitUpdate = (project: Project) => {
         onUpdateProject(project);
-        closeDialogs();
+    };
+
+    const handleSubmitAdd = (project: Project) => {
+        onAddProject(project);
     };
     
     const closeDialogs = () => setActiveDialog({type: null, project: null});
@@ -418,8 +423,8 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
     return (
         <div>
             {/* Diálogos */}
-            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} providers={providers} onSubmit={activeDialog.type === 'edit' ? handleUpdate : onAddProject} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
-            <ProjectForm clients={clients} providers={providers} onSubmit={onAddProject} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
+            <ProjectForm project={activeDialog.type === 'edit' ? activeDialog.project! : undefined} clients={clients} providers={providers} onSubmit={handleSubmitUpdate} open={activeDialog.type === 'edit'} onOpenChange={(isOpen) => !isOpen && closeDialogs()} />
+            <ProjectForm clients={clients} providers={providers} onSubmit={handleSubmitAdd} open={isAddProjectOpen} onOpenChange={setAddProjectOpen} />
             {activeDialog.type === 'plan' && activeDialog.project && <GanttChartDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
             {activeDialog.type === 'photos' && activeDialog.project && <PhotoManagerDialog project={activeDialog.project} onSave={onUpdateProject} open={true} onOpenChange={closeDialogs} />}
             
