@@ -148,30 +148,31 @@ function OptionsSettingsDialog({
 function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[] }) {
     const form = useForm<z.infer<typeof seguimientoSchema>>({
         resolver: zodResolver(seguimientoSchema),
-        defaultValues: { name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0] },
     });
 
     useEffect(() => {
         if (open) {
+            let defaultValues;
             if (seguimiento) {
                  const callDate = seguimiento.siguienteLlamada 
                     ? parse(seguimiento.siguienteLlamada, 'dd/MM/yyyy', new Date())
                     : null;
-                form.reset({
+                defaultValues = {
                     name: seguimiento.name || "",
                     phone: seguimiento.phone || "",
                     email: seguimiento.email || "",
                     localizacion: seguimiento.localizacion || "",
                     informacion: seguimiento.informacion || "",
-                    estado: seguimiento.estado || estadoOptions[0],
-                    porHacer: seguimiento.porHacer || porHacerOptions[0],
+                    estado: seguimiento.estado || "",
+                    porHacer: seguimiento.porHacer || "",
                     siguienteLlamada: callDate && isValid(callDate) ? callDate : null,
-                });
+                };
             } else {
-                form.reset({ name: "", phone: "", email: "", localizacion: "", informacion: "", estado: estadoOptions[0], porHacer: porHacerOptions[0], siguienteLlamada: undefined });
+                defaultValues = { name: "", phone: "", email: "", localizacion: "", informacion: "", estado: "", porHacer: "", siguienteLlamada: null };
             }
+            form.reset(defaultValues);
         }
-    }, [seguimiento, open, form, estadoOptions, porHacerOptions]);
+    }, [seguimiento, open, form]);
     
     const handleSubmit = async (values: z.infer<typeof seguimientoSchema>) => {
         const submissionData = {
@@ -180,7 +181,6 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
             siguienteLlamada: values.siguienteLlamada ? format(values.siguienteLlamada, "dd/MM/yyyy") : null,
         };
         onSubmit(submissionData);
-        form.reset();
         onOpenChange(false);
     };
 
@@ -212,7 +212,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="estado" render={({ field }) => (
                                 <FormItem><FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
+                                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {estadoOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
@@ -222,7 +222,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                             )} />
                             <FormField control={form.control} name="porHacer" render={({ field }) => (
                                 <FormItem><FormLabel>Por Hacer</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
+                                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una acción" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {porHacerOptions.map(option => <SelectItem key={option} value={option} className="capitalize">{option}</SelectItem>)}
