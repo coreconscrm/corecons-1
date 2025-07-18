@@ -12,7 +12,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
-import { isWithinInterval, addDays, isValid, parse } from 'date-fns';
+import { isWithinInterval, addDays, isValid, parse, startOfWeek, endOfWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import type { BudgetCategory } from '@/components/dashboard/budgets-card';
 
@@ -321,19 +322,19 @@ export default function DashboardPage() {
 
   // Metrics for Seguimiento Overview
   const totalSeguimientos = seguimientos.length;
+  
   const llamarEstaSemana = seguimientos.filter(s => {
     if (!s.siguienteLlamada || typeof s.siguienteLlamada !== 'string') return false;
     
-    // Assume "dd/MM/yyyy" format and parse it
     const nextCallDate = parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date());
 
     if (!isValid(nextCallDate)) return false;
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextWeek = addDays(today, 7);
+    const startOfThisWeek = startOfWeek(today, { locale: es });
+    const endOfThisWeek = endOfWeek(today, { locale: es });
     
-    return isWithinInterval(nextCallDate, { start: today, end: nextWeek });
+    return isWithinInterval(nextCallDate, { start: startOfThisWeek, end: endOfThisWeek });
   }).length;
   
   const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar arquitecto').length;
