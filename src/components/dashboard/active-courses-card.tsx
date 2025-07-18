@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -247,82 +248,89 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
       </CardHeader>
 
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <Accordion type="single" collapsible className="w-full space-y-4">
           {clients.map(client => {
             const provider = providers.find(p => p.id === client.providerId);
             return (
-              <Card key={client.id} className="flex flex-col overview-card">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="mb-1">{client.name}</CardTitle>
-                      {client.estado && <Badge variant="secondary">{client.estado}</Badge>}
+              <AccordionItem value={client.id} key={client.id} className="border-none">
+                 <Card className="flex flex-col overview-card">
+                  <AccordionTrigger className="p-4 hover:no-underline">
+                    <div className="flex w-full justify-between items-center pr-4">
+                      <div className="text-left">
+                        <h3 className="font-semibold text-lg">{client.name}</h3>
+                        {client.estado && <Badge variant="secondary" className="mt-1">{client.estado}</Badge>}
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 flex-grow text-sm">
-                  <div>
-                    <h4 className="font-semibold mb-2">Contacto</h4>
-                    <div className="space-y-1 text-muted-foreground">
-                      <p>{client.contact}</p>
-                      <div className="flex items-center gap-2"><Phone size={14}/> {client.phone}</div>
-                      <div className="flex items-center gap-2"><Mail size={14}/> {client.email}</div>
-                      {client.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {client.localizacion}</div>}
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <div className="space-y-4 flex-grow text-sm">
+                      <div>
+                        <h4 className="font-semibold mb-2">Contacto</h4>
+                        <div className="space-y-1 text-muted-foreground">
+                          <p>{client.contact}</p>
+                          <div className="flex items-center gap-2"><Phone size={14}/> {client.phone}</div>
+                          <div className="flex items-center gap-2"><Mail size={14}/> {client.email}</div>
+                          {client.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {client.localizacion}</div>}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
+                        <div className="space-y-1 text-muted-foreground">
+                          <div className="flex justify-between"><span>Arquitecto:</span> <strong>{client.arquitecto || 'N/A'}</strong></div>
+                          <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
+                          {client.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{client.obtenido}</strong></div>}
+                        </div>
+                      </div>
+                       {client.infoAdicional && (
+                          <div className="pt-2 border-t">
+                            <h4 className="font-semibold mb-1">Info Adicional:</h4>
+                            <p 
+                              className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
+                              onClick={() => setViewingInfo(client.infoAdicional || null)}
+                            >
+                              {client.infoAdicional.substring(0, 100)}{client.infoAdicional.length > 100 ? '...' : ''}
+                            </p>
+                        </div>
+                       )}
+                      <Separator />
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
+                            <Button className="w-full" variant="outline" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
+                        </a>
+                        <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
+                            <Button className="w-full" variant="outline" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
-                    <div className="space-y-1 text-muted-foreground">
-                      <div className="flex justify-between"><span>Arquitecto:</span> <strong>{client.arquitecto || 'N/A'}</strong></div>
-                      <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
-                      {client.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{client.obtenido}</strong></div>}
-                    </div>
-                  </div>
-                   {client.infoAdicional && (
-                      <div className="pt-2 border-t">
-                        <h4 className="font-semibold mb-1">Info Adicional:</h4>
-                        <p 
-                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
-                          onClick={() => setViewingInfo(client.infoAdicional || null)}
-                        >
-                          {client.infoAdicional.substring(0, 50)}{client.infoAdicional.length > 50 ? '...' : ''}
-                        </p>
-                    </div>
-                   )}
-                </CardContent>
-                <CardFooter className="grid grid-cols-2 gap-2">
-                  <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
-                      <Button className="w-full" variant="outline" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
-                  </a>
-                  <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
-                        <Button className="w-full" variant="outline" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
-                  </a>
-                </CardFooter>
-              </Card>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
             )
           })}
-        </div>
+        </Accordion>
       </CardContent>
     </Card>
   );
