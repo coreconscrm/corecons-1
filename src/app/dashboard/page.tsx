@@ -21,6 +21,24 @@ import type { BudgetCategory } from '@/components/dashboard/budgets-card';
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto", "buscar terreno"];
 const defaultPorHacerOptions = ["llamar", "buscar arquitecto", "licencia"];
+const defaultVisibleTabs = {
+    projects: true,
+    clients: true,
+    reformas: true,
+    providers: true,
+    team: true,
+    forms: true,
+    budgets: true,
+    companies: true,
+    prices: true,
+    collaborators: true,
+    interioristas: true,
+    constructoras: true,
+    reformistas: true,
+    inmobiliarias: true,
+    seguimiento: true,
+    ia: true,
+};
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -49,24 +67,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const [visibleTabs, setVisibleTabs] = useState({
-    projects: true,
-    clients: true,
-    reformas: true,
-    providers: true,
-    team: true,
-    forms: true,
-    budgets: true,
-    companies: true,
-    prices: true,
-    collaborators: true,
-    interioristas: true,
-    constructoras: true,
-    reformistas: true,
-    inmobiliarias: true,
-    seguimiento: true,
-    ia: true,
-  });
+  const [visibleTabs, setVisibleTabs] = useState(defaultVisibleTabs);
   const [activeTab, setActiveTab] = useState("clients");
 
   const [isNotepadOpen, setNotepadOpen] = useState(false);
@@ -87,6 +88,18 @@ export default function DashboardPage() {
     } catch (error) {
         console.error("Error saving seguimiento options to Firestore", error);
         toast({ variant: 'destructive', title: `Error al guardar`, description: `No se pudieron guardar las opciones. Error: ${(error as Error).message}`});
+    }
+  };
+
+  const handleTabVisibilityChange = async (newVisibleTabs: any) => {
+    setVisibleTabs(newVisibleTabs);
+    try {
+        const settingsDocRef = doc(db, 'config', 'dashboardSettings');
+        await setDoc(settingsDocRef, { visibleTabs: newVisibleTabs }, { merge: true });
+        toast({ title: 'Visibilidad guardada', description: 'Tus preferencias de visibilidad se han guardado.' });
+    } catch (error) {
+        console.error("Error saving tab visibility to Firestore", error);
+        toast({ variant: 'destructive', title: `Error al guardar`, description: `No se pudieron guardar los cambios. Error: ${(error as Error).message}`});
     }
   };
 
@@ -132,12 +145,22 @@ export default function DashboardPage() {
         setSeguimientos(mapSnapToState(snapshots[15]));
         
         // Fetch config options
-        const configOptionsRef = doc(db, 'config', 'seguimientoOptions');
-        const configOptionsSnap = await getDoc(configOptionsRef);
-        if (configOptionsSnap.exists()) {
-            const optionsData = configOptionsSnap.data();
+        const seguimientoOptionsRef = doc(db, 'config', 'seguimientoOptions');
+        const seguimientoOptionsSnap = await getDoc(seguimientoOptionsRef);
+        if (seguimientoOptionsSnap.exists()) {
+            const optionsData = seguimientoOptionsSnap.data();
             if(optionsData.estadoOptions) setEstadoOptions(optionsData.estadoOptions);
             if(optionsData.porHacerOptions) setPorHacerOptions(optionsData.porHacerOptions);
+        }
+
+        // Fetch dashboard settings (tab visibility, etc.)
+        const settingsDocRef = doc(db, 'config', 'dashboardSettings');
+        const settingsDocSnap = await getDoc(settingsDocRef);
+        if (settingsDocSnap.exists()) {
+            const settingsData = settingsDocSnap.data();
+            if (settingsData.visibleTabs) {
+                setVisibleTabs(prev => ({ ...prev, ...settingsData.visibleTabs }));
+            }
         }
 
         // Fetch Google Sheet config and data
@@ -485,7 +508,7 @@ export default function DashboardPage() {
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
 
               visibleTabs={visibleTabs}
-              onTabVisibilityChange={setVisibleTabs}
+              onTabVisibilityChange={handleTabVisibilityChange}
               
               sheetUrl={sheetUrl}
               onSaveSheetUrl={handleSaveSheetUrl}

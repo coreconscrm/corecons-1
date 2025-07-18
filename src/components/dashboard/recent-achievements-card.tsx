@@ -20,12 +20,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 
 const itemSchema = z.record(z.any());
 
 type Item = { [key: string]: any; id: string };
 
-type ColumnConfig = {
+export type ColumnConfig = {
     key: string;
     visible: boolean;
     displayName: string;
@@ -408,14 +411,12 @@ export function FormsSection({
   const { toast } = useToast();
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
 
-  const allItems = useMemo(() => [...forms, ...contacts, ...priorityCalls], [forms, contacts, priorityCalls]);
-
   const [columnConfigs, setColumnConfigs] = useState<{ [key: string]: ColumnConfig[] }>({
       forms: [],
       contacts: [],
       priority: [],
   });
-
+  
   const getHeadersFromItems = (items: Item[]) => {
       const headerSet = new Set<string>();
       items.forEach(item => {
@@ -429,28 +430,27 @@ export function FormsSection({
   };
   
   useEffect(() => {
-    const loadConfigs = () => {
-        if (typeof window === 'undefined') return;
+    const loadConfigs = async () => {
+        const settingsDocRef = doc(db, 'config', 'dashboardSettings');
+        const settingsSnap = await getDoc(settingsDocRef);
+        const settingsData = settingsSnap.exists() ? settingsSnap.data() : {};
+        const storedConfigs = settingsData.columnConfigs || {};
 
-        const getInitialConfig = (storageKey: string, currentHeaders: string[]) => {
-            try {
-                const savedConfig = localStorage.getItem(storageKey);
-                if (savedConfig) {
-                    const parsedConfig: ColumnConfig[] = JSON.parse(savedConfig);
-                    const parsedHeaderKeys = new Set(parsedConfig.map(c => c.key));
-                    const finalConfig = [...parsedConfig];
-                    
-                    currentHeaders.forEach(key => {
-                        if (!parsedHeaderKeys.has(key)) {
-                            finalConfig.push({ key, visible: true, displayName: getDisplayName(key) });
-                        }
-                    });
-                    
-                    const currentHeaderSet = new Set(currentHeaders);
-                    return finalConfig.filter(c => currentHeaderSet.has(c.key));
-                }
-            } catch (e) {
-                console.error(`Failed to parse column config from localStorage for ${storageKey}`, e);
+        const getInitialConfig = (storageKey: 'forms' | 'contacts' | 'priority', currentHeaders: string[]) => {
+            const savedConfig = storedConfigs[storageKey];
+            if (savedConfig) {
+                const parsedConfig: ColumnConfig[] = savedConfig;
+                const parsedHeaderKeys = new Set(parsedConfig.map(c => c.key));
+                const finalConfig = [...parsedConfig];
+                
+                currentHeaders.forEach(key => {
+                    if (!parsedHeaderKeys.has(key)) {
+                        finalConfig.push({ key, visible: true, displayName: getDisplayName(key) });
+                    }
+                });
+                
+                const currentHeaderSet = new Set(currentHeaders);
+                return finalConfig.filter(c => currentHeaderSet.has(c.key));
             }
             return currentHeaders.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
         };
@@ -464,19 +464,25 @@ export function FormsSection({
         if (!allPriorityHeaders.includes('status')) allPriorityHeaders.push('status');
 
         setColumnConfigs({
-            forms: getInitialConfig('formsColumnsConfig', getHeadersFromItems(forms)),
-            contacts: getInitialConfig('contactsColumnsConfig', allContactHeaders),
-            priority: getInitialConfig('priorityColumnsConfig', allPriorityHeaders),
+            forms: getInitialConfig('forms', getHeadersFromItems(forms)),
+            contacts: getInitialConfig('contacts', allContactHeaders),
+            priority: getInitialConfig('priority', allPriorityHeaders),
         });
     };
 
     loadConfigs();
-  }, [allItems, forms, contacts, priorityCalls]);
+  }, [forms, contacts, priorityCalls]);
 
-  const handleColumnChange = (type: 'forms' | 'contacts' | 'priority', newConfig: ColumnConfig[]) => {
-      setColumnConfigs(prev => ({ ...prev, [type]: newConfig }));
-      if (typeof window !== 'undefined') {
-          localStorage.setItem(`${type}ColumnsConfig`, JSON.stringify(newConfig));
+  const handleColumnChange = async (type: 'forms' | 'contacts' | 'priority', newConfig: ColumnConfig[]) => {
+      const newColumnConfigs = { ...columnConfigs, [type]: newConfig };
+      setColumnConfigs(newColumnConfigs);
+      try {
+        const settingsDocRef = doc(db, 'config', 'dashboardSettings');
+        await setDoc(settingsDocRef, { columnConfigs: newColumnConfigs }, { merge: true });
+        toast({ title: 'Configuración guardada', description: 'Las preferencias de columnas se han actualizado.' });
+      } catch (error) {
+        console.error("Error saving column configs to Firestore", error);
+        toast({ variant: 'destructive', title: `Error al guardar`, description: `No se pudieron guardar los cambios. Error: ${(error as Error).message}`});
       }
   };
   

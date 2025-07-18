@@ -46,10 +46,11 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     ia: "Inteligencia Artificial",
 };
 
-export function SettingsCard({ visibleTabs, onVisibilityChange }: { visibleTabs: VisibleTabs, onVisibilityChange: (fn: (prev: VisibleTabs) => VisibleTabs) => void }) {
+export function SettingsCard({ visibleTabs, onTabVisibilityChange }: { visibleTabs: VisibleTabs, onTabVisibilityChange: (tabs: any) => void }) {
   
   const handleToggle = (tabName: keyof VisibleTabs) => {
-    onVisibilityChange(prev => ({ ...prev, [tabName]: !prev[tabName] }));
+    const newVisibleTabs = { ...visibleTabs, [tabName]: !visibleTabs[tabName] };
+    onTabVisibilityChange(newVisibleTabs);
   };
 
   // Create a sorted list of labels for consistent rendering

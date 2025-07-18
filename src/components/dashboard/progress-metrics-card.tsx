@@ -184,7 +184,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       <TabsContent value="settings" className="mt-6">
-        <SettingsCard visibleTabs={visibleTabs} onVisibilityChange={onTabVisibilityChange} />
+        <SettingsCard visibleTabs={visibleTabs} onTabVisibilityChange={onTabVisibilityChange} />
       </TabsContent>
     </Tabs>
   );
