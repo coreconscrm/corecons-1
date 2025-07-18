@@ -254,7 +254,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   }, [watchedLineItems]);
 
   const handleApplyIncrease = (percentage: number) => {
-    const currentItems = form.getValues("lineItems");
+    const currentItems = form.getValues("lineItems") || [];
     const updatedItems = currentItems.map(item => ({
       ...item,
       unitPrice: (item.unitPrice || 0) * (1 + percentage / 100)
@@ -263,7 +263,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   };
   
   const handleApplyDecrease = (percentage: number) => {
-    const currentItems = form.getValues("lineItems");
+    const currentItems = form.getValues("lineItems") || [];
     const updatedItems = currentItems.map(item => ({
       ...item,
       unitPrice: (item.unitPrice || 0) * (1 - percentage / 100)
@@ -453,29 +453,28 @@ function BudgetAccordionItem({
     budget,
     clients,
     companies,
+    onUpdateBudget,
+    onDeleteBudget,
     setViewingBudget,
     setMovingBudget,
     setPrintingBudget,
     handleEditBudget,
-    onDeleteBudget,
-    onUpdateBudget
 }: {
-    budget: Budget,
-    clients: any[],
-    companies: Company[],
-    setViewingBudget: (b: Budget | undefined) => void,
-    setMovingBudget: (b: Budget | undefined) => void,
-    setPrintingBudget: (b: Budget | null) => void,
-    handleEditBudget: (b: Budget) => void,
-    onDeleteBudget: (id: string) => void,
-    onUpdateBudget: (b: any) => void
+    budget: Budget;
+    clients: any[];
+    companies: Company[];
+    onUpdateBudget: (budget: Budget) => void;
+    onDeleteBudget: (id: string) => void;
+    setViewingBudget: (budget: Budget | undefined) => void;
+    setMovingBudget: (budget: Budget | undefined) => void;
+    setPrintingBudget: (budget: Budget | null) => void;
+    handleEditBudget: (budget: Budget) => void;
 }) {
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
     const handleDocUpload = async (file: File) => {
         setIsUploading(true);
-    
         const storageRef = ref(storage, `budgets/${budget.id}/documents/${file.name}`);
         
         try {
@@ -566,7 +565,7 @@ function BudgetAccordionItem({
                                 fileInput.onchange = (e) => {
                                     const file = (e.target as HTMLInputElement).files?.[0];
                                     if (file) {
-                                    handleDocUpload(file);
+                                      handleDocUpload(file);
                                     }
                                 }
                                 fileInput.click();
@@ -613,6 +612,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const handleMoveBudget = (category: BudgetCategory) => {
     if (!movingBudget) return;
     onUpdateBudget({ ...movingBudget, category });
+    setMovingBudget(undefined);
   }
 
   const handleSubmit = (values: any) => {
@@ -708,12 +708,12 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                             budget={budget}
                             clients={clients}
                             companies={companies}
+                            onUpdateBudget={onUpdateBudget}
+                            onDeleteBudget={onDeleteBudget}
                             setViewingBudget={setViewingBudget}
                             setMovingBudget={setMovingBudget}
                             setPrintingBudget={setPrintingBudget}
                             handleEditBudget={handleEditBudget}
-                            onDeleteBudget={onDeleteBudget}
-                            onUpdateBudget={onUpdateBudget}
                         />
                     ))}
                 </Accordion>
@@ -744,7 +744,7 @@ export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpda
         <TabsContent key={tab.value} value={tab.value} className="mt-6">
           <BudgetListCard
             title={`Presupuestos de ${tab.label}`}
-            budgets={filteredBudgets}
+            budgets={activeTab === tab.value ? filteredBudgets : []}
             clients={clients}
             companies={companies}
             onAddBudget={onAddBudget}
