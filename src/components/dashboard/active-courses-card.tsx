@@ -254,37 +254,35 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
             return (
               <AccordionItem value={client.id} key={client.id} className="border-none">
                  <Card className="flex flex-col overview-card">
-                  <AccordionTrigger className="p-4 hover:no-underline">
-                    <div className="flex w-full justify-between items-center pr-4">
-                      <div className="text-left">
-                        <h3 className="font-semibold text-lg">{client.name}</h3>
-                        {client.estado && <Badge variant="secondary" className="mt-1">{client.estado}</Badge>}
-                      </div>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
+                  <CardHeader className="flex flex-row items-center justify-between p-4">
+                      <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                        <div className="text-left">
+                          <h3 className="font-semibold text-lg">{client.name}</h3>
+                          {client.estado && <Badge variant="secondary" className="mt-1">{client.estado}</Badge>}
+                        </div>
+                      </AccordionTrigger>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                  </CardHeader>
+                  <AccordionContent className="px-6 pb-6 pt-0">
                     <div className="space-y-4 flex-grow text-sm">
                       <div>
                         <h4 className="font-semibold mb-2">Contacto</h4>
