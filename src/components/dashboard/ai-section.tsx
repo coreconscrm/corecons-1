@@ -564,13 +564,11 @@ function PriceTable() {
                 filteredAndSortedPrices.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      <span
-                        className="cursor-pointer hover:underline"
-                        onClick={() => setViewingDescription(item.descripcion)}
-                      >
+                    <TableCell 
+                      className="max-w-xs truncate cursor-pointer hover:underline"
+                      onClick={() => setViewingDescription(item.descripcion)}
+                    >
                         {item.descripcion}
-                      </span>
                     </TableCell>
                     <TableCell>{item.unidad}</TableCell>
                     <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
