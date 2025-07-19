@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2 } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -314,9 +314,7 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
         async () => {
           try {
             await getDownloadURL(uploadTask.snapshot.ref);
-            setUploads(prev =>
-              prev.map(u => u.id === upload.id ? { ...u, progress: 100, status: "processing" } : u)
-            );
+            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, progress: 100, status: "processing" } : u));
             onUploadSuccess(upload.file.name);
             setTimeout(() => {
               setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: "success" } : u));
@@ -361,7 +359,7 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
     <Card>
       <CardHeader>
         <CardTitle>Importar Presupuestos</CardTitle>
-        <CardDescription>Sube archivos para extraer precios automáticamente.</CardDescription>
+        <CardDescription>Sube archivos para extraer precios y añadirlos a la base de datos centralizada.</CardDescription>
       </CardHeader>
       <CardContent>
         <div
@@ -377,7 +375,7 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
               ? "Suelta los archivos aquí..."
               : "Arrastra y suelta archivos aquí, o haz clic para seleccionar"}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">PDF, DOCS, XLSX</p>
+          <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, XLSX</p>
         </div>
         <div className="mt-4 space-y-3">
           {activeUploads.map((upload) => (
@@ -697,11 +695,19 @@ export function AiSection() {
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="price-database">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
-                    <PriceTable />
-                </div>
+            <TabsContent value="price-database" className="mt-6">
+                <Tabs defaultValue="consult" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
+                        <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="consult" className="mt-6">
+                        <PriceTable />
+                    </TabsContent>
+                    <TabsContent value="import" className="mt-6">
+                        <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
+                    </TabsContent>
+                </Tabs>
             </TabsContent>
         </Tabs>
     );
