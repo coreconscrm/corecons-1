@@ -122,14 +122,15 @@ function ProjectBreakdownGenerator() {
 
     try {
       for (const partida of allPartidas) {
-        if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) {
+        const precioString = partida.precioUnitario?.replace(',', '.') ?? '0';
+        if (!partida.precioUnitario || isNaN(parseFloat(precioString))) {
             continue;
         }
 
         const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
         const querySnapshot = await getDocs(q);
 
-        const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
+        const precio = parseFloat(precioString);
         const docData = {
           descripcion: partida.descripcion,
           unidad: partida.unidad,
@@ -277,21 +278,21 @@ function ProjectBreakdownGenerator() {
 
 
 // --- Componente de Carga de Archivos ---
-function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete: (fileName: string) => void, onUploadSuccess: (fileId: string) => void }) {
+function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: string) => void }) {
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newUploads = acceptedFiles.map((file) => ({
+    const newUploads: UploadedFile[] = acceptedFiles.map(file => ({
       file,
       progress: 0,
-      status: "pending" as UploadStatus,
+      status: "pending",
       id: `${file.name}-${Date.now()}`,
     }));
     
     setUploads(prev => [...prev, ...newUploads]);
 
-    newUploads.forEach((upload) => {
+    newUploads.forEach(upload => {
       const storageRef = ref(storage, `presupuestos-importados/${upload.file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, upload.file);
 
@@ -299,41 +300,35 @@ function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete:
         "state_changed",
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploads((prev) =>
-            prev.map((u) =>
-              u.id === upload.id ? { ...u, progress: progress, status: "uploading" } : u
-            )
+          setUploads(prev =>
+            prev.map(u => u.id === upload.id ? { ...u, progress, status: "uploading" } : u)
           );
         },
         (error) => {
           console.error("Upload error:", error);
-          setUploads((prev) =>
-            prev.map((u) =>
-              u.id === upload.id
-                ? { ...u, status: "error", errorMessage: error.message }
-                : u
-            )
+          setUploads(prev =>
+            prev.map(u => u.id === upload.id ? { ...u, status: "error", errorMessage: error.message } : u)
           );
           toast({ variant: "destructive", title: "Error en la subida", description: `El archivo ${upload.file.name} no pudo subirse.` });
         },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then(() => {
-            setUploads((prev) =>
-              prev.map((u) =>
-                u.id === upload.id ? { ...u, progress: 100, status: "processing" } : u
-              )
+        async () => {
+          try {
+            await getDownloadURL(uploadTask.snapshot.ref);
+            setUploads(prev =>
+              prev.map(u => u.id === upload.id ? { ...u, progress: 100, status: "processing" } : u)
             );
-            onUploadComplete(upload.file.name);
-            
+            onUploadSuccess(upload.file.name);
             setTimeout(() => {
-                 setUploads((prev) => prev.map((u) => u.id === upload.id ? { ...u, status: "success" } : u));
-                 onUploadSuccess(upload.id);
-            }, 1000); 
-          });
+              setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: "success" } : u));
+            }, 1000);
+          } catch (error) {
+            console.error("Error finalizing upload:", error);
+            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: "error", errorMessage: (error as Error).message } : u));
+          }
         }
       );
     });
-  }, [onUploadComplete, toast, onUploadSuccess]);
+  }, [onUploadSuccess, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -344,6 +339,8 @@ function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete:
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
   });
+  
+  const activeUploads = uploads.filter(u => u.status === 'uploading' || u.status === 'processing');
 
   const getStatusContent = (upload: UploadedFile) => {
     switch (upload.status) {
@@ -383,7 +380,7 @@ function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete:
           <p className="text-xs text-muted-foreground mt-1">PDF, DOCS, XLSX</p>
         </div>
         <div className="mt-4 space-y-3">
-          {uploads.map((upload) => (
+          {activeUploads.map((upload) => (
             <div key={upload.id} className="p-3 border rounded-lg">
               <div className="flex items-center justify-between text-sm">
                 <p className="truncate font-medium flex items-center gap-2">
@@ -564,11 +561,13 @@ function PriceTable() {
                 filteredAndSortedPrices.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                    <TableCell 
-                      className="max-w-xs truncate cursor-pointer hover:underline"
-                      onClick={() => setViewingDescription(item.descripcion)}
-                    >
+                    <TableCell>
+                      <div
+                        className="max-w-xs truncate cursor-pointer hover:underline"
+                        onClick={() => setViewingDescription(item.descripcion)}
+                      >
                         {item.descripcion}
+                      </div>
                     </TableCell>
                     <TableCell>{item.unidad}</TableCell>
                     <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
@@ -666,10 +665,6 @@ export function AiSection() {
         }
     }, [toast]);
     
-    const handleUploadSuccess = useCallback(() => {
-        // Podríamos añadir lógica aquí si fuera necesario
-    }, []);
-
     return (
         <Tabs defaultValue="breakdown-generator" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -704,17 +699,10 @@ export function AiSection() {
             </TabsContent>
             <TabsContent value="price-database">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <FileUploader 
-                        onUploadComplete={simulatePriceExtraction} 
-                        onUploadSuccess={handleUploadSuccess} 
-                    />
+                    <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
                     <PriceTable />
                 </div>
             </TabsContent>
         </Tabs>
     );
 }
-
-    
-
-    
