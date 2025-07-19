@@ -13,7 +13,7 @@ import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, Arrow
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -136,7 +136,7 @@ function ProjectBreakdownGenerator() {
         const querySnapshot = await getDocs(q);
 
         const precio = parseFloat(precioString);
-        const fecha = serverTimestamp();
+        const fecha = new Date();
         const archivoOrigen = file.name;
 
         const newHistoryEntry = { precio, fecha, archivoOrigen };
@@ -720,7 +720,7 @@ function PriceDatabaseSection() {
                 const q = query(pricesRef, where("descripcion", "==", item.descripcion));
                 const querySnapshot = await getDocs(q);
                 
-                const fecha = serverTimestamp();
+                const fecha = new Date();
                 const newHistoryEntry = { precio: item.precio, fecha, archivoOrigen: fileName };
 
                 if (querySnapshot.empty) {
