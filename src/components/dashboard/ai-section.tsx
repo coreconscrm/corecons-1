@@ -9,14 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 
 // --- Tipos de Datos ---
 type UploadStatus = "pending" | "uploading" | "processing" | "success" | "error";
@@ -400,6 +402,7 @@ function PriceTable() {
   const [prices, setPrices] = useState<PriceMasterItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const q = query(collection(db, "preciosMaestros"), orderBy("fechaImportacion", "desc"));
@@ -413,6 +416,32 @@ function PriceTable() {
     });
     return () => unsubscribe();
   }, []);
+
+  const handleDeleteAll = async () => {
+    const pricesRef = collection(db, "preciosMaestros");
+    try {
+        const querySnapshot = await getDocs(pricesRef);
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
+    } catch (error) {
+        console.error("Error deleting all prices:", error);
+        toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    try {
+        await deleteDoc(doc(db, "preciosMaestros", id));
+        toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
+    } catch (error) {
+        console.error(`Error deleting price ${id}:`, error);
+        toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
+    }
+  };
 
   const filteredAndSortedPrices = useMemo(() => {
     let sortableItems = [...prices];
@@ -460,8 +489,32 @@ function PriceTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Consulta de Precios</CardTitle>
-        <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Consulta de Precios</CardTitle>
+                <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
+            </div>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. Esto eliminará permanentemente
+                            toda la base de precios.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </CardHeader>
       <CardContent>
         <Input
@@ -492,6 +545,7 @@ function PriceTable() {
                 <TableHead onClick={() => requestSort("archivoOrigen")} className="cursor-pointer">
                     <div className="flex items-center">Origen {getSortIcon("archivoOrigen")}</div>
                 </TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -504,11 +558,32 @@ function PriceTable() {
                     <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
                     <TableCell>{item.fechaImportacion}</TableCell>
                     <TableCell className="truncate max-w-[150px]">{item.archivoOrigen}</TableCell>
+                    <TableCell className="text-right">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        "{item.descripcion}" será eliminada permanentemente.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     No se encontraron precios. Sube un presupuesto para empezar.
                   </TableCell>
                 </TableRow>
@@ -623,4 +698,3 @@ export function AiSection() {
         </Tabs>
     );
 }
-
