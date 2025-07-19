@@ -18,6 +18,9 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DialogContent } from "@radix-ui/react-dialog";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 // --- Tipos de Datos ---
@@ -402,6 +405,7 @@ function PriceTable() {
   const [prices, setPrices] = useState<PriceMasterItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [viewingDescription, setViewingDescription] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -488,6 +492,13 @@ function PriceTable() {
 
   return (
     <Card>
+      <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
+        <DialogContent>
+            <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
+            <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingDescription}</div></ScrollArea>
+            <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
@@ -553,7 +564,18 @@ function PriceTable() {
                 filteredAndSortedPrices.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                    <TableCell className="font-medium">{item.descripcion}</TableCell>
+                    <TableCell className="max-w-xs">
+                        {item.descripcion.length > 100 ? (
+                            <span 
+                                className="truncate cursor-pointer hover:underline"
+                                onClick={() => setViewingDescription(item.descripcion)}
+                            >
+                                {item.descripcion.substring(0, 100)}...
+                            </span>
+                        ) : (
+                            item.descripcion
+                        )}
+                    </TableCell>
                     <TableCell>{item.unidad}</TableCell>
                     <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
                     <TableCell>{item.fechaImportacion}</TableCell>
@@ -698,3 +720,5 @@ export function AiSection() {
         </Tabs>
     );
 }
+
+    
