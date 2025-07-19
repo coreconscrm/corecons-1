@@ -15,7 +15,7 @@ import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc, limit, startAt, endAt } from "firebase/firestore";
 import { format } from "date-fns";
-import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
+import { createProjectBreakdown, type ProjectBreakdown, type ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
@@ -30,7 +30,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AiBudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import type { ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
 
 
 // --- Tipos de Datos ---
@@ -830,12 +829,19 @@ function PriceDatabaseSection() {
         setIsSearching(true);
         try {
             const pricesRef = collection(db, "preciosMaestros");
-            const searchTermLower = term.toLowerCase();
-            const q = query(
-                pricesRef,
-                where("keywords", "array-contains", searchTermLower),
-                limit(50)
-            );
+            const searchKeywords = term.toLowerCase().split(' ').filter(Boolean);
+
+            if (searchKeywords.length === 0) {
+                setPrices([]);
+                setIsSearching(false);
+                return;
+            }
+
+            let q = query(pricesRef);
+            searchKeywords.forEach(keyword => {
+                q = query(q, where("keywords", "array-contains", keyword));
+            });
+            q = query(q, limit(50));
             
             const querySnapshot = await getDocs(q);
             const priceData = querySnapshot.docs.map(doc => ({
@@ -1229,11 +1235,16 @@ export function AiSection({
           
           const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
           const querySnapshot = await getDocs(q);
-
           
           const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
           const newHistoryEntry = { precio, fecha: now, archivoOrigen: fileName };
-          const keywords = partida.descripcion.toLowerCase().replace(/[.,;]/g, '').split(/\s+/).filter(Boolean);
+          
+          // Improved keyword generation
+          const keywords = partida.descripcion
+            .toLowerCase()
+            .replace(/[.,;:]/g, ' ') // Replace punctuation with spaces
+            .split(/\s+/) // Split by any whitespace
+            .filter(Boolean); // Remove empty strings
 
           if (querySnapshot.empty) {
             const newDocRef = doc(pricesRef);
@@ -1352,6 +1363,7 @@ export function AiSection({
 
 
     
+
 
 
 
