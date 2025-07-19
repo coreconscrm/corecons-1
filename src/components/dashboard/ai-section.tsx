@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
-import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
+import { createProjectBreakdown, type ProjectBreakdown, type ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
@@ -29,6 +29,7 @@ import { Textarea } from "../ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { AiBudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 
 // --- Tipos de Datos ---
@@ -76,6 +77,10 @@ const budgetDetailsSchema = z.object({
     title: z.string().min(1, "El título es requerido."),
     clientName: z.string().optional(),
     description: z.string().optional(),
+});
+
+const mergeBudgetSchema = z.object({
+  targetBudgetId: z.string().min(1, "Debes seleccionar un presupuesto de destino."),
 });
 
 
@@ -357,19 +362,94 @@ function BudgetDetailsDialog({ budget, open, onOpenChange, onSave }: { budget: A
     );
 }
 
+function MergeBudgetDialog({
+    sourceBudget,
+    allBudgets,
+    open,
+    onOpenChange,
+    onMerge,
+}: {
+    sourceBudget: AiBudgetItem;
+    allBudgets: AiBudgetItem[];
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onMerge: (sourceId: string, targetId: string) => void;
+}) {
+    const form = useForm<z.infer<typeof mergeBudgetSchema>>({
+        resolver: zodResolver(mergeBudgetSchema),
+    });
+
+    const potentialTargets = allBudgets.filter(b => b.id !== sourceBudget.id);
+
+    const handleSubmit = (values: z.infer<typeof mergeBudgetSchema>) => {
+        onMerge(sourceBudget.id, values.targetBudgetId);
+        onOpenChange(false);
+    };
+    
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Unir Presupuestos</DialogTitle>
+                    <DialogDescription>
+                        Vas a unir "{sourceBudget.title}" con otro presupuesto. El presupuesto actual se borrará y sus partidas se añadirán al presupuesto de destino.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="targetBudgetId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Selecciona el presupuesto de destino</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Elige un presupuesto..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {potentialTargets.map(b => (
+                                                <SelectItem key={b.id} value={b.id}>
+                                                    {b.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Cancelar</Button>
+                            </DialogClose>
+                            <Button type="submit">Confirmar Fusión</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
 // --- Componente para una tarjeta de presupuesto de IA ---
 function AiBudgetCard({ 
     budget, 
     onUserPriceChange, 
     onDetailsChange,
     onDelete,
-    onPrint
+    onPrint,
+    onMergeClick
 }: { 
     budget: AiBudgetItem, 
     onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void,
     onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
     onDelete: (id: string) => void,
-    onPrint: (budget: AiBudgetItem) => void
+    onPrint: (budget: AiBudgetItem) => void,
+    onMergeClick: (budget: AiBudgetItem) => void
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const budgetTotals = useMemo(() => {
@@ -424,6 +504,9 @@ function AiBudgetCard({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => onPrint(budget)}>
                                     <Printer className="mr-2 h-4 w-4" /> Imprimir
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem onSelect={() => onMergeClick(budget)}>
+                                    <Merge className="mr-2 h-4 w-4" /> Unir con...
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
@@ -524,6 +607,7 @@ function AiBudgetsSection({
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [printingBudget, setPrintingBudget] = useState<AiBudgetItem | null>(null);
+    const [mergingBudget, setMergingBudget] = useState<AiBudgetItem | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -598,6 +682,57 @@ function AiBudgetsSection({
             toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar el presupuesto.`});
         }
     };
+
+    const handleMergeBudgets = async (sourceId: string, targetId: string) => {
+        const sourceBudget = aiBudgets.find(b => b.id === sourceId);
+        const targetBudget = aiBudgets.find(b => b.id === targetId);
+
+        if (!sourceBudget || !targetBudget) {
+            toast({ variant: "destructive", title: "Error", description: "No se encontraron los presupuestos para unir." });
+            return;
+        }
+
+        const mergedBreakdown: ProjectBreakdownChapter[] = [...targetBudget.breakdown.capitulos];
+        const mergedPrices = { ...targetBudget.userPrices };
+
+        for (const sourceChapter of sourceBudget.breakdown.capitulos) {
+            const targetChapter = mergedBreakdown.find(c => c.nombre === sourceChapter.nombre);
+            if (targetChapter) {
+                // Merge partidas into existing chapter
+                targetChapter.partidas.push(...sourceChapter.partidas);
+            } else {
+                // Add new chapter
+                mergedBreakdown.push(sourceChapter);
+            }
+        }
+        
+        // Merge user prices
+        for (const [chapterName, partidas] of Object.entries(sourceBudget.userPrices || {})) {
+            if (!mergedPrices[chapterName]) {
+                mergedPrices[chapterName] = {};
+            }
+             Object.assign(mergedPrices[chapterName], partidas);
+        }
+
+        try {
+            const batch = writeBatch(db);
+            const targetRef = doc(db, 'ia_budgets', targetId);
+            batch.update(targetRef, { 
+                'breakdown.capitulos': mergedBreakdown,
+                'userPrices': mergedPrices
+            });
+
+            const sourceRef = doc(db, 'ia_budgets', sourceId);
+            batch.delete(sourceRef);
+
+            await batch.commit();
+            toast({ title: "Fusión completada", description: `"${sourceBudget.title}" se ha unido con "${targetBudget.title}".` });
+
+        } catch (error) {
+            console.error("Error merging budgets:", error);
+            toast({ variant: "destructive", title: "Error al fusionar", description: `No se pudieron unir los presupuestos. ${(error as Error).message}` });
+        }
+    };
     
     if (loading) {
         return (
@@ -610,6 +745,15 @@ function AiBudgetsSection({
     
     return (
       <div className="space-y-6">
+          {mergingBudget && (
+                <MergeBudgetDialog
+                    sourceBudget={mergingBudget}
+                    allBudgets={aiBudgets}
+                    open={!!mergingBudget}
+                    onOpenChange={() => setMergingBudget(null)}
+                    onMerge={handleMergeBudgets}
+                />
+            )}
           <div className="printable-area">
                 <AiBudgetPrintLayout 
                     budget={printingBudget}
@@ -626,6 +770,7 @@ function AiBudgetsSection({
                         onDetailsChange={handleDetailsChange}
                         onDelete={handleDeleteBudget}
                         onPrint={setPrintingBudget}
+                        onMergeClick={setMergingBudget}
                     />
                 ))}
             </Accordion>
@@ -1137,5 +1282,6 @@ export function AiSection({
 
 
     
+
 
 
