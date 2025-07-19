@@ -17,8 +17,8 @@ import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBa
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 
@@ -61,7 +61,19 @@ type AiBudgetItem = {
 };
 
 // --- Componente para Generador de Desglose ---
-function BudgetUploader({ onSaveToPriceBase }: { onSaveToPriceBase: (breakdown: ProjectBreakdown, fileName: string) => Promise<void> }) {
+function BudgetUploader({ 
+    title,
+    description,
+    onAnalysisComplete,
+    saveButtonLabel,
+    saveButtonIcon
+}: { 
+    title: string;
+    description: string;
+    onAnalysisComplete: (breakdown: ProjectBreakdown, fileName: string) => Promise<void>;
+    saveButtonLabel: string;
+    saveButtonIcon: React.ReactNode;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -118,40 +130,16 @@ function BudgetUploader({ onSaveToPriceBase }: { onSaveToPriceBase: (breakdown: 
     }
   };
 
-  const handleSaveToAiBudgets = async () => {
+  const handleSaveClick = async () => {
     if (!breakdown || !file) {
-      toast({ variant: "destructive", title: "Error", description: "No hay desglose para guardar." });
-      return;
-    }
-    
-    setIsSaving(true);
-    try {
-      await addDoc(collection(db, "ia_budgets"), {
-        fileName: file.name,
-        createdAt: new Date(),
-        breakdown: breakdown,
-        userPrices: {},
-      });
-      toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos IA." });
-      setBreakdown(null); // Reset after saving
-      setFile(null);
-    } catch (error) {
-       console.error("Error saving AI budget:", error);
-       toast({ variant: "destructive", title: "Error al guardar", description: `No se pudo guardar el presupuesto. ${(error as Error).message}` });
-    } finally {
-        setIsSaving(false);
-    }
-  };
-
-  const handleSaveToPriceBaseClick = async () => {
-    if (!breakdown || !file) {
-       toast({ variant: "destructive", title: "Error", description: "No hay desglose para añadir a la base de precios." });
+       toast({ variant: "destructive", title: "Error", description: "No hay desglose para guardar." });
        return;
     }
     setIsSaving(true);
     try {
-        await onSaveToPriceBase(breakdown, file.name);
-        // Do not clear the form, user might want to save to budgets too
+        await onAnalysisComplete(breakdown, file.name);
+        setBreakdown(null);
+        setFile(null);
     } catch (error) {
         // Error toast is handled in parent
     } finally {
@@ -164,8 +152,8 @@ function BudgetUploader({ onSaveToPriceBase }: { onSaveToPriceBase: (breakdown: 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Subir Presupuesto</CardTitle>
-          <CardDescription>Sube una memoria de calidades en PDF para que la IA genere un desglose estructurado del proyecto.</CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div
@@ -254,15 +242,10 @@ function BudgetUploader({ onSaveToPriceBase }: { onSaveToPriceBase: (breakdown: 
         </CardContent>
         {breakdown && breakdown.capitulos.length > 0 && (
           <CardFooter className="flex-col sm:flex-row gap-2">
-            <Button onClick={handleSaveToAiBudgets} disabled={isSaving}>
+            <Button onClick={handleSaveClick} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" />
-              Guardar Presupuesto
-            </Button>
-             <Button onClick={handleSaveToPriceBaseClick} disabled={isSaving} variant="outline">
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Plus className="mr-2 h-4 w-4" />
-              Añadir a Base de Precios
+              {saveButtonIcon}
+              {saveButtonLabel}
             </Button>
           </CardFooter>
         )}
@@ -392,7 +375,7 @@ function AiBudgetsSection() {
                 <FileInput className="h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No hay presupuestos analizados</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Ve a la pestaña "Subir Presupuesto" para empezar.
+                    Ve a la pestaña "Subir para Presupuestos IA" para empezar.
                 </p>
             </div>
           )}
@@ -809,24 +792,70 @@ export function AiSection() {
          throw error; // Propagate error for the caller to handle state
       }
     }, [toast]);
+
+    const handleSaveToAiBudgets = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
+        try {
+            await addDoc(collection(db, "ia_budgets"), {
+                fileName: fileName,
+                createdAt: new Date(),
+                breakdown: breakdown,
+                userPrices: {},
+            });
+            toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos IA." });
+        } catch (error) {
+            console.error("Error saving AI budget:", error);
+            toast({ variant: "destructive", title: "Error al guardar", description: `No se pudo guardar el presupuesto. ${(error as Error).message}` });
+            throw error; // Propagate error
+        }
+    }, [toast]);
     
     return (
-        <Tabs defaultValue="upload-budget" className="w-full">
+        <Tabs defaultValue="upload-for-prices" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="upload-budget">
-                  <BrainCircuit className="mr-2" /> Subir Presupuesto
+                <TabsTrigger value="upload-for-prices">
+                  <Database className="mr-2" /> Subir para Precios
                 </TabsTrigger>
-                <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
-                <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
+                <TabsTrigger value="upload-for-budgets">
+                  <Server className="mr-2" /> Subir para Presupuestos IA
+                </TabsTrigger>
+                <TabsTrigger value="view-and-edit">
+                  <BrainCircuit className="mr-2" /> Consulta y Edición
+                </TabsTrigger>
             </TabsList>
-            <TabsContent value="upload-budget" className="mt-6">
-                <BudgetUploader onSaveToPriceBase={handleSaveToPriceBase} />
+
+            <TabsContent value="upload-for-prices" className="mt-6">
+                 <BudgetUploader 
+                    title="Subir para Base de Precios"
+                    description="Sube un PDF para añadir o actualizar partidas en tu base de datos de precios centralizada."
+                    onAnalysisComplete={handleSaveToPriceBase}
+                    saveButtonLabel="Añadir a Base de Precios"
+                    saveButtonIcon={<Database className="mr-2 h-4 w-4" />}
+                />
             </TabsContent>
-            <TabsContent value="ai-budgets" className="mt-6">
-                <AiBudgetsSection />
+
+            <TabsContent value="upload-for-budgets" className="mt-6">
+                <BudgetUploader 
+                    title="Subir para Presupuestos IA"
+                    description="Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'."
+                    onAnalysisComplete={handleSaveToAiBudgets}
+                    saveButtonLabel="Guardar Presupuesto"
+                    saveButtonIcon={<Save className="mr-2 h-4 w-4" />}
+                />
             </TabsContent>
-            <TabsContent value="price-database" className="mt-6">
-                <PriceDatabaseSection />
+
+            <TabsContent value="view-and-edit" className="mt-6">
+                <Tabs defaultValue="ai-budgets" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
+                        <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="ai-budgets" className="mt-6">
+                       <AiBudgetsSection />
+                    </TabsContent>
+                    <TabsContent value="price-database" className="mt-6">
+                        <PriceDatabaseSection />
+                    </TabsContent>
+                </Tabs>
             </TabsContent>
         </Tabs>
     );
