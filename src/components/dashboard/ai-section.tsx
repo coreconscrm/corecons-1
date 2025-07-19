@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { DialogContent } from "@radix-ui/react-dialog";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -396,11 +396,10 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
 }
 
 // --- Componente de Tabla de Precios ---
-function PriceTable() {
+function PriceTable({ onViewDescription }: { onViewDescription: (description: string) => void }) {
   const [prices, setPrices] = useState<PriceMasterItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const [viewingDescription, setViewingDescription] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -486,14 +485,6 @@ function PriceTable() {
   };
 
   return (
-    <>
-      <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
-        <DialogContent>
-            <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
-            <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingDescription}</div></ScrollArea>
-            <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
@@ -560,11 +551,8 @@ function PriceTable() {
                   filteredAndSortedPrices.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                      <TableCell>
-                        <div
-                          className="max-w-xs truncate cursor-pointer hover:underline"
-                          onClick={() => setViewingDescription(item.descripcion)}
-                        >
+                      <TableCell className="max-w-xs cursor-pointer" onClick={() => onViewDescription(item.descripcion)}>
+                        <div className="truncate hover:underline">
                           {item.descripcion}
                         </div>
                       </TableCell>
@@ -607,13 +595,13 @@ function PriceTable() {
           </div>
         </CardContent>
       </Card>
-    </>
   );
 }
 
 // --- Sección Principal de IA ---
 export function AiSection() {
     const { toast } = useToast();
+    const [viewingDescription, setViewingDescription] = useState<string | null>(null);
 
     // Simula la Cloud Function de extracción de precios
     const simulatePriceExtraction = useCallback(async (fileName: string) => {
@@ -666,6 +654,15 @@ export function AiSection() {
     }, [toast]);
     
     return (
+      <>
+        <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
+          <DialogContent>
+              <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
+              <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingDescription}</div></ScrollArea>
+              <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Tabs defaultValue="breakdown-generator" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="breakdown-generator">
@@ -704,7 +701,7 @@ export function AiSection() {
                         <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
                     </TabsList>
                     <TabsContent value="consult" className="mt-6">
-                        <PriceTable />
+                        <PriceTable onViewDescription={setViewingDescription} />
                     </TabsContent>
                     <TabsContent value="import" className="mt-6">
                         <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
@@ -712,5 +709,6 @@ export function AiSection() {
                 </Tabs>
             </TabsContent>
         </Tabs>
+      </>
     );
 }
