@@ -63,18 +63,21 @@ function PrintLayoutFooter({ company }: { company: Company | null }) {
 export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem | null, company: Company | null }) {
   if (!budget) return null;
 
-  const budgetTotals = useMemo(() => {
+  const { grandTotal, chapterTotals } = useMemo(() => {
     let grandTotal = 0;
+    const chapterTotals: Record<string, number> = {};
+
     if (budget.breakdown.capitulos) {
         for (const capitulo of budget.breakdown.capitulos) {
             const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
                 const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
                 return sum + lineTotal;
             }, 0);
+            chapterTotals[capitulo.nombre] = chapterTotal;
             grandTotal += chapterTotal;
         }
     }
-    return grandTotal;
+    return { grandTotal, chapterTotals };
   }, [budget.breakdown, budget.userLineTotals]);
 
   return (
@@ -128,6 +131,28 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
           </tbody>
         </table>
       </section>
+      
+      <section className="mt-8">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
+        <table className="w-full max-w-md ml-auto text-left">
+            <thead className="bg-gray-100 text-gray-600">
+                <tr>
+                    <th className="p-3 font-semibold uppercase text-sm">Capítulo</th>
+                    <th className="p-3 font-semibold uppercase text-sm text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                 {Object.entries(chapterTotals).map(([nombre, total]) => (
+                    <tr key={nombre} className="border-b border-gray-100">
+                        <td className="p-3 font-semibold">{nombre}</td>
+                        <td className="p-3 text-right font-mono">
+                           €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+      </section>
 
       <section className="mt-8 flex justify-between items-end">
         <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
@@ -139,7 +164,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
             <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
                 <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                 <span className="text-xl font-bold font-mono text-gray-900">
-                    €{budgetTotals.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
             </div>
             <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
@@ -228,4 +253,3 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
     </div>
   );
 }
-

@@ -530,7 +530,7 @@ function AiBudgetCard({
                     </AlertDialog>
                 </CardHeader>
                 <AccordionContent>
-                    <CardContent className="flex-grow">
+                    <CardContent className="flex-grow space-y-6">
                         <Accordion type="multiple" className="w-full">
                             {budget.breakdown.capitulos.map((capitulo, index) => (
                                 <AccordionItem value={`item-${index}`} key={index}>
@@ -584,6 +584,30 @@ function AiBudgetCard({
                                 </AccordionItem>
                             ))}
                         </Accordion>
+
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Resumen de Capítulos</h4>
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Capítulo</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
+                                            <TableRow key={nombre}>
+                                                <TableCell className="font-semibold">{nombre}</TableCell>
+                                                <TableCell className="text-right font-mono">
+                                                    €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
                     </CardContent>
                     <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                         <div className="text-xl font-bold">
@@ -1281,6 +1305,7 @@ export function AiSection({
 
 
     
+
 
 
 
