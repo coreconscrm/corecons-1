@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 
@@ -59,6 +59,12 @@ type AiBudgetItem = {
   breakdown: ProjectBreakdown;
   userPrices?: Record<string, Record<string, number>>; // { [capituloNombre]: { [partidaDescripcion]: precio } }
 };
+
+
+// --- Helper Functions for Firestore Keys ---
+function encodeKey(key: string): string {
+    return key.replace(/\./g, '__DOT__');
+}
 
 // --- Componente para Generador de Desglose ---
 function BudgetUploader({ 
@@ -263,7 +269,7 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
         if (budget.breakdown.capitulos) {
             for (const capitulo of budget.breakdown.capitulos) {
                 const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
-                    const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                    const price = budget.userPrices?.[capitulo.nombre]?.[encodeKey(partida.descripcion)] || 0;
                     return sum + price;
                 }, 0);
                 chapterTotals[capitulo.nombre] = chapterTotal;
@@ -309,7 +315,7 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
                                                         type="number"
                                                         className="text-right"
                                                         placeholder="0.00"
-                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || ''}
+                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[encodeKey(partida.descripcion)] || ''}
                                                         onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
                                                     />
                                                 </TableCell>
@@ -363,6 +369,7 @@ function AiBudgetsSection() {
     const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string) => {
         const budgetRef = doc(db, 'ia_budgets', budgetId);
         const priceValue = parseFloat(price);
+        const encodedPartida = encodeKey(partida);
 
         // Optimistically update UI
         setAiBudgets(prev => prev.map(b => {
@@ -371,7 +378,7 @@ function AiBudgetsSection() {
                     ...b.userPrices,
                     [capitulo]: {
                         ...b.userPrices?.[capitulo],
-                        [partida]: isNaN(priceValue) ? 0 : priceValue
+                        [encodedPartida]: isNaN(priceValue) ? 0 : priceValue
                     }
                 };
                 return { ...b, userPrices: updatedUserPrices };
@@ -383,7 +390,7 @@ function AiBudgetsSection() {
         // In a real app, you would debounce this call. For now, direct update.
         try {
             await updateDoc(budgetRef, {
-                [`userPrices.${capitulo}.${partida}`]: isNaN(priceValue) ? 0 : priceValue
+                [`userPrices.${capitulo}.${encodedPartida}`]: isNaN(priceValue) ? 0 : priceValue
             });
         } catch (error) {
             console.error("Error updating user price:", error);
@@ -903,5 +910,6 @@ export function AiSection() {
 
 
     
+
 
 
