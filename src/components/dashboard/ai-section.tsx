@@ -833,9 +833,7 @@ function PriceDatabaseSection() {
             const searchTermLower = term.toLowerCase();
             const q = query(
                 pricesRef,
-                orderBy("descripcion"),
-                startAt(searchTermLower),
-                endAt(searchTermLower + '\uf8ff'),
+                where("keywords", "array-contains", searchTermLower),
                 limit(50)
             );
             
@@ -1235,6 +1233,7 @@ export function AiSection({
           
           const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
           const newHistoryEntry = { precio, fecha: now, archivoOrigen: fileName };
+          const keywords = partida.descripcion.toLowerCase().replace(/[.,;]/g, '').split(/\s+/).filter(Boolean);
 
           if (querySnapshot.empty) {
             const newDocRef = doc(pricesRef);
@@ -1245,7 +1244,8 @@ export function AiSection({
                 precioActual: precio,
                 fechaUltimaActualizacion: now,
                 historialPrecios: [newHistoryEntry],
-                status: 'new'
+                status: 'new',
+                keywords: keywords
             });
           } else {
             const docId = querySnapshot.docs[0].id;
@@ -1256,7 +1256,8 @@ export function AiSection({
                precioActual: precio,
                fechaUltimaActualizacion: now,
                historialPrecios: newHistory,
-               status: 'updated'
+               status: 'updated',
+               keywords: keywords
             });
           }
         }
@@ -1351,6 +1352,7 @@ export function AiSection({
 
 
     
+
 
 
 
