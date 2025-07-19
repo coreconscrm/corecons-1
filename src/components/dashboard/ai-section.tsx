@@ -13,7 +13,7 @@ import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, Arrow
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc, limit, startAt, endAt } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -816,23 +816,52 @@ function AiBudgetsSection({
 function PriceDatabaseSection() {
     const { toast } = useToast();
     const [prices, setPrices] = useState<PriceMasterItem[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
     const [viewingDescription, setViewingDescription] = useState<string | null>(null);
     const [viewingOrigin, setViewingOrigin] = useState<string | null>(null);
     const [viewingHistory, setViewingHistory] = useState<PriceMasterItem | null>(null);
 
-
+    const handleSearch = useCallback(async (term: string) => {
+        if (!term) {
+            setPrices([]);
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const pricesRef = collection(db, "preciosMaestros");
+            const searchTermLower = term.toLowerCase();
+            const searchTermUpper = searchTermLower + '\uf8ff';
+            const q = query(
+                pricesRef,
+                orderBy("descripcion"),
+                startAt(searchTermLower),
+                endAt(searchTermUpper),
+                limit(50)
+            );
+            
+            const querySnapshot = await getDocs(q);
+            const priceData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                fechaUltimaActualizacion: doc.data().fechaUltimaActualizacion?.toDate ? format(doc.data().fechaUltimaActualizacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
+            })) as PriceMasterItem[];
+            setPrices(priceData);
+        } catch (error) {
+            console.error("Error searching prices:", error);
+            toast({ variant: "destructive", title: "Error en la búsqueda", description: (error as Error).message });
+        } finally {
+            setIsSearching(false);
+        }
+    }, [toast]);
+    
     useEffect(() => {
-        const q = query(collection(db, "preciosMaestros"), orderBy("fechaUltimaActualizacion", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const priceData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            fechaUltimaActualizacion: doc.data().fechaUltimaActualizacion?.toDate ? format(doc.data().fechaUltimaActualizacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
-          })) as PriceMasterItem[];
-          setPrices(priceData);
-        });
-        return () => unsubscribe();
-    }, []);
+        const debounceTimer = setTimeout(() => {
+            handleSearch(searchTerm);
+        }, 300); // 300ms delay
+
+        return () => clearTimeout(debounceTimer);
+    }, [searchTerm, handleSearch]);
 
     const handleDeleteAll = async () => {
       const pricesRef = collection(db, "preciosMaestros");
@@ -844,6 +873,7 @@ function PriceDatabaseSection() {
           });
           await batch.commit();
           toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
+          setPrices([]); // Clear frontend
       } catch (error) {
           console.error("Error deleting all prices:", error);
           toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
@@ -854,6 +884,7 @@ function PriceDatabaseSection() {
       try {
           await deleteDoc(doc(db, "preciosMaestros", id));
           toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
+          setPrices(prev => prev.filter(p => p.id !== id));
       } catch (error) {
           console.error(`Error deleting price ${id}:`, error);
           toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
@@ -926,8 +957,18 @@ function PriceDatabaseSection() {
                 </div>
             </CardHeader>
             <CardContent>
+                <div className="mb-4">
+                    <Input
+                        placeholder="Buscar por descripción..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="max-w-sm"
+                    />
+                </div>
                 <PriceTable 
-                    prices={prices} 
+                    prices={prices}
+                    isSearching={isSearching}
+                    hasSearchTerm={!!searchTerm}
                     onViewDescription={setViewingDescription} 
                     onViewOrigin={setViewingOrigin} 
                     onDeleteItem={handleDeleteItem}
@@ -942,30 +983,25 @@ function PriceDatabaseSection() {
 // --- Componente de Tabla de Precios ---
 function PriceTable({ 
     prices, 
+    isSearching,
+    hasSearchTerm,
     onViewDescription, 
     onViewOrigin, 
     onDeleteItem,
     onViewHistory,
 }: { 
     prices: PriceMasterItem[], 
+    isSearching: boolean,
+    hasSearchTerm: boolean,
     onViewDescription: (description: string) => void, 
     onViewOrigin: (origin: string) => void, 
     onDeleteItem: (id: string) => void,
     onViewHistory: (item: PriceMasterItem) => void,
 }) {
-  const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
-  const filteredAndSortedPrices = useMemo(() => {
+  const sortedPrices = useMemo(() => {
     let sortableItems = [...prices];
-
-    if (searchTerm) {
-      sortableItems = sortableItems.filter((item) =>
-        item.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.capitulo && item.capitulo.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const aVal = a[sortConfig.key] || '';
@@ -980,7 +1016,7 @@ function PriceTable({
       });
     }
     return sortableItems;
-  }, [prices, searchTerm, sortConfig]);
+  }, [prices, sortConfig]);
 
   const requestSort = (key: keyof PriceMasterItem) => {
     let direction: "ascending" | "descending" = "ascending";
@@ -999,14 +1035,85 @@ function PriceTable({
           <ArrowUpDown className="h-4 w-4 ml-2 transform rotate-180" />;
   };
 
+  const renderTableBody = () => {
+    if (isSearching) {
+        return (
+            <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin inline" />
+                    Buscando...
+                </TableCell>
+            </TableRow>
+        );
+    }
+
+    if (sortedPrices.length === 0) {
+        return (
+            <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center">
+                    {hasSearchTerm ? "No se encontraron precios para tu búsqueda." : "Escribe en el buscador para encontrar precios."}
+                </TableCell>
+            </TableRow>
+        );
+    }
+    
+    return sortedPrices.map((item) => (
+        <TableRow key={item.id}>
+            <TableCell className="font-semibold">{item.capitulo}</TableCell>
+            <TableCell>
+                <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
+                    {item.descripcion}
+                </div>
+            </TableCell>
+            <TableCell>{item.unidad}</TableCell>
+            <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
+            <TableCell>{item.fechaUltimaActualizacion}</TableCell>
+            <TableCell>
+                {(item.historialPrecios?.length || 0) > 1 ? (
+                    <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
+                        <History className="mr-2 h-4 w-4" />
+                        Ver ({(item.historialPrecios?.length)})
+                    </Button>
+                ) : (
+                <Badge variant="secondary">Nuevo</Badge>
+                )}
+            </TableCell>
+            <TableCell>
+                <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
+                    {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
+                </div>
+            </TableCell>
+            <TableCell>
+                {item.status === 'new' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
+                {item.status === 'updated' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
+                {!item.status && <Badge variant="secondary">N/A</Badge>}
+            </TableCell>
+            <TableCell className="text-right">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </TableCell>
+        </TableRow>
+    ));
+  };
+
   return (
-      <>
-        <Input
-            placeholder="Buscar por descripción o capítulo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4 max-w-sm"
-        />
         <div className="rounded-md border">
         <Table>
             <TableHeader>
@@ -1033,72 +1140,10 @@ function PriceTable({
             </TableRow>
             </TableHeader>
             <TableBody>
-            {filteredAndSortedPrices.length > 0 ? (
-                filteredAndSortedPrices.map((item) => (
-                <TableRow key={item.id}>
-                    <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                    <TableCell>
-                        <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
-                            {item.descripcion}
-                        </div>
-                    </TableCell>
-                    <TableCell>{item.unidad}</TableCell>
-                    <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
-                    <TableCell>{item.fechaUltimaActualizacion}</TableCell>
-                    <TableCell>
-                        {(item.historialPrecios?.length || 0) > 1 ? (
-                            <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
-                                <History className="mr-2 h-4 w-4" />
-                                Ver ({(item.historialPrecios?.length)})
-                            </Button>
-                        ) : (
-                        <Badge variant="secondary">Nuevo</Badge>
-                        )}
-                    </TableCell>
-                    <TableCell>
-                        <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
-                            {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        {item.status === 'new' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
-                        {item.status === 'updated' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
-                        {!item.status && <Badge variant="secondary">N/A</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                </TableRow>
-                ))
-            ) : (
-                <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
-                    No se encontraron precios. Sube un presupuesto para empezar.
-                </TableCell>
-                </TableRow>
-            )}
+                {renderTableBody()}
             </TableBody>
         </Table>
         </div>
-      </>
   );
 }
 
@@ -1307,6 +1352,7 @@ export function AiSection({
 
 
     
+
 
 
 
