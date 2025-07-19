@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -21,6 +21,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Textarea } from "../ui/textarea";
 
 
 // --- Tipos de Datos ---
@@ -55,10 +59,20 @@ type SortConfig = {
 type AiBudgetItem = {
   id: string;
   fileName: string;
+  title: string;
+  clientName?: string;
+  description?: string;
   createdAt: any; // Firestore Timestamp
   breakdown: ProjectBreakdown;
-  userPrices?: Record<string, Record<string, number>>; // { [capituloNombre]: { [partidaDescripcion]: precio } }
+  userPrices?: Record<string, Record<string, number>>;
 };
+
+
+const budgetDetailsSchema = z.object({
+    title: z.string().min(1, "El título es requerido."),
+    clientName: z.string().optional(),
+    description: z.string().optional(),
+});
 
 
 // --- Componente para Generador de Desglose ---
@@ -255,8 +269,103 @@ function BudgetUploader({
   );
 }
 
+
+function BudgetDetailsDialog({ budget, open, onOpenChange, onSave }: { budget: AiBudgetItem, open: boolean, onOpenChange: (open: boolean) => void, onSave: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void }) {
+    const form = useForm<z.infer<typeof budgetDetailsSchema>>({
+        resolver: zodResolver(budgetDetailsSchema),
+        defaultValues: {
+            title: budget.title || budget.fileName,
+            clientName: budget.clientName || "",
+            description: budget.description || "",
+        },
+    });
+
+    useEffect(() => {
+        if (open) {
+            form.reset({
+                title: budget.title || budget.fileName,
+                clientName: budget.clientName || "",
+                description: budget.description || "",
+            });
+        }
+    }, [budget, open, form]);
+
+    const handleSubmit = (values: z.infer<typeof budgetDetailsSchema>) => {
+        onSave(budget.id, values);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Detalles del Presupuesto</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Título del Presupuesto</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="clientName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre del Cliente</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: Juan Pérez" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Descripción / Notas</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="Añade detalles sobre el proyecto..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">Guardar Cambios</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // --- Componente para una tarjeta de presupuesto de IA ---
-function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string, currentPrices: AiBudgetItem['userPrices']) => void }) {
+function AiBudgetCard({ 
+    budget, 
+    onUserPriceChange, 
+    onDetailsChange,
+    onDelete 
+}: { 
+    budget: AiBudgetItem, 
+    onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void,
+    onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
+    onDelete: (id: string) => void
+}) {
+    const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
         const chapterTotals: Record<string, number> = {};
@@ -265,7 +374,8 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
             for (const capitulo of budget.breakdown.capitulos) {
                 const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
                     const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                    return sum + price;
+                    const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                    return sum + (price * quantity);
                 }, 0);
                 chapterTotals[capitulo.nombre] = chapterTotal;
                 grandTotal += chapterTotal;
@@ -275,14 +385,60 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
     }, [budget.breakdown, budget.userPrices]);
 
     return (
-        <Card key={budget.id}>
+        <>
+        {isDetailsDialogOpen && (
+            <BudgetDetailsDialog
+                budget={budget}
+                open={isDetailsDialogOpen}
+                onOpenChange={setDetailsDialogOpen}
+                onSave={onDetailsChange}
+            />
+        )}
+        <Card key={budget.id} className="flex flex-col">
             <CardHeader>
-                <CardTitle>{budget.fileName}</CardTitle>
-                <CardDescription>
-                    Analizado el: {budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Fecha desconocida'}
-                </CardDescription>
+                 <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>{budget.title || budget.fileName}</CardTitle>
+                        <CardDescription className="mt-1">
+                            {budget.clientName && <span className="font-semibold">{budget.clientName}</span>}
+                            {budget.clientName && budget.description && " - "}
+                            {budget.description && <span>{budget.description}</span>}
+                            {!budget.clientName && !budget.description && `Analizado el: ${budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Fecha desconocida'}`}
+                        </CardDescription>
+                    </div>
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
+                                    <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Presupuesto
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Se eliminará permanentemente este presupuesto analizado.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(budget.id)}>Sí, eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
                 <Accordion type="multiple" className="w-full">
                     {budget.breakdown.capitulos.map((capitulo, index) => (
                         <AccordionItem value={`item-${index}`} key={index}>
@@ -291,36 +447,42 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-1/2">Partida</TableHead>
+                                            <TableHead className="w-2/5">Partida</TableHead>
                                             <TableHead className="text-right">Medición</TableHead>
                                             <TableHead className="text-center">Unidad</TableHead>
-                                            <TableHead className="text-right">Precio PDF</TableHead>
-                                            <TableHead className="text-right w-[150px]">Tu Precio (€)</TableHead>
+                                            <TableHead className="text-right">Tu Precio (€/ud)</TableHead>
+                                            <TableHead className="text-right">Total Partida (€)</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {capitulo.partidas.map((partida, pIndex) => (
+                                        {capitulo.partidas.map((partida, pIndex) => {
+                                            const userPrice = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                            const lineTotal = userPrice * quantity;
+                                            return (
                                             <TableRow key={pIndex}>
                                                 <TableCell>{partida.descripcion}</TableCell>
                                                 <TableCell className="text-right">{partida.medicion}</TableCell>
                                                 <TableCell className="text-center">{partida.unidad}</TableCell>
-                                                <TableCell className="text-right">{partida.precioUnitario}</TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right w-[150px]">
                                                     <Input
                                                         type="number"
                                                         className="text-right"
                                                         placeholder="0.00"
-                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || ''}
-                                                        onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value, budget.userPrices)}
+                                                        defaultValue={userPrice || ''}
+                                                        onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
                                                     />
                                                 </TableCell>
+                                                <TableCell className="text-right font-mono">
+                                                    {lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </TableCell>
                                             </TableRow>
-                                        ))}
+                                        )})}
                                     </TableBody>
                                     <UiTableFooter>
                                         <TableRow className="bg-secondary/50 hover:bg-secondary">
                                             <TableCell colSpan={4} className="text-right font-bold">Total Capítulo</TableCell>
-                                            <TableCell className="text-right font-bold">
+                                            <TableCell className="text-right font-bold font-mono">
                                                 €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </TableCell>
                                         </TableRow>
@@ -331,12 +493,13 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
                     ))}
                 </Accordion>
             </CardContent>
-            <CardFooter className="justify-end bg-secondary/80 p-4">
+            <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                 <div className="text-xl font-bold">
                     Total Presupuesto (Tus Precios): <span className="font-mono">€{budgetTotals.grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
             </CardFooter>
         </Card>
+        </>
     );
 }
 
@@ -345,6 +508,7 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
 function AiBudgetsSection() {
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
 
     useEffect(() => {
         const q = query(collection(db, "ia_budgets"), orderBy("createdAt", "desc"));
@@ -362,31 +526,18 @@ function AiBudgetsSection() {
         return () => unsubscribe();
     }, []);
 
-    const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string, currentPrices: AiBudgetItem['userPrices']) => {
+    const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string) => {
         const budgetRef = doc(db, 'ia_budgets', budgetId);
         const priceValue = parseFloat(price);
         const newPrice = isNaN(priceValue) ? 0 : priceValue;
 
-        // Optimistically update UI
-        setAiBudgets(prev => prev.map(b => {
-            if (b.id === budgetId) {
-                const updatedUserPrices = {
-                    ...b.userPrices,
-                    [capitulo]: {
-                        ...b.userPrices?.[capitulo],
-                        [partida]: newPrice
-                    }
-                };
-                return { ...b, userPrices: updatedUserPrices };
-            }
-            return b;
-        }));
-
-        // Use setDoc with merge to handle complex keys
+        const currentBudget = aiBudgets.find(b => b.id === budgetId);
+        if (!currentBudget) return;
+        
         const updatedPricesForFirestore = {
-            ...currentPrices,
+            ...currentBudget.userPrices,
             [capitulo]: {
-                ...currentPrices?.[capitulo],
+                ...currentBudget.userPrices?.[capitulo],
                 [partida]: newPrice
             }
         };
@@ -397,7 +548,28 @@ function AiBudgetsSection() {
             }, { merge: true });
         } catch (error) {
             console.error("Error updating user price:", error);
-            // Optionally revert UI on error
+            toast({ variant: 'destructive', title: 'Error al guardar precio', description: 'No se pudo actualizar el precio en la base de datos.'});
+        }
+    };
+    
+    const handleDetailsChange = async (id: string, values: z.infer<typeof budgetDetailsSchema>) => {
+        const budgetRef = doc(db, 'ia_budgets', id);
+        try {
+            await updateDoc(budgetRef, values);
+            toast({ title: "Detalles actualizados", description: "La información del presupuesto se ha guardado." });
+        } catch (error) {
+            console.error("Error updating budget details:", error);
+            toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudieron guardar los detalles del presupuesto.' });
+        }
+    };
+
+    const handleDeleteBudget = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "ia_budgets", id));
+            toast({ title: "Presupuesto eliminado", description: "El presupuesto analizado ha sido borrado." });
+        } catch (error) {
+            console.error(`Error deleting budget ${id}:`, error);
+            toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar el presupuesto.`});
         }
     };
     
@@ -418,6 +590,8 @@ function AiBudgetsSection() {
                     key={budget.id}
                     budget={budget}
                     onUserPriceChange={handleUserPriceChange}
+                    onDetailsChange={handleDetailsChange}
+                    onDelete={handleDeleteBudget}
                 />
             ))
           ) : (
@@ -796,6 +970,7 @@ export function AiSection() {
     const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
       const pricesRef = collection(db, "preciosMaestros");
       const batch = writeBatch(db);
+      const now = new Date();
 
       for (const capitulo of breakdown.capitulos) {
         for (const partida of capitulo.partidas) {
@@ -804,9 +979,9 @@ export function AiSection() {
           const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
           const querySnapshot = await getDocs(q);
 
-          const fecha = new Date();
+          
           const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
-          const newHistoryEntry = { precio, fecha, archivoOrigen: fileName };
+          const newHistoryEntry = { precio, fecha: now, archivoOrigen: fileName };
 
           if (querySnapshot.empty) {
             const newDocRef = doc(pricesRef);
@@ -815,7 +990,7 @@ export function AiSection() {
                 descripcion: partida.descripcion,
                 unidad: partida.unidad,
                 precioActual: precio,
-                fechaUltimaActualizacion: fecha,
+                fechaUltimaActualizacion: now,
                 historialPrecios: [newHistoryEntry],
                 status: 'new'
             });
@@ -826,7 +1001,7 @@ export function AiSection() {
             const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
             batch.update(docRef, {
                precioActual: precio,
-               fechaUltimaActualizacion: fecha,
+               fechaUltimaActualizacion: now,
                historialPrecios: newHistory,
                status: 'updated'
             });
@@ -847,9 +1022,12 @@ export function AiSection() {
         try {
             await addDoc(collection(db, "ia_budgets"), {
                 fileName: fileName,
+                title: fileName,
                 createdAt: new Date(),
                 breakdown: JSON.parse(JSON.stringify(breakdown)), // Deep copy to prevent issues
                 userPrices: {},
+                clientName: "",
+                description: ""
             });
             toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos IA." });
         } catch (error) {
@@ -917,3 +1095,6 @@ export function AiSection() {
 
 
 
+
+
+    
