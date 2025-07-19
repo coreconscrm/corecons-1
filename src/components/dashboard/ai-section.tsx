@@ -13,12 +13,12 @@ import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, Arrow
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 
@@ -60,11 +60,6 @@ type AiBudgetItem = {
   userPrices?: Record<string, Record<string, number>>; // { [capituloNombre]: { [partidaDescripcion]: precio } }
 };
 
-
-// --- Helper Functions for Firestore Keys ---
-function encodeKey(key: string): string {
-    return key.replace(/\./g, '__DOT__');
-}
 
 // --- Componente para Generador de Desglose ---
 function BudgetUploader({ 
@@ -261,7 +256,7 @@ function BudgetUploader({
 }
 
 // --- Componente para una tarjeta de presupuesto de IA ---
-function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void }) {
+function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string, currentPrices: AiBudgetItem['userPrices']) => void }) {
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
         const chapterTotals: Record<string, number> = {};
@@ -269,7 +264,7 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
         if (budget.breakdown.capitulos) {
             for (const capitulo of budget.breakdown.capitulos) {
                 const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
-                    const price = budget.userPrices?.[capitulo.nombre]?.[encodeKey(partida.descripcion)] || 0;
+                    const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
                     return sum + price;
                 }, 0);
                 chapterTotals[capitulo.nombre] = chapterTotal;
@@ -315,8 +310,8 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
                                                         type="number"
                                                         className="text-right"
                                                         placeholder="0.00"
-                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[encodeKey(partida.descripcion)] || ''}
-                                                        onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
+                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || ''}
+                                                        onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value, budget.userPrices)}
                                                     />
                                                 </TableCell>
                                             </TableRow>
@@ -345,6 +340,7 @@ function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onU
     );
 }
 
+
 // --- Componente de la Sección de Presupuestos de IA ---
 function AiBudgetsSection() {
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
@@ -366,10 +362,10 @@ function AiBudgetsSection() {
         return () => unsubscribe();
     }, []);
 
-    const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string) => {
+    const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string, currentPrices: AiBudgetItem['userPrices']) => {
         const budgetRef = doc(db, 'ia_budgets', budgetId);
         const priceValue = parseFloat(price);
-        const encodedPartida = encodeKey(partida);
+        const newPrice = isNaN(priceValue) ? 0 : priceValue;
 
         // Optimistically update UI
         setAiBudgets(prev => prev.map(b => {
@@ -378,7 +374,7 @@ function AiBudgetsSection() {
                     ...b.userPrices,
                     [capitulo]: {
                         ...b.userPrices?.[capitulo],
-                        [encodedPartida]: isNaN(priceValue) ? 0 : priceValue
+                        [partida]: newPrice
                     }
                 };
                 return { ...b, userPrices: updatedUserPrices };
@@ -386,12 +382,19 @@ function AiBudgetsSection() {
             return b;
         }));
 
-        // Debounced update to Firestore
-        // In a real app, you would debounce this call. For now, direct update.
+        // Use setDoc with merge to handle complex keys
+        const updatedPricesForFirestore = {
+            ...currentPrices,
+            [capitulo]: {
+                ...currentPrices?.[capitulo],
+                [partida]: newPrice
+            }
+        };
+
         try {
-            await updateDoc(budgetRef, {
-                [`userPrices.${capitulo}.${encodedPartida}`]: isNaN(priceValue) ? 0 : priceValue
-            });
+            await setDoc(budgetRef, {
+                userPrices: updatedPricesForFirestore
+            }, { merge: true });
         } catch (error) {
             console.error("Error updating user price:", error);
             // Optionally revert UI on error
@@ -910,6 +913,7 @@ export function AiSection() {
 
 
     
+
 
 
 
