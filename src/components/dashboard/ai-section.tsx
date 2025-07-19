@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 
@@ -254,6 +254,90 @@ function BudgetUploader({
   );
 }
 
+// --- Componente para una tarjeta de presupuesto de IA ---
+function AiBudgetCard({ budget, onUserPriceChange }: { budget: AiBudgetItem, onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void }) {
+    const budgetTotals = useMemo(() => {
+        let grandTotal = 0;
+        const chapterTotals: Record<string, number> = {};
+
+        if (budget.breakdown.capitulos) {
+            for (const capitulo of budget.breakdown.capitulos) {
+                const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
+                    const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                    return sum + price;
+                }, 0);
+                chapterTotals[capitulo.nombre] = chapterTotal;
+                grandTotal += chapterTotal;
+            }
+        }
+        return { grandTotal, chapterTotals };
+    }, [budget.breakdown, budget.userPrices]);
+
+    return (
+        <Card key={budget.id}>
+            <CardHeader>
+                <CardTitle>{budget.fileName}</CardTitle>
+                <CardDescription>
+                    Analizado el: {budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Fecha desconocida'}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="multiple" className="w-full">
+                    {budget.breakdown.capitulos.map((capitulo, index) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
+                            <AccordionContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-1/2">Partida</TableHead>
+                                            <TableHead className="text-right">Medición</TableHead>
+                                            <TableHead className="text-center">Unidad</TableHead>
+                                            <TableHead className="text-right">Precio PDF</TableHead>
+                                            <TableHead className="text-right w-[150px]">Tu Precio (€)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {capitulo.partidas.map((partida, pIndex) => (
+                                            <TableRow key={pIndex}>
+                                                <TableCell>{partida.descripcion}</TableCell>
+                                                <TableCell className="text-right">{partida.medicion}</TableCell>
+                                                <TableCell className="text-center">{partida.unidad}</TableCell>
+                                                <TableCell className="text-right">{partida.precioUnitario}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Input
+                                                        type="number"
+                                                        className="text-right"
+                                                        placeholder="0.00"
+                                                        defaultValue={budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || ''}
+                                                        onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                    <UiTableFooter>
+                                        <TableRow className="bg-secondary/50 hover:bg-secondary">
+                                            <TableCell colSpan={4} className="text-right font-bold">Total Capítulo</TableCell>
+                                            <TableCell className="text-right font-bold">
+                                                €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </TableCell>
+                                        </TableRow>
+                                    </UiTableFooter>
+                                </Table>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </CardContent>
+            <CardFooter className="justify-end bg-secondary/80 p-4">
+                <div className="text-xl font-bold">
+                    Total Presupuesto (Tus Precios): <span className="font-mono">€{budgetTotals.grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
 
 // --- Componente de la Sección de Presupuestos de IA ---
 function AiBudgetsSection() {
@@ -319,88 +403,13 @@ function AiBudgetsSection() {
     return (
       <div className="space-y-6">
           {aiBudgets.length > 0 ? (
-            aiBudgets.map(budget => {
-                const budgetTotals = useMemo(() => {
-                    let grandTotal = 0;
-                    const chapterTotals: Record<string, number> = {};
-
-                    for (const capitulo of budget.breakdown.capitulos) {
-                        const chapterTotal = capitulo.partidas.reduce((sum, partida) => {
-                            const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                            return sum + price;
-                        }, 0);
-                        chapterTotals[capitulo.nombre] = chapterTotal;
-                        grandTotal += chapterTotal;
-                    }
-                    return { grandTotal, chapterTotals };
-                }, [budget.breakdown, budget.userPrices]);
-
-
-                return (
-                  <Card key={budget.id}>
-                    <CardHeader>
-                      <CardTitle>{budget.fileName}</CardTitle>
-                      <CardDescription>
-                        Analizado el: {budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Fecha desconocida'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <Accordion type="multiple" className="w-full">
-                            {budget.breakdown.capitulos.map((capitulo, index) => (
-                              <AccordionItem value={`item-${index}`} key={index}>
-                                <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
-                                <AccordionContent>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className="w-1/2">Partida</TableHead>
-                                        <TableHead className="text-right">Medición</TableHead>
-                                        <TableHead className="text-center">Unidad</TableHead>
-                                        <TableHead className="text-right">Precio PDF</TableHead>
-                                        <TableHead className="text-right w-[150px]">Tu Precio (€)</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {capitulo.partidas.map((partida, pIndex) => (
-                                        <TableRow key={pIndex}>
-                                          <TableCell>{partida.descripcion}</TableCell>
-                                          <TableCell className="text-right">{partida.medicion}</TableCell>
-                                          <TableCell className="text-center">{partida.unidad}</TableCell>
-                                          <TableCell className="text-right">{partida.precioUnitario}</TableCell>
-                                          <TableCell className="text-right">
-                                             <Input
-                                                type="number"
-                                                className="text-right"
-                                                placeholder="0.00"
-                                                defaultValue={budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || ''}
-                                                onBlur={(e) => handleUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
-                                              />
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                    <UiTableFooter>
-                                      <TableRow className="bg-secondary/50 hover:bg-secondary">
-                                        <TableCell colSpan={4} className="text-right font-bold">Total Capítulo</TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </TableCell>
-                                      </TableRow>
-                                    </UiTableFooter>
-                                  </Table>
-                                </AccordionContent>
-                              </AccordionItem>
-                            ))}
-                          </Accordion>
-                    </CardContent>
-                    <CardFooter className="justify-end bg-secondary/80 p-4">
-                        <div className="text-xl font-bold">
-                            Total Presupuesto (Tus Precios): <span className="font-mono">€{budgetTotals.grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                    </CardFooter>
-                  </Card>
-                )
-            })
+            aiBudgets.map(budget => (
+                <AiBudgetCard
+                    key={budget.id}
+                    budget={budget}
+                    onUserPriceChange={handleUserPriceChange}
+                />
+            ))
           ) : (
              <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
                 <FileInput className="h-12 w-12 text-muted-foreground" />
@@ -829,7 +838,7 @@ export function AiSection() {
             await addDoc(collection(db, "ia_budgets"), {
                 fileName: fileName,
                 createdAt: new Date(),
-                breakdown: breakdown,
+                breakdown: JSON.parse(JSON.stringify(breakdown)), // Deep copy to prevent issues
                 userPrices: {},
             });
             toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos IA." });
@@ -894,4 +903,5 @@ export function AiSection() {
 
 
     
+
 
