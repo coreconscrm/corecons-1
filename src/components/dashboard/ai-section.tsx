@@ -20,6 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
+import { Badge } from "../ui/badge";
 
 
 // --- Tipos de Datos ---
@@ -39,6 +40,7 @@ type PriceMasterItem = {
   capitulo: string;
   fechaImportacion: string;
   archivoOrigen: string;
+  status?: 'new' | 'updated';
 };
 type SortConfig = {
   key: keyof PriceMasterItem;
@@ -130,18 +132,18 @@ function ProjectBreakdownGenerator() {
         const querySnapshot = await getDocs(q);
 
         const precio = parseFloat(precioString);
-        const docData = {
-          descripcion: partida.descripcion,
-          unidad: partida.unidad,
-          precioUnitario: precio,
-          capitulo: partida.capitulo,
-          fechaImportacion: serverTimestamp(),
-          archivoOrigen: file.name,
-        };
-
+        
         if (querySnapshot.empty) {
           const newDocRef = doc(pricesRef);
-          batch.set(newDocRef, docData);
+          batch.set(newDocRef, {
+            descripcion: partida.descripcion,
+            unidad: partida.unidad,
+            precioUnitario: precio,
+            capitulo: partida.capitulo,
+            fechaImportacion: serverTimestamp(),
+            archivoOrigen: file.name,
+            status: 'new'
+          });
           itemsAdded++;
         } else {
           const docId = querySnapshot.docs[0].id;
@@ -151,6 +153,7 @@ function ProjectBreakdownGenerator() {
               capitulo: partida.capitulo,
               fechaImportacion: serverTimestamp(),
               archivoOrigen: file.name,
+              status: 'updated'
           });
           itemsUpdated++;
         }
@@ -478,6 +481,9 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                   <TableHead onClick={() => requestSort("fechaImportacion")} className="cursor-pointer">
                       <div className="flex items-center">Fecha {getSortIcon("fechaImportacion")}</div>
                   </TableHead>
+                   <TableHead onClick={() => requestSort("status")} className="cursor-pointer">
+                      <div className="flex items-center">Estado {getSortIcon("status")}</div>
+                  </TableHead>
                   <TableHead onClick={() => requestSort("archivoOrigen")} className="cursor-pointer">
                       <div className="flex items-center">Origen {getSortIcon("archivoOrigen")}</div>
                   </TableHead>
@@ -497,6 +503,11 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                       <TableCell>{item.unidad}</TableCell>
                       <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
                       <TableCell>{item.fechaImportacion}</TableCell>
+                      <TableCell>
+                          {item.status === 'new' && <Badge className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
+                          {item.status === 'updated' && <Badge className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
+                          {!item.status && <Badge variant="secondary">N/A</Badge>}
+                      </TableCell>
                       <TableCell className="max-w-[150px] cursor-pointer" onClick={() => onViewOrigin(item.archivoOrigen)}>
                         <div className="truncate hover:underline">
                             {item.archivoOrigen}
@@ -527,7 +538,7 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       No se encontraron precios. Sube un presupuesto para empezar.
                     </TableCell>
                   </TableRow>
