@@ -82,7 +82,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
   if (!budget) return null;
 
   return (
-    <div className="bg-white text-black p-8 font-sans">
+    <div className="bg-white text-black p-8 font-sans print:text-sm">
       <PrintLayoutHeader company={company} />
 
       <section className="my-8 flex justify-between">
@@ -97,14 +97,14 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
       </section>
       
       <section>
-        <table className="w-full text-left text-sm print:text-base">
+        <table className="w-full text-left table-fixed">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
-              <th className="p-3 font-semibold uppercase text-sm">Descripción</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Medición</th>
-              <th className="p-3 text-center font-semibold uppercase text-sm">Unidad</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Precio Unitario</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Total</th>
+              <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Medición</th>
+              <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -186,7 +186,7 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
   }
   
   return (
-    <div className="bg-white text-black p-8 font-sans">
+    <div className="bg-white text-black p-8 font-sans print:text-sm">
       <PrintLayoutHeader company={company} />
 
       {/* Client Info */}
@@ -206,14 +206,14 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
 
       {/* Line Items Table */}
       <section>
-        <table className="w-full text-left text-sm print:text-base">
+        <table className="w-full text-left table-fixed">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
-              <th className="p-3 font-semibold uppercase text-sm">Descripción</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Medición</th>
-              <th className="p-3 text-center font-semibold uppercase text-sm">Unidad</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Precio Unitario</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm">Total</th>
+              <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Medición</th>
+              <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
             </tr>
           </thead>
           <tbody>
