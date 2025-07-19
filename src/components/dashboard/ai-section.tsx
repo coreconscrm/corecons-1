@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc } from "firebase/firestore";
 import { format } from "date-fns";
 
 // --- Tipos de Datos ---
@@ -39,7 +39,7 @@ type SortConfig = {
 };
 
 // --- Componente de Carga de Archivos ---
-function FileUploader({ onUploadComplete }: { onUploadComplete: (fileName: string) => void }) {
+function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete: (fileName: string) => void, onUploadSuccess: (fileId: string) => void }) {
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const { toast } = useToast();
 
@@ -50,8 +50,8 @@ function FileUploader({ onUploadComplete }: { onUploadComplete: (fileName: strin
       status: "pending" as UploadStatus,
       id: `${file.name}-${Date.now()}`,
     }));
-
-    setUploads((prev) => [...prev, ...newUploads]);
+    
+    setUploads(prev => [...prev, ...newUploads]);
 
     newUploads.forEach((upload) => {
       const storageRef = ref(storage, `presupuestos-importados/${upload.file.name}`);
@@ -63,7 +63,7 @@ function FileUploader({ onUploadComplete }: { onUploadComplete: (fileName: strin
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploads((prev) =>
             prev.map((u) =>
-              u.id === upload.id ? { ...u, progress, status: "uploading" } : u
+              u.id === upload.id ? { ...u, progress: progress, status: "uploading" } : u
             )
           );
         },
@@ -86,11 +86,13 @@ function FileUploader({ onUploadComplete }: { onUploadComplete: (fileName: strin
               )
             );
             onUploadComplete(upload.file.name);
+            // Marcar como exitoso para que se pueda mostrar en el UI
+            setTimeout(() => onUploadSuccess(upload.id), 1000); 
           });
         }
       );
     });
-  }, [onUploadComplete, toast]);
+  }, [onUploadComplete, toast, onUploadSuccess]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -107,7 +109,7 @@ function FileUploader({ onUploadComplete }: { onUploadComplete: (fileName: strin
       case "uploading":
         return <Progress value={upload.progress} className="w-full" />;
       case "processing":
-        return <p className="text-xs text-blue-500">✅ Archivo subido. Procesando datos...</p>;
+         return <p className="text-xs text-blue-500 flex items-center gap-1"><Loader2 size={14} className="animate-spin" /> Procesando datos...</p>;
       case "success":
         return <p className="text-xs text-green-500 flex items-center gap-1"><CheckCircle size={14} /> Proceso completado.</p>;
       case "error":
@@ -188,7 +190,7 @@ function PriceTable() {
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sort_config.direction === "ascending" ? -1 : 1;
+          return sortConfig.direction === "ascending" ? -1 : 1;
         }
         if (a[sortConfig.key] > b[sortConfig.key]) {
           return sortConfig.direction === "ascending" ? 1 : -1;
@@ -329,6 +331,15 @@ export function AiSection() {
             toast({ variant: "destructive", title: "Error al guardar", description: "No se pudieron guardar los precios en la base de datos." });
         }
     }, [toast]);
+    
+    const handleUploadSuccess = useCallback((fileId: string) => {
+        setUploads(prev =>
+            prev.map(u => u.id === fileId ? { ...u, status: "success" } : u)
+        );
+    }, []);
+
+    const [uploads, setUploads] = useState<UploadedFile[]>([]);
+
 
     return (
         <Tabs defaultValue="price-database">
@@ -358,7 +369,10 @@ export function AiSection() {
             </TabsContent>
             <TabsContent value="price-database">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <FileUploader onUploadComplete={simulatePriceExtraction} />
+                    <FileUploader 
+                        onUploadComplete={simulatePriceExtraction} 
+                        onUploadSuccess={handleUploadSuccess} 
+                    />
                     <PriceTable />
                 </div>
             </TabsContent>
