@@ -32,6 +32,7 @@ type PriceMasterItem = {
   descripcion: string;
   unidad: string;
   precioUnitario: number;
+  capitulo: string;
   fechaImportacion: string;
   archivoOrigen: string;
 };
@@ -105,7 +106,9 @@ function ProjectBreakdownGenerator() {
     }
     
     setIsSaving(true);
-    const allPartidas = breakdown.capitulos.flatMap(c => c.partidas);
+    const allPartidas = breakdown.capitulos.flatMap(c => 
+        c.partidas.map(p => ({ ...p, capitulo: c.nombre }))
+    );
     let itemsAdded = 0;
     let itemsUpdated = 0;
 
@@ -115,31 +118,32 @@ function ProjectBreakdownGenerator() {
     try {
       for (const partida of allPartidas) {
         if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) {
-            continue; // Omitir si no hay precio o no es un número válido
+            continue;
         }
 
         const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
         const querySnapshot = await getDocs(q);
 
         const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
+        const docData = {
+          descripcion: partida.descripcion,
+          unidad: partida.unidad,
+          precioUnitario: precio,
+          capitulo: partida.capitulo,
+          fechaImportacion: serverTimestamp(),
+          archivoOrigen: file.name,
+        };
 
         if (querySnapshot.empty) {
-          // Si no existe, lo añadimos
           const newDocRef = doc(pricesRef);
-          batch.set(newDocRef, {
-              descripcion: partida.descripcion,
-              unidad: partida.unidad,
-              precioUnitario: precio,
-              fechaImportacion: serverTimestamp(),
-              archivoOrigen: file.name,
-          });
+          batch.set(newDocRef, docData);
           itemsAdded++;
         } else {
-          // Si ya existe, lo actualizamos
           const docId = querySnapshot.docs[0].id;
           const docRef = doc(pricesRef, docId);
           batch.update(docRef, {
               precioUnitario: precio,
+              capitulo: partida.capitulo,
               fechaImportacion: serverTimestamp(),
               archivoOrigen: file.name,
           });
@@ -403,7 +407,7 @@ function PriceTable() {
       const priceData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        fechaImportacion: format(doc.data().fechaImportacion.toDate(), "dd/MM/yyyy HH:mm"),
+        fechaImportacion: doc.data().fechaImportacion?.toDate ? format(doc.data().fechaImportacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
       })) as PriceMasterItem[];
       setPrices(priceData);
     });
@@ -415,16 +419,19 @@ function PriceTable() {
 
     if (searchTerm) {
       sortableItems = sortableItems.filter((item) =>
-        item.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+        item.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.capitulo && item.capitulo.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) {
           return sortConfig.direction === "ascending" ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aVal > bVal) {
           return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
@@ -458,7 +465,7 @@ function PriceTable() {
       </CardHeader>
       <CardContent>
         <Input
-          placeholder="Buscar por descripción..."
+          placeholder="Buscar por descripción o capítulo..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="mb-4 max-w-sm"
@@ -467,6 +474,9 @@ function PriceTable() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
+                    <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
+                </TableHead>
                 <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
                     <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
                 </TableHead>
@@ -488,16 +498,17 @@ function PriceTable() {
               {filteredAndSortedPrices.length > 0 ? (
                 filteredAndSortedPrices.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell className="font-semibold">{item.capitulo}</TableCell>
                     <TableCell className="font-medium">{item.descripcion}</TableCell>
                     <TableCell>{item.unidad}</TableCell>
-                    <TableCell>€{item.precioUnitario.toFixed(2)}</TableCell>
+                    <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
                     <TableCell>{item.fechaImportacion}</TableCell>
-                    <TableCell className="truncate max-w-xs">{item.archivoOrigen}</TableCell>
+                    <TableCell className="truncate max-w-[150px]">{item.archivoOrigen}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No se encontraron precios. Sube un presupuesto para empezar.
                   </TableCell>
                 </TableRow>
@@ -520,9 +531,9 @@ export function AiSection() {
 
         // Datos de ejemplo
         const extractedData = [
-            { descripcion: `Demolición de tabique (de ${fileName})`, unidad: 'm2', precioUnitario: 8.75 },
-            { descripcion: 'Falso techo de pladur', unidad: 'm2', precioUnitario: 22.50 },
-            { descripcion: 'Punto de luz completo', unidad: 'ud', precioUnitario: 65.00 },
+            { capitulo: 'Demoliciones', descripcion: `Demolición de tabique (de ${fileName})`, unidad: 'm2', precioUnitario: 8.75 },
+            { capitulo: 'Techos', descripcion: 'Falso techo de pladur', unidad: 'm2', precioUnitario: 22.50 },
+            { capitulo: 'Electricidad', descripcion: 'Punto de luz completo', unidad: 'ud', precioUnitario: 65.00 },
         ];
 
         const pricesRef = collection(db, "preciosMaestros");
@@ -545,7 +556,7 @@ export function AiSection() {
                 const docId = querySnapshot.docs[0].id;
                 const docRef = doc(pricesRef, docId);
                 batch.update(docRef, {
-                    precioUnitario: item.precioUnitario,
+                    ...item,
                     fechaImportacion: serverTimestamp(),
                     archivoOrigen: fileName,
                 });
