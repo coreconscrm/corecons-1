@@ -486,7 +486,7 @@ function PriceTable() {
   };
 
   return (
-    <Card>
+    <>
       <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
         <DialogContent>
             <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
@@ -494,118 +494,120 @@ function PriceTable() {
             <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Consulta de Precios</CardTitle>
-                <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
-            </div>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente
-                            toda la base de precios.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Input
-          placeholder="Buscar por descripción o capítulo..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4 max-w-sm"
-        />
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
-                    <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
-                </TableHead>
-                <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
-                    <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
-                </TableHead>
-                <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
-                    <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
-                </TableHead>
-                <TableHead onClick={() => requestSort("precioUnitario")} className="cursor-pointer">
-                    <div className="flex items-center">Precio Unitario {getSortIcon("precioUnitario")}</div>
-                </TableHead>
-                <TableHead onClick={() => requestSort("fechaImportacion")} className="cursor-pointer">
-                    <div className="flex items-center">Fecha {getSortIcon("fechaImportacion")}</div>
-                </TableHead>
-                <TableHead onClick={() => requestSort("archivoOrigen")} className="cursor-pointer">
-                    <div className="flex items-center">Origen {getSortIcon("archivoOrigen")}</div>
-                </TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedPrices.length > 0 ? (
-                filteredAndSortedPrices.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                    <TableCell>
-                      <div
-                        className="max-w-xs truncate cursor-pointer hover:underline"
-                        onClick={() => setViewingDescription(item.descripcion)}
-                      >
-                        {item.descripcion}
-                      </div>
-                    </TableCell>
-                    <TableCell>{item.unidad}</TableCell>
-                    <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
-                    <TableCell>{item.fechaImportacion}</TableCell>
-                    <TableCell className="truncate max-w-[150px]">{item.archivoOrigen}</TableCell>
-                    <TableCell className="text-right">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        "{item.descripcion}" será eliminada permanentemente.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Eliminar</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+              <div>
+                  <CardTitle>Consulta de Precios</CardTitle>
+                  <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
+              </div>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
+                      </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Esto eliminará permanentemente
+                              toda la base de precios.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="Buscar por descripción o capítulo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-4 max-w-sm"
+          />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
+                      <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
+                      <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
+                      <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("precioUnitario")} className="cursor-pointer">
+                      <div className="flex items-center">Precio Unitario {getSortIcon("precioUnitario")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("fechaImportacion")} className="cursor-pointer">
+                      <div className="flex items-center">Fecha {getSortIcon("fechaImportacion")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("archivoOrigen")} className="cursor-pointer">
+                      <div className="flex items-center">Origen {getSortIcon("archivoOrigen")}</div>
+                  </TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedPrices.length > 0 ? (
+                  filteredAndSortedPrices.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-semibold">{item.capitulo}</TableCell>
+                      <TableCell>
+                        <div
+                          className="max-w-xs truncate cursor-pointer hover:underline"
+                          onClick={() => setViewingDescription(item.descripcion)}
+                        >
+                          {item.descripcion}
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.unidad}</TableCell>
+                      <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
+                      <TableCell>{item.fechaImportacion}</TableCell>
+                      <TableCell className="truncate max-w-[150px]">{item.archivoOrigen}</TableCell>
+                      <TableCell className="text-right">
+                          <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          "{item.descripcion}" será eliminada permanentemente.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      No se encontraron precios. Sube un presupuesto para empezar.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No se encontraron precios. Sube un presupuesto para empezar.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }
 
