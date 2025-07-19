@@ -110,7 +110,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
           <tbody>
             {(budget.breakdown.capitulos || []).map((capitulo, index) => (
               <React.Fragment key={index}>
-                <tr>
+                <tr className="page-break-before">
                   <td colSpan={5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700">{capitulo.nombre}</td>
                 </tr>
                 {(capitulo.partidas || []).map((partida, pIndex) => {
