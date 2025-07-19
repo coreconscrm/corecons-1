@@ -86,8 +86,11 @@ function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete:
               )
             );
             onUploadComplete(upload.file.name);
-            // Marcar como exitoso para que se pueda mostrar en el UI
-            setTimeout(() => onUploadSuccess(upload.id), 1000); 
+            
+            setTimeout(() => {
+                 setUploads((prev) => prev.map((u) => u.id === upload.id ? { ...u, status: "success" } : u));
+                 onUploadSuccess(upload.id);
+            }, 1000); 
           });
         }
       );
@@ -332,14 +335,9 @@ export function AiSection() {
         }
     }, [toast]);
     
-    const handleUploadSuccess = useCallback((fileId: string) => {
-        setUploads(prev =>
-            prev.map(u => u.id === fileId ? { ...u, status: "success" } : u)
-        );
+    const handleUploadSuccess = useCallback(() => {
+        // Podríamos añadir lógica aquí si fuera necesario
     }, []);
-
-    const [uploads, setUploads] = useState<UploadedFile[]>([]);
-
 
     return (
         <Tabs defaultValue="price-database">
