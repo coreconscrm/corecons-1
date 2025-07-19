@@ -164,7 +164,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
-        <AiSection />
+        <AiSection companies={companies} />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">

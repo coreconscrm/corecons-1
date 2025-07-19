@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,6 +27,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "../ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { AiBudgetPrintLayout } from "./budget-print-layout";
+import type { Company } from "./company-card";
 
 
 // --- Tipos de Datos ---
@@ -58,7 +60,7 @@ type SortConfig = {
   direction: "ascending" | "descending";
 };
 
-type AiBudgetItem = {
+export type AiBudgetItem = {
   id: string;
   fileName: string;
   title: string;
@@ -360,12 +362,14 @@ function AiBudgetCard({
     budget, 
     onUserPriceChange, 
     onDetailsChange,
-    onDelete 
+    onDelete,
+    onPrint
 }: { 
     budget: AiBudgetItem, 
     onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void,
     onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
-    onDelete: (id: string) => void
+    onDelete: (id: string) => void,
+    onPrint: (budget: AiBudgetItem) => void
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const budgetTotals = useMemo(() => {
@@ -416,6 +420,9 @@ function AiBudgetCard({
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
                                     <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => onPrint(budget)}>
+                                    <Printer className="mr-2 h-4 w-4" /> Imprimir
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
@@ -507,9 +514,14 @@ function AiBudgetCard({
 
 
 // --- Componente de la Sección de Presupuestos de IA ---
-function AiBudgetsSection() {
+function AiBudgetsSection({ 
+    companies 
+}: { 
+    companies: Company[] 
+}) {
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [printingBudget, setPrintingBudget] = useState<AiBudgetItem | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -527,6 +539,16 @@ function AiBudgetsSection() {
         });
         return () => unsubscribe();
     }, []);
+    
+    useEffect(() => {
+        if (printingBudget) {
+            const timer = setTimeout(() => {
+                window.print();
+                setPrintingBudget(null);
+            }, 250);
+            return () => clearTimeout(timer);
+        }
+    }, [printingBudget]);
 
     const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string) => {
         const budgetRef = doc(db, 'ia_budgets', budgetId);
@@ -586,6 +608,12 @@ function AiBudgetsSection() {
     
     return (
       <div className="space-y-6">
+          <div className="printable-area">
+                <AiBudgetPrintLayout 
+                    budget={printingBudget}
+                    company={companies[0] || null}
+                />
+            </div>
           {aiBudgets.length > 0 ? (
             aiBudgets.map(budget => (
                 <AiBudgetCard
@@ -594,6 +622,7 @@ function AiBudgetsSection() {
                     onUserPriceChange={handleUserPriceChange}
                     onDetailsChange={handleDetailsChange}
                     onDelete={handleDeleteBudget}
+                    onPrint={setPrintingBudget}
                 />
             ))
           ) : (
@@ -966,7 +995,11 @@ function HistoryDialog({
 
 
 // --- Sección Principal de IA ---
-export function AiSection() {
+export function AiSection({
+    companies
+}: {
+    companies: Company[]
+}) {
     const { toast } = useToast();
 
     const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
@@ -1080,7 +1113,7 @@ export function AiSection() {
                         <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
                     </TabsList>
                     <TabsContent value="ai-budgets" className="mt-6">
-                       <AiBudgetsSection />
+                       <AiBudgetsSection companies={companies} />
                     </TabsContent>
                     <TabsContent value="price-database" className="mt-6">
                         <PriceDatabaseSection />
@@ -1100,3 +1133,4 @@ export function AiSection() {
 
 
     
+
