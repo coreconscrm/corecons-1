@@ -395,7 +395,7 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
 }
 
 // --- Componente de Tabla de Precios ---
-function PriceTable({ prices, onViewDescription, onDeleteItem }: { prices: PriceMasterItem[], onViewDescription: (description: string) => void, onDeleteItem: (id: string) => void }) {
+function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: { prices: PriceMasterItem[], onViewDescription: (description: string) => void, onViewOrigin: (origin: string) => void, onDeleteItem: (id: string) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
@@ -497,7 +497,11 @@ function PriceTable({ prices, onViewDescription, onDeleteItem }: { prices: Price
                       <TableCell>{item.unidad}</TableCell>
                       <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
                       <TableCell>{item.fechaImportacion}</TableCell>
-                      <TableCell className="truncate max-w-[150px]">{item.archivoOrigen}</TableCell>
+                      <TableCell className="max-w-[150px] cursor-pointer" onClick={() => onViewOrigin(item.archivoOrigen)}>
+                        <div className="truncate hover:underline">
+                            {item.archivoOrigen}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                           <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -541,6 +545,7 @@ function PriceDatabaseSection() {
     const { toast } = useToast();
     const [prices, setPrices] = useState<PriceMasterItem[]>([]);
     const [viewingDescription, setViewingDescription] = useState<string | null>(null);
+    const [viewingOrigin, setViewingOrigin] = useState<string | null>(null);
 
     useEffect(() => {
         const q = query(collection(db, "preciosMaestros"), orderBy("fechaImportacion", "desc"));
@@ -640,6 +645,14 @@ function PriceDatabaseSection() {
               <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
           </DialogContent>
         </Dialog>
+        <Dialog open={!!viewingOrigin} onOpenChange={() => setViewingOrigin(null)}>
+          <DialogContent>
+              <DialogHeader><DialogTitle>Origen del Archivo</DialogTitle></DialogHeader>
+              <div className="py-4 whitespace-pre-wrap break-words">{viewingOrigin}</div>
+              <DialogFooter><Button variant="outline" onClick={() => setViewingOrigin(null)}>Cerrar</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Tabs defaultValue="consult" className="w-full">
             <div className="flex justify-between items-center mb-4">
               <TabsList className="grid grid-cols-2 w-auto">
@@ -668,7 +681,7 @@ function PriceDatabaseSection() {
               </AlertDialog>
             </div>
             <TabsContent value="consult">
-                <PriceTable prices={prices} onViewDescription={setViewingDescription} onDeleteItem={handleDeleteItem} />
+                <PriceTable prices={prices} onViewDescription={setViewingDescription} onViewOrigin={setViewingOrigin} onDeleteItem={handleDeleteItem} />
             </TabsContent>
             <TabsContent value="import">
                 <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
