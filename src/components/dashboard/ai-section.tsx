@@ -163,6 +163,7 @@ function ProjectBreakdownGenerator() {
                           <TableHead>Partida</TableHead>
                           <TableHead className="text-right">Medición</TableHead>
                           <TableHead className="text-center">Unidad</TableHead>
+                          <TableHead className="text-right">Precio/Ud.</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -171,6 +172,7 @@ function ProjectBreakdownGenerator() {
                             <TableCell>{partida.descripcion}</TableCell>
                             <TableCell className="text-right">{partida.medicion}</TableCell>
                             <TableCell className="text-center">{partida.unidad}</TableCell>
+                            <TableCell className="text-right">{partida.precioUnitario}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

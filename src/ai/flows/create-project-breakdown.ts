@@ -29,6 +29,7 @@ const ProjectBreakdownSchema = z.object({
       descripcion: z.string().describe("Descripción detallada de la partida de obra."),
       medicion: z.string().describe("La cantidad o medición de la partida, por ejemplo: '250', 'Según proyecto'."),
       unidad: z.string().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
+      precioUnitario: z.string().optional().describe("El precio unitario de la partida. Ej: '12,50', 'N/A'."),
     })).describe("Lista de partidas de obra para este capítulo."),
   })).describe("Lista de capítulos que componen el proyecto."),
 });
@@ -42,14 +43,15 @@ const projectBreakdownPrompt = ai.definePrompt({
   output: { schema: ProjectBreakdownSchema },
   prompt: `
     Eres un jefe de obra experto en construcción con más de 20 años de experiencia en España.
-    Tu tarea es analizar la siguiente memoria de calidades, que está en formato PDF, y desglosarla en capítulos y partidas de obra.
+    Tu tarea es analizar la siguiente memoria de calidades o presupuesto, que está en formato PDF, y desglosarla en capítulos y partidas de obra.
     
     Instrucciones:
     1.  Lee atentamente el documento PDF adjunto.
-    2.  Identifica los principales capítulos de la obra (ej: Albañilería, Solados y Alicatados, Fontanería y Saneamiento, Electricidad, Climatización, Carpintería, etc.).
+    2.  Identifica los principales capítulos de la obra (ej: Demoliciones, Albañilería, Solados y Alicatados, Fontanería y Saneamiento, Electricidad, Climatización, Carpintería, etc.).
     3.  Para cada capítulo, extrae las partidas de obra específicas mencionadas.
-    4.  Cada partida debe tener una descripción clara, su medición (si se especifica) y la unidad de medida. Si no se especifica, puedes poner 'Según proyecto' o similar.
-    5.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
+    4.  Cada partida debe tener una descripción clara, su medición (si se especifica), la unidad de medida, y el precio unitario si está disponible.
+    5.  Si una medición o precio no se especifica, puedes poner 'Según proyecto', 'N/A' o similar.
+    6.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
 
     Documento a analizar:
     {{media url=pdfDataUri}}
