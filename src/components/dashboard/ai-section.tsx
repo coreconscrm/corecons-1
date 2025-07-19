@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -45,6 +45,7 @@ type PriceMasterItem = {
   precioActual: number;
   fechaUltimaActualizacion: string;
   historialPrecios: PriceHistoryEntry[];
+  status: 'new' | 'updated';
 };
 type SortConfig = {
   key: keyof PriceMasterItem;
@@ -379,421 +380,7 @@ function AiBudgetsSection() {
     );
 }
 
-// --- Componente de la Sección de Base de Precios ---
-function PriceDatabaseSection() {
-    const { toast } = useToast();
-    const [prices, setPrices] = useState<PriceMasterItem[]>([]);
-    const [viewingDescription, setViewingDescription] = useState<string | null>(null);
-    const [viewingOrigin, setViewingOrigin] = useState<string | null>(null);
-    const [viewingHistory, setViewingHistory] = useState<PriceMasterItem | null>(null);
-
-
-    useEffect(() => {
-        const q = query(collection(db, "preciosMaestros"), orderBy("fechaUltimaActualizacion", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const priceData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            fechaUltimaActualizacion: doc.data().fechaUltimaActualizacion?.toDate ? format(doc.data().fechaUltimaActualizacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
-          })) as PriceMasterItem[];
-          setPrices(priceData);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const handleDeleteAll = async () => {
-      const pricesRef = collection(db, "preciosMaestros");
-      try {
-          const querySnapshot = await getDocs(pricesRef);
-          const batch = writeBatch(db);
-          querySnapshot.forEach(doc => {
-              batch.delete(doc.ref);
-          });
-          await batch.commit();
-          toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
-      } catch (error) {
-          console.error("Error deleting all prices:", error);
-          toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
-      }
-    };
-  
-    const handleDeleteItem = async (id: string) => {
-      try {
-          await deleteDoc(doc(db, "preciosMaestros", id));
-          toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
-      } catch (error) {
-          console.error(`Error deleting price ${id}:`, error);
-          toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
-      }
-    };
-    
-    const handleSetCurrentPrice = async (itemId: string, newPrice: number) => {
-        const itemDocRef = doc(db, "preciosMaestros", itemId);
-        try {
-            await updateDoc(itemDocRef, {
-                precioActual: newPrice
-            });
-            toast({ title: "Precio Actualizado", description: `El precio de la partida ha sido restaurado.`});
-            setViewingHistory(null);
-        } catch(error) {
-            console.error("Error setting current price:", error);
-            toast({ variant: "destructive", title: "Error al actualizar", description: `No se pudo cambiar el precio. ${(error as Error).message}`});
-        }
-    };
-
-    // Simula la Cloud Function de extracción de precios
-    const simulatePriceExtraction = useCallback(async (fileName: string) => {
-        console.log(`Simulating extraction for: ${fileName}`);
-
-        // Datos de ejemplo
-        const extractedData = [
-            { capitulo: 'Demoliciones', descripcion: `Demolición de tabique (de ${fileName})`, unidad: 'm2', precio: 8.75 },
-            { capitulo: 'Techos', descripcion: 'Falso techo de pladur', unidad: 'm2', precio: 22.50 },
-            { capitulo: 'Electricidad', descripcion: 'Punto de luz completo', unidad: 'ud', precio: 65.00 },
-        ];
-
-        const pricesRef = collection(db, "preciosMaestros");
-        
-        try {
-            const batch = writeBatch(db);
-            for (const item of extractedData) {
-                const q = query(pricesRef, where("descripcion", "==", item.descripcion));
-                const querySnapshot = await getDocs(q);
-                
-                const fecha = new Date();
-                const newHistoryEntry = { precio: item.precio, fecha, archivoOrigen: fileName };
-
-                if (querySnapshot.empty) {
-                    const newDocRef = doc(pricesRef);
-                    batch.set(newDocRef, {
-                        ...item,
-                        precioActual: item.precio,
-                        fechaUltimaActualizacion: fecha,
-                        historialPrecios: [newHistoryEntry]
-                    });
-                } else {
-                    const docId = querySnapshot.docs[0].id;
-                    const docRef = doc(pricesRef, docId);
-                    const existingData = querySnapshot.docs[0].data();
-                    const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
-                    batch.update(docRef, {
-                       precioActual: item.precio,
-                       fechaUltimaActualizacion: fecha,
-                       historialPrecios: newHistory
-                    });
-                }
-            }
-            await batch.commit();
-            toast({
-                title: "Proceso completado",
-                description: `Se han añadido/actualizado ${extractedData.length} precios desde ${fileName}.`,
-            });
-        } catch (error) {
-            console.error("Error saving prices to Firestore:", error);
-            toast({ variant: "destructive", title: "Error al guardar", description: "No se pudieron guardar los precios en la base de datos." });
-        }
-    }, [toast]);
-
-    return (
-      <>
-        <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
-          <DialogContent>
-              <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
-              <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingDescription}</div></ScrollArea>
-              <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={!!viewingOrigin} onOpenChange={() => setViewingOrigin(null)}>
-          <DialogContent>
-              <DialogHeader><DialogTitle>Origen del Archivo</DialogTitle></DialogHeader>
-              <div className="py-4 whitespace-pre-wrap break-words">{viewingOrigin}</div>
-              <DialogFooter><Button variant="outline" onClick={() => setViewingOrigin(null)}>Cerrar</Button></DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <HistoryDialog
-            item={viewingHistory}
-            open={!!viewingHistory}
-            onOpenChange={() => setViewingHistory(null)}
-            onSetCurrentPrice={handleSetCurrentPrice}
-        />
-
-        <Tabs defaultValue="consult" className="w-full">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList className="grid grid-cols-2 w-auto">
-                  <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
-                  <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
-              </TabsList>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
-                      </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Esto eliminará permanentemente
-                              toda la base de precios.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <TabsContent value="consult">
-                <PriceTable 
-                    prices={prices} 
-                    onViewDescription={setViewingDescription} 
-                    onViewOrigin={setViewingOrigin} 
-                    onDeleteItem={handleDeleteItem}
-                    onViewHistory={setViewingHistory}
-                />
-            </TabsContent>
-            <TabsContent value="import">
-                <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
-            </TabsContent>
-        </Tabs>
-      </>
-    );
-}
-
-// --- Componente de Tabla de Precios ---
-function PriceTable({ 
-    prices, 
-    onViewDescription, 
-    onViewOrigin, 
-    onDeleteItem,
-    onViewHistory,
-}: { 
-    prices: PriceMasterItem[], 
-    onViewDescription: (description: string) => void, 
-    onViewOrigin: (origin: string) => void, 
-    onDeleteItem: (id: string) => void,
-    onViewHistory: (item: PriceMasterItem) => void,
-}) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  
-  const filteredAndSortedPrices = useMemo(() => {
-    let sortableItems = [...prices];
-
-    if (searchTerm) {
-      sortableItems = sortableItems.filter((item) =>
-        item.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.capitulo && item.capitulo.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aVal = a[sortConfig.key] || '';
-        const bVal = b[sortConfig.key] || '';
-        if (aVal < bVal) {
-          return sortConfig.direction === "ascending" ? -1 : 1;
-        }
-        if (aVal > bVal) {
-          return sortConfig.direction === "ascending" ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [prices, searchTerm, sortConfig]);
-
-  const requestSort = (key: keyof PriceMasterItem) => {
-    let direction: "ascending" | "descending" = "ascending";
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
-  };
-  
-  const getSortIcon = (key: keyof PriceMasterItem) => {
-      if (!sortConfig || sortConfig.key !== key) {
-          return <ArrowUpDown className="h-4 w-4 ml-2 opacity-30" />;
-      }
-      return sortConfig.direction === 'ascending' ? 
-          <ArrowUpDown className="h-4 w-4 ml-2" /> : 
-          <ArrowUpDown className="h-4 w-4 ml-2 transform rotate-180" />;
-  };
-
-  return (
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-              <div>
-                  <CardTitle>Consulta de Precios</CardTitle>
-                  <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
-              </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Buscar por descripción o capítulo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4 max-w-sm"
-          />
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
-                      <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
-                      <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
-                      <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("precioActual")} className="cursor-pointer">
-                      <div className="flex items-center">Precio Unitario {getSortIcon("precioActual")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("fechaUltimaActualizacion")} className="cursor-pointer">
-                      <div className="flex items-center">Fecha Act. {getSortIcon("fechaUltimaActualizacion")}</div>
-                  </TableHead>
-                  <TableHead>Historial</TableHead>
-                  <TableHead>Origen</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedPrices.length > 0 ? (
-                  filteredAndSortedPrices.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
-                          {item.descripcion}
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.unidad}</TableCell>
-                      <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
-                      <TableCell>{item.fechaUltimaActualizacion}</TableCell>
-                      <TableCell>
-                          {(item.historialPrecios?.length || 0) > 1 ? (
-                              <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
-                                  <History className="mr-2 h-4 w-4" />
-                                  Ver ({(item.historialPrecios?.length)})
-                              </Button>
-                          ) : (
-                            <Badge variant="secondary">Nuevo</Badge>
-                          )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
-                            {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                          <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                      <Trash2 className="h-4 w-4" />
-                                  </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                          "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      No se encontraron precios. Sube un presupuesto para empezar.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-  );
-}
-
-function HistoryDialog({
-    item,
-    open,
-    onOpenChange,
-    onSetCurrentPrice
-}: {
-    item: PriceMasterItem | null;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSetCurrentPrice: (itemId: string, newPrice: number) => void;
-}) {
-    if (!item) return null;
-
-    const sortedHistory = [...(item.historialPrecios || [])].sort((a,b) => {
-        const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
-        const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-    });
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Historial de Precios</DialogTitle>
-                    <DialogDescription>{item.descripcion}</DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Precio</TableHead>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Origen</TableHead>
-                                <TableHead className="text-right">Acción</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedHistory.map((entry, index) => (
-                                <TableRow key={index} className={entry.precio === item.precioActual ? "bg-primary/10" : ""}>
-                                    <TableCell>€{entry.precio.toFixed(2)}</TableCell>
-                                    <TableCell>{entry.fecha?.toDate ? format(entry.fecha.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</TableCell>
-                                    <TableCell>{entry.archivoOrigen}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            onClick={() => onSetCurrentPrice(item.id, entry.precio)}
-                                            disabled={entry.precio === item.precioActual}
-                                        >
-                                            <Undo className="mr-2 h-4 w-4" /> Usar este precio
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-// --- Componente de Carga de Archivos ---
+// --- Componente de Carga de Archivos para Base de Precios ---
 function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: string) => void }) {
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const { toast } = useToast();
@@ -911,6 +498,423 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
   );
 }
 
+// --- Componente de la Sección de Base de Precios ---
+function PriceDatabaseSection() {
+    const { toast } = useToast();
+    const [prices, setPrices] = useState<PriceMasterItem[]>([]);
+    const [viewingDescription, setViewingDescription] = useState<string | null>(null);
+    const [viewingOrigin, setViewingOrigin] = useState<string | null>(null);
+    const [viewingHistory, setViewingHistory] = useState<PriceMasterItem | null>(null);
+
+
+    useEffect(() => {
+        const q = query(collection(db, "preciosMaestros"), orderBy("fechaUltimaActualizacion", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const priceData = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            fechaUltimaActualizacion: doc.data().fechaUltimaActualizacion?.toDate ? format(doc.data().fechaUltimaActualizacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
+          })) as PriceMasterItem[];
+          setPrices(priceData);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleDeleteAll = async () => {
+      const pricesRef = collection(db, "preciosMaestros");
+      try {
+          const querySnapshot = await getDocs(pricesRef);
+          const batch = writeBatch(db);
+          querySnapshot.forEach(doc => {
+              batch.delete(doc.ref);
+          });
+          await batch.commit();
+          toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
+      } catch (error) {
+          console.error("Error deleting all prices:", error);
+          toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
+      }
+    };
+  
+    const handleDeleteItem = async (id: string) => {
+      try {
+          await deleteDoc(doc(db, "preciosMaestros", id));
+          toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
+      } catch (error) {
+          console.error(`Error deleting price ${id}:`, error);
+          toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
+      }
+    };
+    
+    const handleSetCurrentPrice = async (itemId: string, newPrice: number) => {
+        const itemDocRef = doc(db, "preciosMaestros", itemId);
+        try {
+            await updateDoc(itemDocRef, {
+                precioActual: newPrice
+            });
+            toast({ title: "Precio Actualizado", description: `El precio de la partida ha sido restaurado.`});
+            setViewingHistory(null);
+        } catch(error) {
+            console.error("Error setting current price:", error);
+            toast({ variant: "destructive", title: "Error al actualizar", description: `No se pudo cambiar el precio. ${(error as Error).message}`});
+        }
+    };
+
+    const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
+      const pricesRef = collection(db, "preciosMaestros");
+      const batch = writeBatch(db);
+
+      for (const capitulo of breakdown.capitulos) {
+        for (const partida of capitulo.partidas) {
+          if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) continue;
+          
+          const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
+          const querySnapshot = await getDocs(q);
+
+          const fecha = new Date();
+          const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
+          const newHistoryEntry = { precio, fecha, archivoOrigen: fileName };
+
+          if (querySnapshot.empty) {
+            const newDocRef = doc(pricesRef);
+            batch.set(newDocRef, {
+                capitulo: capitulo.nombre,
+                descripcion: partida.descripcion,
+                unidad: partida.unidad,
+                precioActual: precio,
+                fechaUltimaActualizacion: fecha,
+                historialPrecios: [newHistoryEntry],
+                status: 'new'
+            });
+          } else {
+            const docId = querySnapshot.docs[0].id;
+            const docRef = doc(pricesRef, docId);
+            const existingData = querySnapshot.docs[0].data();
+            const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
+            batch.update(docRef, {
+               precioActual: precio,
+               fechaUltimaActualizacion: fecha,
+               historialPrecios: newHistory,
+               status: 'updated'
+            });
+          }
+        }
+      }
+      
+      await batch.commit();
+      toast({ title: "Base de Precios Actualizada", description: "Los precios del desglose se han añadido/actualizado."});
+    }, [toast]);
+
+    return (
+      <>
+        <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
+          <DialogContent>
+              <DialogHeader><DialogTitle>Descripción Completa</DialogTitle></DialogHeader>
+              <ScrollArea className="max-h-[60vh] my-4"><div className="whitespace-pre-wrap break-words pr-4">{viewingDescription}</div></ScrollArea>
+              <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={!!viewingOrigin} onOpenChange={() => setViewingOrigin(null)}>
+          <DialogContent>
+              <DialogHeader><DialogTitle>Origen del Archivo</DialogTitle></DialogHeader>
+              <div className="py-4 whitespace-pre-wrap break-words">{viewingOrigin}</div>
+              <DialogFooter><Button variant="outline" onClick={() => setViewingOrigin(null)}>Cerrar</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <HistoryDialog
+            item={viewingHistory}
+            open={!!viewingHistory}
+            onOpenChange={() => setViewingHistory(null)}
+            onSetCurrentPrice={handleSetCurrentPrice}
+        />
+
+        <Tabs defaultValue="consult" className="w-full">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList className="grid grid-cols-2 w-auto">
+                  <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
+                  <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
+              </TabsList>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
+                      </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Esto eliminará permanentemente
+                              toda la base de precios.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <TabsContent value="consult">
+                <PriceTable 
+                    prices={prices} 
+                    onViewDescription={setViewingDescription} 
+                    onViewOrigin={setViewingOrigin} 
+                    onDeleteItem={handleDeleteItem}
+                    onViewHistory={setViewingHistory}
+                />
+            </TabsContent>
+            <TabsContent value="import">
+                <FileUploadSection onUploadSuccess={(fileName) => {
+                  // This is a placeholder for the actual extraction logic, which should happen server-side.
+                  // For now, we'll simulate it.
+                  toast({ title: "Archivo subido", description: `${fileName} está listo para ser procesado.`})
+                }} />
+            </TabsContent>
+        </Tabs>
+      </>
+    );
+}
+
+// --- Componente de Tabla de Precios ---
+function PriceTable({ 
+    prices, 
+    onViewDescription, 
+    onViewOrigin, 
+    onDeleteItem,
+    onViewHistory,
+}: { 
+    prices: PriceMasterItem[], 
+    onViewDescription: (description: string) => void, 
+    onViewOrigin: (origin: string) => void, 
+    onDeleteItem: (id: string) => void,
+    onViewHistory: (item: PriceMasterItem) => void,
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  
+  const filteredAndSortedPrices = useMemo(() => {
+    let sortableItems = [...prices];
+
+    if (searchTerm) {
+      sortableItems = sortableItems.filter((item) =>
+        item.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.capitulo && item.capitulo.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [prices, searchTerm, sortConfig]);
+
+  const requestSort = (key: keyof PriceMasterItem) => {
+    let direction: "ascending" | "descending" = "ascending";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof PriceMasterItem) => {
+      if (!sortConfig || sortConfig.key !== key) {
+          return <ArrowUpDown className="h-4 w-4 ml-2 opacity-30" />;
+      }
+      return sortConfig.direction === 'ascending' ? 
+          <ArrowUpDown className="h-4 w-4 ml-2" /> : 
+          <ArrowUpDown className="h-4 w-4 ml-2 transform rotate-180" />;
+  };
+
+  return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+              <div>
+                  <CardTitle>Consulta de Precios</CardTitle>
+                  <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
+              </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="Buscar por descripción o capítulo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-4 max-w-sm"
+          />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
+                      <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
+                      <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
+                      <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("precioActual")} className="cursor-pointer">
+                      <div className="flex items-center">Precio Unitario {getSortIcon("precioActual")}</div>
+                  </TableHead>
+                  <TableHead onClick={() => requestSort("fechaUltimaActualizacion")} className="cursor-pointer">
+                      <div className="flex items-center">Fecha Act. {getSortIcon("fechaUltimaActualizacion")}</div>
+                  </TableHead>
+                  <TableHead>Historial</TableHead>
+                  <TableHead>Origen</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedPrices.length > 0 ? (
+                  filteredAndSortedPrices.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-semibold">{item.capitulo}</TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
+                          {item.descripcion}
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.unidad}</TableCell>
+                      <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
+                      <TableCell>{item.fechaUltimaActualizacion}</TableCell>
+                      <TableCell>
+                          {(item.historialPrecios?.length || 0) > 1 ? (
+                              <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
+                                  <History className="mr-2 h-4 w-4" />
+                                  Ver ({(item.historialPrecios?.length)})
+                              </Button>
+                          ) : (
+                            <Badge variant="secondary">Nuevo</Badge>
+                          )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
+                            {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                          {item.status === 'new' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
+                          {item.status === 'updated' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
+                          {!item.status && <Badge variant="secondary">N/A</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-24 text-center">
+                      No se encontraron precios. Sube un presupuesto para empezar.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+  );
+}
+
+function HistoryDialog({
+    item,
+    open,
+    onOpenChange,
+    onSetCurrentPrice
+}: {
+    item: PriceMasterItem | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSetCurrentPrice: (itemId: string, newPrice: number) => void;
+}) {
+    if (!item) return null;
+
+    const sortedHistory = [...(item.historialPrecios || [])].sort((a,b) => {
+        const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
+        const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Historial de Precios</DialogTitle>
+                    <DialogDescription>{item.descripcion}</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Precio</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Origen</TableHead>
+                                <TableHead className="text-right">Acción</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedHistory.map((entry, index) => (
+                                <TableRow key={index} className={entry.precio === item.precioActual ? "bg-primary/10" : ""}>
+                                    <TableCell>€{entry.precio.toFixed(2)}</TableCell>
+                                    <TableCell>{entry.fecha?.toDate ? format(entry.fecha.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</TableCell>
+                                    <TableCell>{entry.archivoOrigen}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            onClick={() => onSetCurrentPrice(item.id, entry.precio)}
+                                            disabled={entry.precio === item.precioActual}
+                                        >
+                                            <Undo className="mr-2 h-4 w-4" /> Usar este precio
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 // --- Sección Principal de IA ---
 export function AiSection() {
     return (
@@ -919,7 +923,7 @@ export function AiSection() {
                 <TabsTrigger value="upload-budget">
                   <BrainCircuit className="mr-2" /> Subir Presupuesto
                 </TabsTrigger>
-                <TabsTrigger value="ai-budgets">Presupuestos</TabsTrigger>
+                <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
                 <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
             </TabsList>
             <TabsContent value="upload-budget" className="mt-6">
