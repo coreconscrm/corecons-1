@@ -29,7 +29,10 @@ const ProjectBreakdownSchema = z.object({
       descripcion: z.string().describe("Descripción detallada de la partida de obra."),
       medicion: z.string().optional().describe("La cantidad o medición de la partida, por ejemplo: '250', 'Según proyecto'."),
       unidad: z.string().optional().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
-      precioUnitario: z.string().optional().describe("El precio unitario de la partida. Ej: '12,50', 'N/A'."),
+      precioUnitario: z.string().optional().describe("El precio unitario de la partida. Extrae SÓLO el valor numérico. Ej: '12.50' o '12,50'. Si no hay precio, deja el campo vacío.").refine(
+        (val) => val === undefined || val === null || /^[0-9.,]+$/.test(val), {
+        message: "El precio unitario debe ser un valor numérico o nulo."
+      }),
     }))
     .describe("Lista de partidas de obra para este capítulo.")
     .refine(partidas => partidas.every(p => p.descripcion && p.descripcion.trim() !== ''), {
@@ -53,10 +56,11 @@ const projectBreakdownPrompt = ai.definePrompt({
     1.  Lee atentamente el documento PDF adjunto.
     2.  Identifica los principales capítulos de la obra (ej: Demoliciones, Albañilería, Solados y Alicatados, Fontanería y Saneamiento, Electricidad, Climatización, Carpintería, etc.).
     3.  Para cada capítulo, extrae las partidas de obra específicas mencionadas.
-    4.  Cada partida debe tener una descripción clara, su medición (si se especifica), la unidad de medida, y el precio unitario si está disponible.
-    5.  Si una medición o precio no se especifica, puedes poner 'Según proyecto', 'N/A' o similar.
-    6.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
-    7.  IMPORTANTE: Ignora cualquier partida que esté vacía o no contenga una descripción clara.
+    4.  Cada partida debe tener una descripción clara.
+    5.  Extrae la 'medicion' (cantidad) y 'unidad' de medida si se especifican. Si no, puedes poner 'Según proyecto', 'N/A' o similar.
+    6.  **MUY IMPORTANTE**: Para el campo 'precioUnitario', extrae ÚNICAMENTE el valor numérico del precio (ej: '12.50', '12,50'). NO incluyas el símbolo del euro (€), texto como '/ud' o '/m2'. Si no se especifica un precio numérico claro, deja el campo 'precioUnitario' vacío o nulo. Este campo es el más importante.
+    7.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
+    8.  IMPORTANTE: Ignora cualquier partida que esté vacía o no contenga una descripción clara.
 
     Documento a analizar:
     {{media url=pdfDataUri}}
