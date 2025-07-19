@@ -18,8 +18,7 @@ import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle } from "@/components/ui/dialog";
-import { DialogContent } from "@radix-ui/react-dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 
 
@@ -396,51 +395,10 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
 }
 
 // --- Componente de Tabla de Precios ---
-function PriceTable({ onViewDescription }: { onViewDescription: (description: string) => void }) {
-  const [prices, setPrices] = useState<PriceMasterItem[]>([]);
+function PriceTable({ prices, onViewDescription, onDeleteItem }: { prices: PriceMasterItem[], onViewDescription: (description: string) => void, onDeleteItem: (id: string) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const q = query(collection(db, "preciosMaestros"), orderBy("fechaImportacion", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const priceData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        fechaImportacion: doc.data().fechaImportacion?.toDate ? format(doc.data().fechaImportacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
-      })) as PriceMasterItem[];
-      setPrices(priceData);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleDeleteAll = async () => {
-    const pricesRef = collection(db, "preciosMaestros");
-    try {
-        const querySnapshot = await getDocs(pricesRef);
-        const batch = writeBatch(db);
-        querySnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
-        toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
-    } catch (error) {
-        console.error("Error deleting all prices:", error);
-        toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
-    }
-  };
-
-  const handleDeleteItem = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "preciosMaestros", id));
-        toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
-    } catch (error) {
-        console.error(`Error deleting price ${id}:`, error);
-        toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
-    }
-  };
-
+  
   const filteredAndSortedPrices = useMemo(() => {
     let sortableItems = [...prices];
 
@@ -492,26 +450,6 @@ function PriceTable({ onViewDescription }: { onViewDescription: (description: st
                   <CardTitle>Consulta de Precios</CardTitle>
                   <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
               </div>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
-                      </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Esto eliminará permanentemente
-                              toda la base de precios.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -576,7 +514,7 @@ function PriceTable({ onViewDescription }: { onViewDescription: (description: st
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
                                   </AlertDialogFooter>
                               </AlertDialogContent>
                           </AlertDialog>
@@ -598,11 +536,51 @@ function PriceTable({ onViewDescription }: { onViewDescription: (description: st
   );
 }
 
-// --- Sección Principal de IA ---
-export function AiSection() {
+// --- Componente de la Sección de Base de Precios ---
+function PriceDatabaseSection() {
     const { toast } = useToast();
+    const [prices, setPrices] = useState<PriceMasterItem[]>([]);
     const [viewingDescription, setViewingDescription] = useState<string | null>(null);
 
+    useEffect(() => {
+        const q = query(collection(db, "preciosMaestros"), orderBy("fechaImportacion", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const priceData = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            fechaImportacion: doc.data().fechaImportacion?.toDate ? format(doc.data().fechaImportacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
+          })) as PriceMasterItem[];
+          setPrices(priceData);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleDeleteAll = async () => {
+      const pricesRef = collection(db, "preciosMaestros");
+      try {
+          const querySnapshot = await getDocs(pricesRef);
+          const batch = writeBatch(db);
+          querySnapshot.forEach(doc => {
+              batch.delete(doc.ref);
+          });
+          await batch.commit();
+          toast({ title: "Base de precios eliminada", description: "Se han borrado todos los precios." });
+      } catch (error) {
+          console.error("Error deleting all prices:", error);
+          toast({ variant: "destructive", title: "Error al borrar", description: `No se pudieron eliminar todos los precios. ${(error as Error).message}`});
+      }
+    };
+  
+    const handleDeleteItem = async (id: string) => {
+      try {
+          await deleteDoc(doc(db, "preciosMaestros", id));
+          toast({ title: "Precio eliminado", description: "La partida ha sido eliminada." });
+      } catch (error) {
+          console.error(`Error deleting price ${id}:`, error);
+          toast({ variant: "destructive", title: "Error al eliminar", description: `No se pudo eliminar la partida. ${(error as Error).message}`});
+      }
+    };
+    
     // Simula la Cloud Function de extracción de precios
     const simulatePriceExtraction = useCallback(async (fileName: string) => {
         console.log(`Simulating extraction for: ${fileName}`);
@@ -652,7 +630,7 @@ export function AiSection() {
             toast({ variant: "destructive", title: "Error al guardar", description: "No se pudieron guardar los precios en la base de datos." });
         }
     }, [toast]);
-    
+
     return (
       <>
         <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
@@ -662,7 +640,48 @@ export function AiSection() {
               <DialogFooter><Button variant="outline" onClick={() => setViewingDescription(null)}>Cerrar</Button></DialogFooter>
           </DialogContent>
         </Dialog>
+        <Tabs defaultValue="consult" className="w-full">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList className="grid grid-cols-2 w-auto">
+                  <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
+                  <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
+              </TabsList>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
+                      </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Esto eliminará permanentemente
+                              toda la base de precios.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <TabsContent value="consult">
+                <PriceTable prices={prices} onViewDescription={setViewingDescription} onDeleteItem={handleDeleteItem} />
+            </TabsContent>
+            <TabsContent value="import">
+                <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
+            </TabsContent>
+        </Tabs>
+      </>
+    );
+}
 
+
+// --- Sección Principal de IA ---
+export function AiSection() {
+    return (
         <Tabs defaultValue="breakdown-generator" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="breakdown-generator">
@@ -695,20 +714,8 @@ export function AiSection() {
                 </Card>
             </TabsContent>
             <TabsContent value="price-database" className="mt-6">
-                <Tabs defaultValue="consult" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
-                        <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="consult" className="mt-6">
-                        <PriceTable onViewDescription={setViewingDescription} />
-                    </TabsContent>
-                    <TabsContent value="import" className="mt-6">
-                        <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
-                    </TabsContent>
-                </Tabs>
+                <PriceDatabaseSection />
             </TabsContent>
         </Tabs>
-      </>
     );
 }
