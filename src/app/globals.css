@@ -117,8 +117,12 @@
     width: 100%;
     height: auto;
   }
+  .page-break-before {
+    break-before: page;
+  }
   @page {
     size: A4;
     margin: 1cm;
   }
 }
+

@@ -120,10 +120,10 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                   return (
                     <tr key={pIndex} className="border-b border-gray-100">
                       <td className="p-3 print:py-1 print:text-xs">{partida.descripcion}</td>
-                      <td className="p-3 print:py-1 text-right">{partida.medicion}</td>
-                      <td className="p-3 print:py-1 text-center">{partida.unidad}</td>
-                      <td className="p-3 print:py-1 text-right font-mono">€{unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="p-3 print:py-1 text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="p-3 print:py-1 text-right print:text-xs">{partida.medicion}</td>
+                      <td className="p-3 print:py-1 text-center print:text-xs">{partida.unidad}</td>
+                      <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                   )
                 })}
@@ -133,46 +133,48 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
         </table>
       </section>
       
-      <section className="mt-8">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
-        <table className="w-full max-w-md ml-auto text-left text-sm">
-            <thead className="bg-gray-100 text-gray-600">
-                <tr>
-                    <th className="p-3 font-semibold uppercase text-sm">Capítulo</th>
-                    <th className="p-3 font-semibold uppercase text-sm text-right">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                 {Object.entries(chapterTotals).map(([nombre, total]) => (
-                    <tr key={nombre} className="border-b border-gray-100">
-                        <td className="p-3 print:py-1 font-semibold">{nombre}</td>
-                        <td className="p-3 print:py-1 text-right font-mono">
-                           €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-      </section>
+      <div className="page-break-before">
+        <section className="mt-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
+          <table className="w-full max-w-md ml-auto text-left text-sm">
+              <thead className="bg-gray-100 text-gray-600">
+                  <tr>
+                      <th className="p-3 font-semibold uppercase text-sm">Capítulo</th>
+                      <th className="p-3 font-semibold uppercase text-sm text-right">Total</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {Object.entries(chapterTotals).map(([nombre, total]) => (
+                      <tr key={nombre} className="border-b border-gray-100">
+                          <td className="p-3 print:py-1 font-semibold">{nombre}</td>
+                          <td className="p-3 print:py-1 text-right font-mono">
+                            €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                      </tr>
+                  ))}
+              </tbody>
+          </table>
+        </section>
 
-      <section className="mt-8 flex justify-between items-end">
-        <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
-            <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
-            <p>{company?.validity}</p>
-            <p>{company?.paymentMethods}</p>
-        </div>
-        <div className="w-full max-w-sm">
-            <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
-                <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
-                <span className="text-xl font-bold font-mono text-gray-900">
-                    €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-            </div>
-            <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
-                <p className="text-xs text-gray-500">Este es un documento informativo y no contractual hasta su firma.</p>
-            </div>
-        </div>
-      </section>
+        <section className="mt-8 flex justify-between items-end">
+          <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
+              <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
+              <p>{company?.validity}</p>
+              <p>{company?.paymentMethods}</p>
+          </div>
+          <div className="w-full max-w-sm">
+              <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
+                  <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
+                  <span className="text-xl font-bold font-mono text-gray-900">
+                      €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+              </div>
+              <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
+                  <p className="text-xs text-gray-500">Este es un documento informativo y no contractual hasta su firma.</p>
+              </div>
+          </div>
+        </section>
+      </div>
 
       <PrintLayoutFooter company={company} />
     </div>
@@ -220,10 +222,10 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
             {(budget.lineItems || []).map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
-                <td className="p-3 print:py-1 text-right">{item.quantity}</td>
-                <td className="p-3 print:py-1 text-center">{item.unit}</td>
-                <td className="p-3 print:py-1 text-right font-mono">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 print:py-1 text-right font-mono">€{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 print:py-1 text-right print:text-xs">{item.quantity}</td>
+                <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
+                <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
