@@ -15,7 +15,7 @@ import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
-import { createProjectBreakdown, type ProjectBreakdown, type ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
+import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
@@ -30,6 +30,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AiBudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import type { ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
 
 
 // --- Tipos de Datos ---
@@ -584,30 +585,33 @@ function AiBudgetCard({
                                 </AccordionItem>
                             ))}
                         </Accordion>
-
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Resumen de Capítulos</h4>
-                            <div className="rounded-md border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Capítulo</TableHead>
-                                            <TableHead className="text-right">Total</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
-                                            <TableRow key={nombre}>
-                                                <TableCell className="font-semibold">{nombre}</TableCell>
-                                                <TableCell className="text-right font-mono">
-                                                    €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </div>
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="summary">
+                                <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="rounded-md border">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Capítulo</TableHead>
+                                                    <TableHead className="text-right">Total</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
+                                                    <TableRow key={nombre}>
+                                                        <TableCell className="font-semibold">{nombre}</TableCell>
+                                                        <TableCell className="text-right font-mono">
+                                                            €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </CardContent>
                     <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                         <div className="text-xl font-bold">
@@ -676,9 +680,7 @@ function AiBudgetsSection({
         };
 
         try {
-            await setDoc(budgetRef, {
-                userLineTotals: updatedTotals
-            }, { merge: true });
+            await setDoc(budgetRef, { userLineTotals: updatedTotals }, { merge: true });
         } catch (error) {
             console.error("Error updating user total:", error);
             toast({ variant: 'destructive', title: 'Error al guardar total', description: 'No se pudo actualizar el total en la base de datos.'});
@@ -1305,6 +1307,7 @@ export function AiSection({
 
 
     
+
 
 
 
