@@ -69,7 +69,7 @@ export type AiBudgetItem = {
   description?: string;
   createdAt: any; // Firestore Timestamp
   breakdown: ProjectBreakdown;
-  userPrices?: Record<string, Record<string, number>>;
+  userLineTotals?: Record<string, Record<string, number>>;
 };
 
 
@@ -438,14 +438,14 @@ function MergeBudgetDialog({
 // --- Componente para una tarjeta de presupuesto de IA ---
 function AiBudgetCard({ 
     budget, 
-    onUserPriceChange, 
+    onLineTotalChange, 
     onDetailsChange,
     onDelete,
     onPrint,
     onMergeClick
 }: { 
     budget: AiBudgetItem, 
-    onUserPriceChange: (budgetId: string, capitulo: string, partida: string, price: string) => void,
+    onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
     onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
     onDelete: (id: string) => void,
     onPrint: (budget: AiBudgetItem) => void,
@@ -459,16 +459,15 @@ function AiBudgetCard({
         if (budget.breakdown.capitulos) {
             for (const capitulo of budget.breakdown.capitulos) {
                 const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
-                    const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                    const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                    return sum + (price * quantity);
+                    const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                    return sum + lineTotal;
                 }, 0);
                 chapterTotals[capitulo.nombre] = chapterTotal;
                 grandTotal += chapterTotal;
             }
         }
         return { grandTotal, chapterTotals };
-    }, [budget.breakdown, budget.userPrices]);
+    }, [budget.breakdown, budget.userLineTotals]);
 
     return (
         <AccordionItem value={budget.id} className="border-none">
@@ -549,25 +548,25 @@ function AiBudgetCard({
                                             </TableHeader>
                                             <TableBody>
                                                 {capitulo.partidas.map((partida, pIndex) => {
-                                                    const userPrice = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                    const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
                                                     const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                    const lineTotal = userPrice * quantity;
+                                                    const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
                                                     return (
                                                     <TableRow key={pIndex}>
                                                         <TableCell>{partida.descripcion}</TableCell>
                                                         <TableCell className="text-right">{partida.medicion}</TableCell>
                                                         <TableCell className="text-center">{partida.unidad}</TableCell>
+                                                        <TableCell className="text-right font-mono">
+                                                          {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </TableCell>
                                                         <TableCell className="text-right w-[150px]">
-                                                            <Input
+                                                             <Input
                                                                 type="number"
                                                                 className="text-right"
                                                                 placeholder="0.00"
-                                                                defaultValue={userPrice || ''}
-                                                                onBlur={(e) => onUserPriceChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
+                                                                defaultValue={lineTotal || ''}
+                                                                onBlur={(e) => onLineTotalChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
                                                             />
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-mono">
-                                                            {lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </TableCell>
                                                     </TableRow>
                                                 )})}
@@ -636,29 +635,29 @@ function AiBudgetsSection({
         }
     }, [printingBudget]);
 
-    const handleUserPriceChange = async (budgetId: string, capitulo: string, partida: string, price: string) => {
+    const handleLineTotalChange = async (budgetId: string, capitulo: string, partida: string, total: string) => {
         const budgetRef = doc(db, 'ia_budgets', budgetId);
-        const priceValue = parseFloat(price);
-        const newPrice = isNaN(priceValue) ? 0 : priceValue;
+        const totalValue = parseFloat(total);
+        const newTotal = isNaN(totalValue) ? 0 : totalValue;
 
         const currentBudget = aiBudgets.find(b => b.id === budgetId);
         if (!currentBudget) return;
         
-        const updatedUserPrices = {
-            ...currentBudget.userPrices,
+        const updatedTotals = {
+            ...currentBudget.userLineTotals,
             [capitulo]: {
-                ...(currentBudget.userPrices?.[capitulo] || {}),
-                [partida]: newPrice
+                ...(currentBudget.userLineTotals?.[capitulo] || {}),
+                [partida]: newTotal
             }
         };
 
         try {
             await setDoc(budgetRef, {
-                userPrices: updatedUserPrices
+                userLineTotals: updatedTotals
             }, { merge: true });
         } catch (error) {
-            console.error("Error updating user price:", error);
-            toast({ variant: 'destructive', title: 'Error al guardar precio', description: 'No se pudo actualizar el precio en la base de datos.'});
+            console.error("Error updating user total:", error);
+            toast({ variant: 'destructive', title: 'Error al guardar total', description: 'No se pudo actualizar el total en la base de datos.'});
         }
     };
     
@@ -693,7 +692,7 @@ function AiBudgetsSection({
         }
 
         const mergedBreakdown: ProjectBreakdownChapter[] = [...targetBudget.breakdown.capitulos];
-        const mergedPrices = { ...targetBudget.userPrices };
+        const mergedTotals = { ...targetBudget.userLineTotals };
 
         for (const sourceChapter of sourceBudget.breakdown.capitulos) {
             const targetChapter = mergedBreakdown.find(c => c.nombre === sourceChapter.nombre);
@@ -707,11 +706,11 @@ function AiBudgetsSection({
         }
         
         // Merge user prices
-        for (const [chapterName, partidas] of Object.entries(sourceBudget.userPrices || {})) {
-            if (!mergedPrices[chapterName]) {
-                mergedPrices[chapterName] = {};
+        for (const [chapterName, partidas] of Object.entries(sourceBudget.userLineTotals || {})) {
+            if (!mergedTotals[chapterName]) {
+                mergedTotals[chapterName] = {};
             }
-             Object.assign(mergedPrices[chapterName], partidas);
+             Object.assign(mergedTotals[chapterName], partidas);
         }
 
         try {
@@ -719,7 +718,7 @@ function AiBudgetsSection({
             const targetRef = doc(db, 'ia_budgets', targetId);
             batch.update(targetRef, { 
                 'breakdown.capitulos': mergedBreakdown,
-                'userPrices': mergedPrices
+                'userLineTotals': mergedTotals
             });
 
             const sourceRef = doc(db, 'ia_budgets', sourceId);
@@ -766,7 +765,7 @@ function AiBudgetsSection({
                     <AiBudgetCard
                         key={budget.id}
                         budget={budget}
-                        onUserPriceChange={handleUserPriceChange}
+                        onLineTotalChange={handleLineTotalChange}
                         onDetailsChange={handleDetailsChange}
                         onDelete={handleDeleteBudget}
                         onPrint={setPrintingBudget}
@@ -1209,7 +1208,7 @@ export function AiSection({
                 title: fileName,
                 createdAt: new Date(),
                 breakdown: JSON.parse(JSON.stringify(breakdown)), // Deep copy to prevent issues
-                userPrices: {},
+                userLineTotals: {},
                 clientName: "",
                 description: ""
             });
@@ -1282,6 +1281,7 @@ export function AiSection({
 
 
     
+
 
 
 

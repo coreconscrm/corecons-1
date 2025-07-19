@@ -68,15 +68,14 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
     if (budget.breakdown.capitulos) {
         for (const capitulo of budget.breakdown.capitulos) {
             const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
-                const price = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                return sum + (price * quantity);
+                const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                return sum + lineTotal;
             }, 0);
             grandTotal += chapterTotal;
         }
     }
     return grandTotal;
-  }, [budget.breakdown, budget.userPrices]);
+  }, [budget.breakdown, budget.userLineTotals]);
 
   return (
     <div className="bg-white text-black p-8 font-sans">
@@ -111,16 +110,16 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                   <td colSpan={5} className="p-3 bg-gray-50 font-bold text-gray-700">{capitulo.nombre}</td>
                 </tr>
                 {(capitulo.partidas || []).map((partida, pIndex) => {
-                  const unitPrice = budget.userPrices?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                  const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
                   const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                  const total = unitPrice * quantity;
+                  const unitPrice = quantity !== 0 ? lineTotal / quantity : 0;
                   return (
                     <tr key={pIndex} className="border-b border-gray-100">
                       <td className="p-3">{partida.descripcion}</td>
                       <td className="p-3 text-right">{partida.medicion}</td>
                       <td className="p-3 text-center">{partida.unidad}</td>
                       <td className="p-3 text-right font-mono">€{unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="p-3 text-right font-mono">€{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="p-3 text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                   )
                 })}
@@ -229,3 +228,4 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
     </div>
   );
 }
+
