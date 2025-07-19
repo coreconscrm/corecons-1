@@ -831,12 +831,11 @@ function PriceDatabaseSection() {
         try {
             const pricesRef = collection(db, "preciosMaestros");
             const searchTermLower = term.toLowerCase();
-            const searchTermUpper = searchTermLower + '\uf8ff';
             const q = query(
                 pricesRef,
                 orderBy("descripcion"),
                 startAt(searchTermLower),
-                endAt(searchTermUpper),
+                endAt(searchTermLower + '\uf8ff'),
                 limit(50)
             );
             
@@ -1352,6 +1351,7 @@ export function AiSection({
 
 
     
+
 
 
 
