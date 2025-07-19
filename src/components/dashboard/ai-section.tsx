@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2 } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -46,6 +46,7 @@ function ProjectBreakdownGenerator() {
   const [file, setFile] = useState<File | null>(null);
   const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -94,6 +95,68 @@ function ProjectBreakdownGenerator() {
       console.error("Error setting up file reader:", e);
       toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado.` });
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveToPriceBase = async () => {
+    if (!breakdown || !file) {
+      toast({ variant: "destructive", title: "Error", description: "No hay desglose para guardar." });
+      return;
+    }
+    
+    setIsSaving(true);
+    const allPartidas = breakdown.capitulos.flatMap(c => c.partidas);
+    let itemsAdded = 0;
+    let itemsUpdated = 0;
+
+    const pricesRef = collection(db, "preciosMaestros");
+    const batch = writeBatch(db);
+
+    try {
+      for (const partida of allPartidas) {
+        if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) {
+            continue; // Omitir si no hay precio o no es un número válido
+        }
+
+        const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
+        const querySnapshot = await getDocs(q);
+
+        const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
+
+        if (querySnapshot.empty) {
+          // Si no existe, lo añadimos
+          const newDocRef = doc(pricesRef);
+          batch.set(newDocRef, {
+              descripcion: partida.descripcion,
+              unidad: partida.unidad,
+              precioUnitario: precio,
+              fechaImportacion: serverTimestamp(),
+              archivoOrigen: file.name,
+          });
+          itemsAdded++;
+        } else {
+          // Si ya existe, lo actualizamos
+          const docId = querySnapshot.docs[0].id;
+          const docRef = doc(pricesRef, docId);
+          batch.update(docRef, {
+              precioUnitario: precio,
+              fechaImportacion: serverTimestamp(),
+              archivoOrigen: file.name,
+          });
+          itemsUpdated++;
+        }
+      }
+
+      await batch.commit();
+      toast({
+        title: "Base de Precios Actualizada",
+        description: `${itemsAdded} precios nuevos añadidos y ${itemsUpdated} precios actualizados.`,
+      });
+    } catch (error) {
+        console.error("Error saving to price base:", error);
+        toast({ variant: "destructive", title: "Error al guardar", description: `No se pudieron guardar los precios. ${(error as Error).message}` });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -189,6 +252,15 @@ function ProjectBreakdownGenerator() {
             )
           )}
         </CardContent>
+        {breakdown && breakdown.capitulos.length > 0 && (
+          <CardFooter>
+            <Button onClick={handleSaveToPriceBase} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
+              Incluir en Base de Precios
+            </Button>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );
@@ -540,3 +612,4 @@ export function AiSection() {
         </Tabs>
     );
 }
+
