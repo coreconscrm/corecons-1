@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -32,15 +32,19 @@ type UploadedFile = {
   id: string;
   errorMessage?: string;
 };
+type PriceHistoryEntry = {
+    precio: number;
+    fecha: any; // Firestore Timestamp
+    archivoOrigen: string;
+}
 type PriceMasterItem = {
   id: string;
   descripcion: string;
   unidad: string;
-  precioUnitario: number;
   capitulo: string;
-  fechaImportacion: string;
-  archivoOrigen: string;
-  status?: 'new' | 'updated';
+  precioActual: number;
+  fechaUltimaActualizacion: string;
+  historialPrecios: PriceHistoryEntry[];
 };
 type SortConfig = {
   key: keyof PriceMasterItem;
@@ -132,28 +136,34 @@ function ProjectBreakdownGenerator() {
         const querySnapshot = await getDocs(q);
 
         const precio = parseFloat(precioString);
+        const fecha = serverTimestamp();
+        const archivoOrigen = file.name;
+
+        const newHistoryEntry = { precio, fecha, archivoOrigen };
         
         if (querySnapshot.empty) {
+          // Si no existe, crea una nueva entrada
           const newDocRef = doc(pricesRef);
           batch.set(newDocRef, {
             descripcion: partida.descripcion,
             unidad: partida.unidad,
-            precioUnitario: precio,
             capitulo: partida.capitulo,
-            fechaImportacion: serverTimestamp(),
-            archivoOrigen: file.name,
-            status: 'new'
+            precioActual: precio,
+            fechaUltimaActualizacion: fecha,
+            historialPrecios: [newHistoryEntry]
           });
           itemsAdded++;
         } else {
+          // Si existe, actualiza el historial
           const docId = querySnapshot.docs[0].id;
           const docRef = doc(pricesRef, docId);
+          const existingData = querySnapshot.docs[0].data();
+          const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
+          
           batch.update(docRef, {
-              precioUnitario: precio,
-              capitulo: partida.capitulo,
-              fechaImportacion: serverTimestamp(),
-              archivoOrigen: file.name,
-              status: 'updated'
+              precioActual: precio,
+              fechaUltimaActualizacion: fecha,
+              historialPrecios: newHistory
           });
           itemsUpdated++;
         }
@@ -398,7 +408,19 @@ function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: st
 }
 
 // --- Componente de Tabla de Precios ---
-function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: { prices: PriceMasterItem[], onViewDescription: (description: string) => void, onViewOrigin: (origin: string) => void, onDeleteItem: (id: string) => void }) {
+function PriceTable({ 
+    prices, 
+    onViewDescription, 
+    onViewOrigin, 
+    onDeleteItem,
+    onViewHistory,
+}: { 
+    prices: PriceMasterItem[], 
+    onViewDescription: (description: string) => void, 
+    onViewOrigin: (origin: string) => void, 
+    onDeleteItem: (id: string) => void,
+    onViewHistory: (item: PriceMasterItem) => void,
+}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
@@ -475,18 +497,14 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                   <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
                       <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
                   </TableHead>
-                  <TableHead onClick={() => requestSort("precioUnitario")} className="cursor-pointer">
-                      <div className="flex items-center">Precio Unitario {getSortIcon("precioUnitario")}</div>
+                  <TableHead onClick={() => requestSort("precioActual")} className="cursor-pointer">
+                      <div className="flex items-center">Precio Unitario {getSortIcon("precioActual")}</div>
                   </TableHead>
-                  <TableHead onClick={() => requestSort("fechaImportacion")} className="cursor-pointer">
-                      <div className="flex items-center">Fecha {getSortIcon("fechaImportacion")}</div>
+                  <TableHead onClick={() => requestSort("fechaUltimaActualizacion")} className="cursor-pointer">
+                      <div className="flex items-center">Fecha Act. {getSortIcon("fechaUltimaActualizacion")}</div>
                   </TableHead>
-                   <TableHead onClick={() => requestSort("status")} className="cursor-pointer">
-                      <div className="flex items-center">Estado {getSortIcon("status")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("archivoOrigen")} className="cursor-pointer">
-                      <div className="flex items-center">Origen {getSortIcon("archivoOrigen")}</div>
-                  </TableHead>
+                  <TableHead>Historial</TableHead>
+                  <TableHead>Origen</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -495,22 +513,27 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                   filteredAndSortedPrices.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                      <TableCell className="max-w-xs cursor-pointer" onClick={() => onViewDescription(item.descripcion)}>
-                        <div className="truncate hover:underline">
+                      <TableCell>
+                        <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
                           {item.descripcion}
                         </div>
                       </TableCell>
                       <TableCell>{item.unidad}</TableCell>
-                      <TableCell>€{item.precioUnitario?.toFixed(2)}</TableCell>
-                      <TableCell>{item.fechaImportacion}</TableCell>
+                      <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
+                      <TableCell>{item.fechaUltimaActualizacion}</TableCell>
                       <TableCell>
-                          {item.status === 'new' && <Badge className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
-                          {item.status === 'updated' && <Badge className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
-                          {!item.status && <Badge variant="secondary">N/A</Badge>}
+                          {(item.historialPrecios?.length || 0) > 1 ? (
+                              <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
+                                  <History className="mr-2 h-4 w-4" />
+                                  Ver ({(item.historialPrecios?.length)})
+                              </Button>
+                          ) : (
+                            <Badge variant="secondary">Nuevo</Badge>
+                          )}
                       </TableCell>
-                      <TableCell className="max-w-[150px] cursor-pointer" onClick={() => onViewOrigin(item.archivoOrigen)}>
-                        <div className="truncate hover:underline">
-                            {item.archivoOrigen}
+                      <TableCell>
+                        <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
+                            {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -524,7 +547,7 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
                                   <AlertDialogHeader>
                                       <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                          "{item.descripcion}" será eliminada permanentemente.
+                                          "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
                                       </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -551,20 +574,87 @@ function PriceTable({ prices, onViewDescription, onViewOrigin, onDeleteItem }: {
   );
 }
 
+function HistoryDialog({
+    item,
+    open,
+    onOpenChange,
+    onSetCurrentPrice
+}: {
+    item: PriceMasterItem | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSetCurrentPrice: (itemId: string, newPrice: number) => void;
+}) {
+    if (!item) return null;
+
+    const sortedHistory = [...(item.historialPrecios || [])].sort((a,b) => {
+        const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
+        const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Historial de Precios</DialogTitle>
+                    <DialogDescription>{item.descripcion}</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Precio</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Origen</TableHead>
+                                <TableHead className="text-right">Acción</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedHistory.map((entry, index) => (
+                                <TableRow key={index} className={entry.precio === item.precioActual ? "bg-primary/10" : ""}>
+                                    <TableCell>€{entry.precio.toFixed(2)}</TableCell>
+                                    <TableCell>{entry.fecha?.toDate ? format(entry.fecha.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</TableCell>
+                                    <TableCell>{entry.archivoOrigen}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            onClick={() => onSetCurrentPrice(item.id, entry.precio)}
+                                            disabled={entry.precio === item.precioActual}
+                                        >
+                                            <Undo className="mr-2 h-4 w-4" /> Usar este precio
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 // --- Componente de la Sección de Base de Precios ---
 function PriceDatabaseSection() {
     const { toast } = useToast();
     const [prices, setPrices] = useState<PriceMasterItem[]>([]);
     const [viewingDescription, setViewingDescription] = useState<string | null>(null);
     const [viewingOrigin, setViewingOrigin] = useState<string | null>(null);
+    const [viewingHistory, setViewingHistory] = useState<PriceMasterItem | null>(null);
+
 
     useEffect(() => {
-        const q = query(collection(db, "preciosMaestros"), orderBy("fechaImportacion", "desc"));
+        const q = query(collection(db, "preciosMaestros"), orderBy("fechaUltimaActualizacion", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
           const priceData = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
-            fechaImportacion: doc.data().fechaImportacion?.toDate ? format(doc.data().fechaImportacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
+            fechaUltimaActualizacion: doc.data().fechaUltimaActualizacion?.toDate ? format(doc.data().fechaUltimaActualizacion.toDate(), "dd/MM/yyyy HH:mm") : 'N/A',
           })) as PriceMasterItem[];
           setPrices(priceData);
         });
@@ -597,45 +687,62 @@ function PriceDatabaseSection() {
       }
     };
     
+    const handleSetCurrentPrice = async (itemId: string, newPrice: number) => {
+        const itemDocRef = doc(db, "preciosMaestros", itemId);
+        try {
+            await updateDoc(itemDocRef, {
+                precioActual: newPrice
+            });
+            toast({ title: "Precio Actualizado", description: `El precio de la partida ha sido restaurado.`});
+            setViewingHistory(null);
+        } catch(error) {
+            console.error("Error setting current price:", error);
+            toast({ variant: "destructive", title: "Error al actualizar", description: `No se pudo cambiar el precio. ${(error as Error).message}`});
+        }
+    };
+
     // Simula la Cloud Function de extracción de precios
     const simulatePriceExtraction = useCallback(async (fileName: string) => {
         console.log(`Simulating extraction for: ${fileName}`);
 
         // Datos de ejemplo
         const extractedData = [
-            { capitulo: 'Demoliciones', descripcion: `Demolición de tabique (de ${fileName})`, unidad: 'm2', precioUnitario: 8.75 },
-            { capitulo: 'Techos', descripcion: 'Falso techo de pladur', unidad: 'm2', precioUnitario: 22.50 },
-            { capitulo: 'Electricidad', descripcion: 'Punto de luz completo', unidad: 'ud', precioUnitario: 65.00 },
+            { capitulo: 'Demoliciones', descripcion: `Demolición de tabique (de ${fileName})`, unidad: 'm2', precio: 8.75 },
+            { capitulo: 'Techos', descripcion: 'Falso techo de pladur', unidad: 'm2', precio: 22.50 },
+            { capitulo: 'Electricidad', descripcion: 'Punto de luz completo', unidad: 'ud', precio: 65.00 },
         ];
 
         const pricesRef = collection(db, "preciosMaestros");
-        const batch = writeBatch(db);
-
-        for (const item of extractedData) {
-            const q = query(pricesRef, where("descripcion", "==", item.descripcion));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                // Añadir nuevo documento
-                const newDocRef = doc(pricesRef);
-                batch.set(newDocRef, {
-                    ...item,
-                    fechaImportacion: serverTimestamp(),
-                    archivoOrigen: fileName,
-                });
-            } else {
-                // Actualizar documento existente
-                const docId = querySnapshot.docs[0].id;
-                const docRef = doc(pricesRef, docId);
-                batch.update(docRef, {
-                    ...item,
-                    fechaImportacion: serverTimestamp(),
-                    archivoOrigen: fileName,
-                });
-            }
-        }
         
         try {
+            const batch = writeBatch(db);
+            for (const item of extractedData) {
+                const q = query(pricesRef, where("descripcion", "==", item.descripcion));
+                const querySnapshot = await getDocs(q);
+                
+                const fecha = serverTimestamp();
+                const newHistoryEntry = { precio: item.precio, fecha, archivoOrigen: fileName };
+
+                if (querySnapshot.empty) {
+                    const newDocRef = doc(pricesRef);
+                    batch.set(newDocRef, {
+                        ...item,
+                        precioActual: item.precio,
+                        fechaUltimaActualizacion: fecha,
+                        historialPrecios: [newHistoryEntry]
+                    });
+                } else {
+                    const docId = querySnapshot.docs[0].id;
+                    const docRef = doc(pricesRef, docId);
+                    const existingData = querySnapshot.docs[0].data();
+                    const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
+                    batch.update(docRef, {
+                       precioActual: item.precio,
+                       fechaUltimaActualizacion: fecha,
+                       historialPrecios: newHistory
+                    });
+                }
+            }
             await batch.commit();
             toast({
                 title: "Proceso completado",
@@ -663,6 +770,12 @@ function PriceDatabaseSection() {
               <DialogFooter><Button variant="outline" onClick={() => setViewingOrigin(null)}>Cerrar</Button></DialogFooter>
           </DialogContent>
         </Dialog>
+        <HistoryDialog
+            item={viewingHistory}
+            open={!!viewingHistory}
+            onOpenChange={() => setViewingHistory(null)}
+            onSetCurrentPrice={handleSetCurrentPrice}
+        />
 
         <Tabs defaultValue="consult" className="w-full">
             <div className="flex justify-between items-center mb-4">
@@ -692,7 +805,13 @@ function PriceDatabaseSection() {
               </AlertDialog>
             </div>
             <TabsContent value="consult">
-                <PriceTable prices={prices} onViewDescription={setViewingDescription} onViewOrigin={setViewingOrigin} onDeleteItem={handleDeleteItem} />
+                <PriceTable 
+                    prices={prices} 
+                    onViewDescription={setViewingDescription} 
+                    onViewOrigin={setViewingOrigin} 
+                    onDeleteItem={handleDeleteItem}
+                    onViewHistory={setViewingHistory}
+                />
             </TabsContent>
             <TabsContent value="import">
                 <FileUploadSection onUploadSuccess={simulatePriceExtraction} />
