@@ -15,6 +15,8 @@ import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc } from "firebase/firestore";
 import { format } from "date-fns";
+import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- Tipos de Datos ---
 type UploadStatus = "pending" | "uploading" | "processing" | "success" | "error";
@@ -37,6 +39,159 @@ type SortConfig = {
   key: keyof PriceMasterItem;
   direction: "ascending" | "descending";
 };
+
+
+// --- Componente para Generador de Desglose ---
+function ProjectBreakdownGenerator() {
+  const [file, setFile] = useState<File | null>(null);
+  const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      setFile(acceptedFiles[0]);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'application/pdf': ['.pdf'] },
+    multiple: false,
+  });
+
+  const handleGenerate = async () => {
+    if (!file) {
+      toast({ variant: "destructive", title: "Error", description: "Por favor, selecciona un archivo PDF." });
+      return;
+    }
+
+    setIsLoading(true);
+    setBreakdown(null);
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const dataUri = reader.result as string;
+        try {
+          const result = await createProjectBreakdown({ pdfDataUri: dataUri });
+          setBreakdown(result);
+          toast({ title: "Desglose generado", description: "El proyecto ha sido desglosado exitosamente." });
+        } catch (error) {
+            console.error("Error generating breakdown:", error);
+            toast({ variant: "destructive", title: "Error de IA", description: `No se pudo generar el desglose. ${(error as Error).message}` });
+        } finally {
+            setIsLoading(false);
+        }
+      };
+      reader.onerror = (error) => {
+        console.error("Error reading file:", error);
+        toast({ variant: "destructive", title: "Error de archivo", description: "No se pudo leer el archivo seleccionado." });
+        setIsLoading(false);
+      }
+    } catch (e) {
+      console.error("Error setting up file reader:", e);
+      toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado.` });
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Generador de Desglose de Proyecto</CardTitle>
+          <CardDescription>Sube una memoria de calidades en PDF para que la IA genere un desglose estructurado del proyecto.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div
+            {...getRootProps()}
+            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <UploadCloud className="w-12 h-12 text-muted-foreground" />
+            <p className="mt-4 text-sm text-center">
+              {isDragActive
+                ? "Suelta el archivo aquí..."
+                : "Arrastra y suelta un PDF aquí, o haz clic para seleccionar"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF</p>
+          </div>
+          {file && (
+            <div className="p-3 border rounded-lg text-sm flex items-center justify-between">
+              <p className="truncate font-medium flex items-center gap-2">
+                <FileText size={16} /> {file.name}
+              </p>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFile(null)}>
+                <X size={16} />
+              </Button>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleGenerate} disabled={!file || isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Generando..." : "Generar Desglose"}
+          </Button>
+        </CardFooter>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Resultado del Desglose</CardTitle>
+          <CardDescription>Aquí aparecerán los capítulos y partidas generados por la IA.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center h-60">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="mt-4 text-muted-foreground">Analizando documento y generando desglose...</p>
+            </div>
+          )}
+          {breakdown && breakdown.capitulos.length > 0 ? (
+            <Accordion type="multiple" className="w-full">
+              {breakdown.capitulos.map((capitulo, index) => (
+                <AccordionItem value={`item-${index}`} key={index}>
+                  <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
+                  <AccordionContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Partida</TableHead>
+                          <TableHead className="text-right">Medición</TableHead>
+                          <TableHead className="text-center">Unidad</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {capitulo.partidas.map((partida, pIndex) => (
+                          <TableRow key={pIndex}>
+                            <TableCell>{partida.descripcion}</TableCell>
+                            <TableCell className="text-right">{partida.medicion}</TableCell>
+                            <TableCell className="text-center">{partida.unidad}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            !isLoading && (
+              <div className="flex flex-col items-center justify-center h-60 text-center text-muted-foreground">
+                <p>El resultado aparecerá aquí después de la generación.</p>
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 // --- Componente de Carga de Archivos ---
 function FileUploader({ onUploadComplete, onUploadSuccess }: { onUploadComplete: (fileName: string) => void, onUploadSuccess: (fileId: string) => void }) {
@@ -340,13 +495,19 @@ export function AiSection() {
     }, []);
 
     return (
-        <Tabs defaultValue="price-database">
-            <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="breakdown-generator" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="breakdown-generator">
+                  <BrainCircuit className="mr-2" /> Desglose de Proyecto
+                </TabsTrigger>
                 <TabsTrigger value="content-generator">Generador de Contenido</TabsTrigger>
                 <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
             </TabsList>
+            <TabsContent value="breakdown-generator" className="mt-6">
+                <ProjectBreakdownGenerator />
+            </TabsContent>
             <TabsContent value="content-generator">
-                <Card>
+                <Card className="mt-6">
                     <CardHeader>
                         <div className="flex items-center gap-4">
                             <BrainCircuit className="h-8 w-8 text-primary" />
@@ -377,5 +538,3 @@ export function AiSection() {
         </Tabs>
     );
 }
-
-    
