@@ -25,6 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Textarea } from "../ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 
 // --- Tipos de Datos ---
@@ -534,17 +535,17 @@ function AiBudgetsSection() {
         const currentBudget = aiBudgets.find(b => b.id === budgetId);
         if (!currentBudget) return;
         
-        const updatedPricesForFirestore = {
+        const updatedUserPrices = {
             ...currentBudget.userPrices,
             [capitulo]: {
-                ...currentBudget.userPrices?.[capitulo],
+                ...(currentBudget.userPrices?.[capitulo] || {}),
                 [partida]: newPrice
             }
         };
 
         try {
             await setDoc(budgetRef, {
-                userPrices: updatedPricesForFirestore
+                userPrices: updatedUserPrices
             }, { merge: true });
         } catch (error) {
             console.error("Error updating user price:", error);
