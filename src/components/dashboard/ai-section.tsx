@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -60,9 +60,8 @@ type AiBudgetItem = {
   userPrices?: Record<string, Record<string, number>>; // { [capituloNombre]: { [partidaDescripcion]: precio } }
 };
 
-
 // --- Componente para Generador de Desglose ---
-function BudgetUploader() {
+function BudgetUploader({ onSaveToPriceBase }: { onSaveToPriceBase: (breakdown: ProjectBreakdown, fileName: string) => Promise<void> }) {
   const [file, setFile] = useState<File | null>(null);
   const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,12 +132,28 @@ function BudgetUploader() {
         breakdown: breakdown,
         userPrices: {},
       });
-      toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos." });
+      toast({ title: "Presupuesto Guardado", description: "El desglose ha sido guardado en la sección de Presupuestos IA." });
       setBreakdown(null); // Reset after saving
       setFile(null);
     } catch (error) {
        console.error("Error saving AI budget:", error);
        toast({ variant: "destructive", title: "Error al guardar", description: `No se pudo guardar el presupuesto. ${(error as Error).message}` });
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  const handleSaveToPriceBaseClick = async () => {
+    if (!breakdown || !file) {
+       toast({ variant: "destructive", title: "Error", description: "No hay desglose para añadir a la base de precios." });
+       return;
+    }
+    setIsSaving(true);
+    try {
+        await onSaveToPriceBase(breakdown, file.name);
+        // Do not clear the form, user might want to save to budgets too
+    } catch (error) {
+        // Error toast is handled in parent
     } finally {
         setIsSaving(false);
     }
@@ -238,11 +253,16 @@ function BudgetUploader() {
           )}
         </CardContent>
         {breakdown && breakdown.capitulos.length > 0 && (
-          <CardFooter>
+          <CardFooter className="flex-col sm:flex-row gap-2">
             <Button onClick={handleSaveToAiBudgets} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
               Guardar Presupuesto
+            </Button>
+             <Button onClick={handleSaveToPriceBaseClick} disabled={isSaving} variant="outline">
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Plus className="mr-2 h-4 w-4" />
+              Añadir a Base de Precios
             </Button>
           </CardFooter>
         )}
@@ -380,124 +400,6 @@ function AiBudgetsSection() {
     );
 }
 
-// --- Componente de Carga de Archivos para Base de Precios ---
-function FileUploadSection({ onUploadSuccess }: { onUploadSuccess: (fileName: string) => void }) {
-  const [uploads, setUploads] = useState<UploadedFile[]>([]);
-  const { toast } = useToast();
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newUploads: UploadedFile[] = acceptedFiles.map(file => ({
-      file,
-      progress: 0,
-      status: "pending",
-      id: `${file.name}-${Date.now()}`,
-    }));
-    
-    setUploads(prev => [...prev, ...newUploads]);
-
-    newUploads.forEach(upload => {
-      const storageRef = ref(storage, `presupuestos-importados/${upload.file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, upload.file);
-
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploads(prev =>
-            prev.map(u => u.id === upload.id ? { ...u, progress, status: "uploading" } : u)
-          );
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          setUploads(prev =>
-            prev.map(u => u.id === upload.id ? { ...u, status: "error", errorMessage: error.message } : u)
-          );
-          toast({ variant: "destructive", title: "Error en la subida", description: `El archivo ${upload.file.name} no pudo subirse.` });
-        },
-        async () => {
-          try {
-            await getDownloadURL(uploadTask.snapshot.ref);
-            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, progress: 100, status: "processing" } : u));
-            onUploadSuccess(upload.file.name);
-            setTimeout(() => {
-              setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: "success" } : u));
-            }, 1000);
-          } catch (error) {
-            console.error("Error finalizing upload:", error);
-            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: "error", errorMessage: (error as Error).message } : u));
-          }
-        }
-      );
-    });
-  }, [onUploadSuccess, toast]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-    },
-  });
-  
-  const activeUploads = uploads.filter(u => u.status === 'uploading' || u.status === 'processing');
-
-  const getStatusContent = (upload: UploadedFile) => {
-    switch (upload.status) {
-      case "uploading":
-        return <Progress value={upload.progress} className="w-full" />;
-      case "processing":
-         return <p className="text-xs text-blue-500 flex items-center gap-1"><Loader2 size={14} className="animate-spin" /> Procesando datos...</p>;
-      case "success":
-        return <p className="text-xs text-green-500 flex items-center gap-1"><CheckCircle size={14} /> Proceso completado.</p>;
-      case "error":
-        return <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={14} /> {upload.errorMessage}</p>;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Importar Presupuestos</CardTitle>
-        <CardDescription>Sube archivos para extraer precios y añadirlos a la base de datos centralizada.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div
-          {...getRootProps()}
-          className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-            isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-          }`}
-        >
-          <input {...getInputProps()} />
-          <UploadCloud className="w-12 h-12 text-muted-foreground" />
-          <p className="mt-4 text-sm text-center">
-            {isDragActive
-              ? "Suelta los archivos aquí..."
-              : "Arrastra y suelta archivos aquí, o haz clic para seleccionar"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, XLSX</p>
-        </div>
-        <div className="mt-4 space-y-3">
-          {activeUploads.map((upload) => (
-            <div key={upload.id} className="p-3 border rounded-lg">
-              <div className="flex items-center justify-between text-sm">
-                <p className="truncate font-medium flex items-center gap-2">
-                  <FileText size={16} /> {upload.file.name}
-                </p>
-                <p className="font-mono text-muted-foreground">{upload.progress.toFixed(0)}%</p>
-              </div>
-              <div className="mt-2">{getStatusContent(upload)}</div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 // --- Componente de la Sección de Base de Precios ---
 function PriceDatabaseSection() {
     const { toast } = useToast();
@@ -559,52 +461,7 @@ function PriceDatabaseSection() {
             toast({ variant: "destructive", title: "Error al actualizar", description: `No se pudo cambiar el precio. ${(error as Error).message}`});
         }
     };
-
-    const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
-      const pricesRef = collection(db, "preciosMaestros");
-      const batch = writeBatch(db);
-
-      for (const capitulo of breakdown.capitulos) {
-        for (const partida of capitulo.partidas) {
-          if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) continue;
-          
-          const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
-          const querySnapshot = await getDocs(q);
-
-          const fecha = new Date();
-          const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
-          const newHistoryEntry = { precio, fecha, archivoOrigen: fileName };
-
-          if (querySnapshot.empty) {
-            const newDocRef = doc(pricesRef);
-            batch.set(newDocRef, {
-                capitulo: capitulo.nombre,
-                descripcion: partida.descripcion,
-                unidad: partida.unidad,
-                precioActual: precio,
-                fechaUltimaActualizacion: fecha,
-                historialPrecios: [newHistoryEntry],
-                status: 'new'
-            });
-          } else {
-            const docId = querySnapshot.docs[0].id;
-            const docRef = doc(pricesRef, docId);
-            const existingData = querySnapshot.docs[0].data();
-            const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
-            batch.update(docRef, {
-               precioActual: precio,
-               fechaUltimaActualizacion: fecha,
-               historialPrecios: newHistory,
-               status: 'updated'
-            });
-          }
-        }
-      }
-      
-      await batch.commit();
-      toast({ title: "Base de Precios Actualizada", description: "Los precios del desglose se han añadido/actualizado."});
-    }, [toast]);
-
+    
     return (
       <>
         <Dialog open={!!viewingDescription} onOpenChange={() => setViewingDescription(null)}>
@@ -627,35 +484,36 @@ function PriceDatabaseSection() {
             onOpenChange={() => setViewingHistory(null)}
             onSetCurrentPrice={handleSetCurrentPrice}
         />
-
-        <Tabs defaultValue="consult" className="w-full">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList className="grid grid-cols-2 w-auto">
-                  <TabsTrigger value="consult"><Search className="mr-2" />Consulta de Precios</TabsTrigger>
-                  <TabsTrigger value="import"><FileUp className="mr-2" />Importar Presupuestos</TabsTrigger>
-              </TabsList>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
-                      </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Esto eliminará permanentemente
-                              toda la base de precios.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <TabsContent value="consult">
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Consulta de Precios</CardTitle>
+                        <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
+                    </div>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Borrar Base de Precios
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Esto eliminará permanentemente
+                                    toda la base de precios.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteAll}>Sí, borrar todo</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </CardHeader>
+            <CardContent>
                 <PriceTable 
                     prices={prices} 
                     onViewDescription={setViewingDescription} 
@@ -663,15 +521,8 @@ function PriceDatabaseSection() {
                     onDeleteItem={handleDeleteItem}
                     onViewHistory={setViewingHistory}
                 />
-            </TabsContent>
-            <TabsContent value="import">
-                <FileUploadSection onUploadSuccess={(fileName) => {
-                  // This is a placeholder for the actual extraction logic, which should happen server-side.
-                  // For now, we'll simulate it.
-                  toast({ title: "Archivo subido", description: `${fileName} está listo para ser procesado.`})
-                }} />
-            </TabsContent>
-        </Tabs>
+            </CardContent>
+        </Card>
       </>
     );
 }
@@ -737,115 +588,105 @@ function PriceTable({
   };
 
   return (
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-              <div>
-                  <CardTitle>Consulta de Precios</CardTitle>
-                  <CardDescription>Busca en la base de datos de precios centralizada.</CardDescription>
-              </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Input
+      <>
+        <Input
             placeholder="Buscar por descripción o capítulo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4 max-w-sm"
-          />
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
-                      <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
-                      <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
-                      <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("precioActual")} className="cursor-pointer">
-                      <div className="flex items-center">Precio Unitario {getSortIcon("precioActual")}</div>
-                  </TableHead>
-                  <TableHead onClick={() => requestSort("fechaUltimaActualizacion")} className="cursor-pointer">
-                      <div className="flex items-center">Fecha Act. {getSortIcon("fechaUltimaActualizacion")}</div>
-                  </TableHead>
-                  <TableHead>Historial</TableHead>
-                  <TableHead>Origen</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedPrices.length > 0 ? (
-                  filteredAndSortedPrices.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold">{item.capitulo}</TableCell>
-                      <TableCell>
+        />
+        <div className="rounded-md border">
+        <Table>
+            <TableHeader>
+            <TableRow>
+                <TableHead onClick={() => requestSort("capitulo")} className="cursor-pointer">
+                    <div className="flex items-center">Capítulo {getSortIcon("capitulo")}</div>
+                </TableHead>
+                <TableHead onClick={() => requestSort("descripcion")} className="cursor-pointer">
+                    <div className="flex items-center">Descripción {getSortIcon("descripcion")}</div>
+                </TableHead>
+                <TableHead onClick={() => requestSort("unidad")} className="cursor-pointer">
+                    <div className="flex items-center">Unidad {getSortIcon("unidad")}</div>
+                </TableHead>
+                <TableHead onClick={() => requestSort("precioActual")} className="cursor-pointer">
+                    <div className="flex items-center">Precio Unitario {getSortIcon("precioActual")}</div>
+                </TableHead>
+                <TableHead onClick={() => requestSort("fechaUltimaActualizacion")} className="cursor-pointer">
+                    <div className="flex items-center">Fecha Act. {getSortIcon("fechaUltimaActualizacion")}</div>
+                </TableHead>
+                <TableHead>Historial</TableHead>
+                <TableHead>Origen</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+            </TableHeader>
+            <TableBody>
+            {filteredAndSortedPrices.length > 0 ? (
+                filteredAndSortedPrices.map((item) => (
+                <TableRow key={item.id}>
+                    <TableCell className="font-semibold">{item.capitulo}</TableCell>
+                    <TableCell>
                         <div className="max-w-xs truncate cursor-pointer hover:underline" onClick={() => onViewDescription(item.descripcion)}>
-                          {item.descripcion}
+                            {item.descripcion}
                         </div>
-                      </TableCell>
-                      <TableCell>{item.unidad}</TableCell>
-                      <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
-                      <TableCell>{item.fechaUltimaActualizacion}</TableCell>
-                      <TableCell>
-                          {(item.historialPrecios?.length || 0) > 1 ? (
-                              <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
-                                  <History className="mr-2 h-4 w-4" />
-                                  Ver ({(item.historialPrecios?.length)})
-                              </Button>
-                          ) : (
-                            <Badge variant="secondary">Nuevo</Badge>
-                          )}
-                      </TableCell>
-                      <TableCell>
+                    </TableCell>
+                    <TableCell>{item.unidad}</TableCell>
+                    <TableCell>€{item.precioActual?.toFixed(2)}</TableCell>
+                    <TableCell>{item.fechaUltimaActualizacion}</TableCell>
+                    <TableCell>
+                        {(item.historialPrecios?.length || 0) > 1 ? (
+                            <Button variant="outline" size="sm" onClick={() => onViewHistory(item)}>
+                                <History className="mr-2 h-4 w-4" />
+                                Ver ({(item.historialPrecios?.length)})
+                            </Button>
+                        ) : (
+                        <Badge variant="secondary">Nuevo</Badge>
+                        )}
+                    </TableCell>
+                    <TableCell>
                         <div className="max-w-[150px] truncate cursor-pointer hover:underline" onClick={() => onViewOrigin(item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen)}>
                             {item.historialPrecios?.[item.historialPrecios.length-1]?.archivoOrigen}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                          {item.status === 'new' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
-                          {item.status === 'updated' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
-                          {!item.status && <Badge variant="secondary">N/A</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                      <Trash2 className="h-4 w-4" />
-                                  </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                          "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center">
-                      No se encontraron precios. Sube un presupuesto para empezar.
                     </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                    <TableCell>
+                        {item.status === 'new' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Nuevo</Badge>}
+                        {item.status === 'updated' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Actualizado</Badge>}
+                        {!item.status && <Badge variant="secondary">N/A</Badge>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Seguro que quieres eliminar esta partida?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        "{item.descripcion}" y todo su historial de precios serán eliminados permanentemente.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </TableCell>
+                </TableRow>
+                ))
+            ) : (
+                <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center">
+                    No se encontraron precios. Sube un presupuesto para empezar.
+                </TableCell>
+                </TableRow>
+            )}
+            </TableBody>
+        </Table>
+        </div>
+      </>
   );
 }
 
@@ -917,6 +758,58 @@ function HistoryDialog({
 
 // --- Sección Principal de IA ---
 export function AiSection() {
+    const { toast } = useToast();
+
+    const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
+      const pricesRef = collection(db, "preciosMaestros");
+      const batch = writeBatch(db);
+
+      for (const capitulo of breakdown.capitulos) {
+        for (const partida of capitulo.partidas) {
+          if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) continue;
+          
+          const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
+          const querySnapshot = await getDocs(q);
+
+          const fecha = new Date();
+          const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
+          const newHistoryEntry = { precio, fecha, archivoOrigen: fileName };
+
+          if (querySnapshot.empty) {
+            const newDocRef = doc(pricesRef);
+            batch.set(newDocRef, {
+                capitulo: capitulo.nombre,
+                descripcion: partida.descripcion,
+                unidad: partida.unidad,
+                precioActual: precio,
+                fechaUltimaActualizacion: fecha,
+                historialPrecios: [newHistoryEntry],
+                status: 'new'
+            });
+          } else {
+            const docId = querySnapshot.docs[0].id;
+            const docRef = doc(pricesRef, docId);
+            const existingData = querySnapshot.docs[0].data();
+            const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
+            batch.update(docRef, {
+               precioActual: precio,
+               fechaUltimaActualizacion: fecha,
+               historialPrecios: newHistory,
+               status: 'updated'
+            });
+          }
+        }
+      }
+      
+      try {
+        await batch.commit();
+        toast({ title: "Base de Precios Actualizada", description: "Los precios del desglose se han añadido/actualizado."});
+      } catch (error) {
+         toast({ variant: "destructive", title: "Error al actualizar precios", description: `No se pudo guardar en la base de precios. ${(error as Error).message}` });
+         throw error; // Propagate error for the caller to handle state
+      }
+    }, [toast]);
+    
     return (
         <Tabs defaultValue="upload-budget" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -927,7 +820,7 @@ export function AiSection() {
                 <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
             </TabsList>
             <TabsContent value="upload-budget" className="mt-6">
-                <BudgetUploader />
+                <BudgetUploader onSaveToPriceBase={handleSaveToPriceBase} />
             </TabsContent>
             <TabsContent value="ai-budgets" className="mt-6">
                 <AiBudgetsSection />
