@@ -17,7 +17,7 @@ import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBa
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
@@ -860,3 +860,6 @@ export function AiSection() {
         </Tabs>
     );
 }
+
+
+    
