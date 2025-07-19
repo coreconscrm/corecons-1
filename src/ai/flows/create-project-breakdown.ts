@@ -27,8 +27,8 @@ const ProjectBreakdownSchema = z.object({
     nombre: z.string().describe("Nombre del capítulo, por ejemplo: 'Albañilería', 'Fontanería', 'Electricidad'."),
     partidas: z.array(z.object({
       descripcion: z.string().describe("Descripción detallada de la partida de obra."),
-      medicion: z.string().describe("La cantidad o medición de la partida, por ejemplo: '250', 'Según proyecto'."),
-      unidad: z.string().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
+      medicion: z.string().optional().describe("La cantidad o medición de la partida, por ejemplo: '250', 'Según proyecto'."),
+      unidad: z.string().optional().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
       precioUnitario: z.string().optional().describe("El precio unitario de la partida. Ej: '12,50', 'N/A'."),
     })).describe("Lista de partidas de obra para este capítulo."),
   })).describe("Lista de capítulos que componen el proyecto."),
