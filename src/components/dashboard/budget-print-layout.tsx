@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useMemo } from "react";
 import Image from "next/image";
 import type { Budget } from './budgets-card';
 import type { Company } from './company-card';
