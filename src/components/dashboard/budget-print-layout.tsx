@@ -212,7 +212,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
           <thead className="bg-gray-100 text-gray-600">
             <tr>
               <th className={`p-3 font-semibold uppercase text-sm ${hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Medición</th>
+              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
               <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">CAP</th>
               {!hideUnitPrice && <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>}
               <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
@@ -222,7 +222,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
             {(budget.lineItems || []).map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
-                <td className="p-3 print:py-1 text-right print:text-xs">{item.quantity}</td>
+                <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{item.quantity}</td>
                 <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
                 {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>}
                 <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -256,5 +256,3 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
     </div>
   );
 }
-
-    
