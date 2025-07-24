@@ -213,7 +213,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
             <tr>
               <th className={`p-3 font-semibold uppercase text-sm ${hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
               <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Medición</th>
-              <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
+              <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">CAP</th>
               {!hideUnitPrice && <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>}
               <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
             </tr>
@@ -256,3 +256,5 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
     </div>
   );
 }
+
+    
