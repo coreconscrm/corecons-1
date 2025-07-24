@@ -224,8 +224,8 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
                 <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
                 <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{item.quantity}</td>
                 <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
-                {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>}
-                <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">{item.unitPrice?.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €</td>}
+                <td className="p-3 print:py-1 text-right font-mono print:text-xs">{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €</td>
               </tr>
             ))}
           </tbody>
@@ -243,7 +243,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
             <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
                 <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                 <span className="text-xl font-bold font-mono text-gray-900">
-                    €{budget.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {budget.total.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
                 </span>
             </div>
             <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
