@@ -182,7 +182,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
 }
 
 
-export function BudgetPrintLayout({ budget, client, company }: { budget: Budget | null, client: any, company: Company | null }) {
+export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { budget: Budget | null, client: any, company: Company | null, hideUnitPrice?: boolean }) {
   if (!budget || !client) {
     return null;
   }
@@ -211,10 +211,10 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
         <table className="w-full text-left table-fixed">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
-              <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
+              <th className={`p-3 font-semibold uppercase text-sm ${hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
               <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Medición</th>
               <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>
+              {!hideUnitPrice && <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>}
               <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
             </tr>
           </thead>
@@ -224,7 +224,7 @@ export function BudgetPrintLayout({ budget, client, company }: { budget: Budget 
                 <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
                 <td className="p-3 print:py-1 text-right print:text-xs">{item.quantity}</td>
                 <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
-                <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>}
                 <td className="p-3 print:py-1 text-right font-mono print:text-xs">€{((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}

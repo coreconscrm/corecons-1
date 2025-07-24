@@ -467,7 +467,7 @@ function BudgetAccordionItem({
     onDeleteBudget: (id: string) => void;
     setViewingBudget: (budget: Budget | undefined) => void;
     setMovingBudget: (budget: Budget | undefined) => void;
-    setPrintingBudget: (budget: Budget | null) => void;
+    setPrintingBudget: (budget: Budget | null, hideUnitPrice?: boolean) => void;
     handleEditBudget: (budget: Budget) => void;
 }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -519,7 +519,7 @@ function BudgetAccordionItem({
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget)}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget, budget.category === 'obra_nueva')}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                             </DropdownMenuContent>
@@ -587,7 +587,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
   const [movingBudget, setMovingBudget] = useState<Budget | undefined>(undefined);
-  const [printingBudget, setPrintingBudget] = useState<Budget | null>(null);
+  const [printingBudget, setPrintingBudget] = useState<{budget: Budget, hideUnitPrice: boolean} | null>(null);
 
   useEffect(() => {
     if (printingBudget) {
@@ -624,14 +624,23 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
     setAddBudgetOpen(false);
   }
 
+  const handleSetPrintingBudget = (budget: Budget | null, hideUnitPrice: boolean = false) => {
+    if (budget) {
+        setPrintingBudget({ budget, hideUnitPrice });
+    } else {
+        setPrintingBudget(null);
+    }
+  };
+
 
   return (
     <Card>
        <div className="printable-area">
         <BudgetPrintLayout 
-          budget={printingBudget}
-          client={printingBudget ? clients.find(c => c.id === printingBudget.clientId) : null}
-          company={printingBudget ? companies.find(c => c.id === printingBudget.companyId) : null}
+          budget={printingBudget?.budget || null}
+          client={printingBudget ? clients.find(c => c.id === printingBudget.budget.clientId) : null}
+          company={printingBudget ? companies.find(c => c.id === printingBudget.budget.companyId) : null}
+          hideUnitPrice={printingBudget?.hideUnitPrice}
         />
       </div>
 
@@ -712,7 +721,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                             onDeleteBudget={onDeleteBudget}
                             setViewingBudget={setViewingBudget}
                             setMovingBudget={setMovingBudget}
-                            setPrintingBudget={setPrintingBudget}
+                            setPrintingBudget={handleSetPrintingBudget}
                             handleEditBudget={handleEditBudget}
                         />
                     ))}
