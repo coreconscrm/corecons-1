@@ -104,12 +104,12 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
             }
             onOpenChange(isOpen);
         }}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{company ? "Editar Empresa" : "Añadir Nueva Empresa"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="WinnBuilders" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
@@ -147,7 +147,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                         <FormField control={form.control} name="paymentMethods" render={({ field }) => (
                             <FormItem><FormLabel>Formas de Pago</FormLabel><FormControl><Textarea placeholder="Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <DialogFooter>
+                        <DialogFooter className="mt-auto pt-4 border-t sticky bottom-0 bg-background">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isUploading}>
                                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -293,3 +293,5 @@ export function CompanySection({
         </Tabs>
     )
 }
+
+    
