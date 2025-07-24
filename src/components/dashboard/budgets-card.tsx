@@ -31,7 +31,7 @@ const lineItemSchema = z.object({
   description: z.string().optional(),
   quantity: z.coerce.number().optional(),
   unit: z.enum(["m", "m2", "m3", "pa", "ud", "cap"]).optional(),
-  unitPrice: z.coerce.number().optional(),
+  unitPrice: z.coerce.number().optional(), // This will now hold the total
 });
 
 const budgetSchema = z.object({
@@ -249,7 +249,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   const grandTotal = useMemo(() => {
     if (!watchedLineItems) return 0;
     return watchedLineItems.reduce((total, item) => {
-      return total + (item.quantity || 0) * (item.unitPrice || 0);
+      return total + (item.unitPrice || 0); // Summing up unitPrice directly as it's the total now
     }, 0);
   }, [watchedLineItems]);
 
@@ -291,7 +291,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   }, [budget, open, form, activeCategory]);
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
-    const total = (values.lineItems || []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+    const total = (values.lineItems || []).reduce((sum, item) => sum + (item.unitPrice || 0), 0);
     onSubmit({ ...(budget || {}), ...values, total, id: budget?.id || `bud-${Date.now()}` });
     onOpenChange(false);
   };
@@ -378,16 +378,15 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     <TableHeader>
                         <TableRow>
                         <TableHead className="min-w-[250px]">Descripción</TableHead>
-                        <TableHead className="min-w-[100px]">Medición</TableHead>
+                        <TableHead className="min-w-[100px]">Nº</TableHead>
                         <TableHead className="min-w-[120px]">Unidad</TableHead>
-                        <TableHead className="min-w-[120px]">Precio/Ud.</TableHead>
                         <TableHead className="min-w-[120px]">Total</TableHead>
                         <TableHead></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {fields.map((field, index) => {
-                        const itemTotal = (watchedLineItems?.[index]?.quantity || 0) * (watchedLineItems?.[index]?.unitPrice || 0);
+                         const itemTotal = watchedLineItems?.[index]?.unitPrice || 0;
                         return (
                             <TableRow key={field.id}>
                             <TableCell>
@@ -412,10 +411,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                                 )} />
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />
-                            </TableCell>
-                            <TableCell className="font-mono text-right">
-                                €{itemTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} placeholder="0.00" value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell>
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
