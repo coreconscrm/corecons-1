@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createFormsReport, type FormsReport } from '@/ai/flows/create-forms-report';
@@ -24,6 +24,13 @@ function ReportDisplay({ report }: { report: FormsReport }) {
                 return 'outline';
         }
     };
+
+    const totalContacts = useMemo(() => {
+        if (!report) return 0;
+        const obraNuevaCount = report.obraNueva.reduce((sum, city) => sum + city.contactos.length, 0);
+        const reformasCount = report.reformas.reduce((sum, city) => sum + city.contactos.length, 0);
+        return obraNuevaCount + reformasCount;
+    }, [report]);
 
     const renderCategory = (title: string, data: FormsReport['obraNueva'] | FormsReport['reformas']) => (
         <div className="space-y-4">
@@ -64,6 +71,12 @@ function ReportDisplay({ report }: { report: FormsReport }) {
 
     return (
         <div className="space-y-8 mt-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold">Resumen del Reporte</h2>
+                <Badge variant="outline" className="text-lg py-1 px-3">
+                    Total de Contactos Analizados: {totalContacts}
+                </Badge>
+            </div>
             {renderCategory('Obra Nueva', report.obraNueva)}
             {renderCategory('Reformas', report.reformas)}
         </div>
