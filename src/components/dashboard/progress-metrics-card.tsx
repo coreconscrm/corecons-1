@@ -9,6 +9,7 @@ import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { SeguimientoListCard } from "./seguimiento-card";
 import { AiSection } from "./ai-section";
+import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
 
 export function DashboardTabs({
@@ -67,6 +68,7 @@ export function DashboardTabs({
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas || visibleTabs.prices) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
         {visibleTabs.ia && <TabsTrigger value="ia">IA</TabsTrigger>}
+        {visibleTabs.oficina && <TabsTrigger value="oficina">Oficina</TabsTrigger>}
         {(visibleTabs.companies || visibleTabs.team) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
@@ -165,6 +167,10 @@ export function DashboardTabs({
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
         <AiSection companies={companies} />
+      </TabsContent>}
+      
+      {visibleTabs.oficina && <TabsContent value="oficina" className="mt-6">
+        <OfficeSection />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">

@@ -38,6 +38,7 @@ const defaultVisibleTabs = {
     inmobiliarias: true,
     seguimiento: true,
     ia: true,
+    oficina: true,
 };
 
 export default function DashboardPage() {
@@ -544,7 +545,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
-
-    
