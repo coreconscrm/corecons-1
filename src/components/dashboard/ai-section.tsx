@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc, limit, startAt, endAt } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc, limit, startAt, endAt, getDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { createProjectBreakdown, type ProjectBreakdown, type ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
+import { createFormsReport, type FormsReport } from '@/ai/flows/create-forms-report';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogHeader, DialogFooter, DialogClose, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
@@ -1215,14 +1216,308 @@ function HistoryDialog({
     )
 }
 
+function ReportDisplay({ report, onUpdateReport }: { report: FormsReport, onUpdateReport: (report: FormsReport) => void }) {
+    const [editingContact, setEditingContact] = useState<any | null>(null);
+
+    const getPriorityVariant = (priority: 'Alta' | 'Media' | 'Baja') => {
+        switch (priority) {
+            case 'Alta': return 'destructive';
+            case 'Media': return 'default';
+            case 'Baja': return 'secondary';
+            default: return 'outline';
+        }
+    };
+    
+    const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        if (!editingContact) return;
+        setEditingContact({ ...editingContact, notas: e.target.value });
+    };
+
+    const handleSaveNotes = () => {
+        if (!editingContact || !report) return;
+    
+        const updatedReport = JSON.parse(JSON.stringify(report)); // Deep copy
+    
+        const findAndReplaceContact = (category: any[] | undefined) => {
+            if (!category) return false;
+            for (const city of category) {
+                const contactIndex = city.contactos.findIndex((c: any) => c.nombre === editingContact.nombre && c.email === editingContact.email);
+                if (contactIndex > -1) {
+                    city.contactos[contactIndex] = editingContact;
+                    return true;
+                }
+            }
+            return false;
+        };
+    
+        if (!findAndReplaceContact(updatedReport.obraNueva)) {
+            findAndReplaceContact(updatedReport.reformas);
+        }
+    
+        onUpdateReport(updatedReport);
+        setEditingContact(null);
+    };
+
+    const totalContacts = useMemo(() => {
+        if (!report) return 0;
+        const obraNuevaCount = (report.obraNueva || []).reduce((sum, city) => sum + city.contactos.length, 0);
+        const reformasCount = (report.reformas || []).reduce((sum, city) => sum + city.contactos.length, 0);
+        return obraNuevaCount + reformasCount;
+    }, [report]);
+
+    const renderCategory = (title: string, data: any[] | undefined) => (
+        <div className="space-y-4">
+            <h3 className="text-2xl font-bold flex items-center gap-2">
+                {title === 'Obra Nueva' ? <Building/> : <Users/>} {title}
+            </h3>
+            {data && data.length > 0 ? (
+                <Accordion type="multiple" className="w-full" defaultValue={data.map(city => city.ciudad)}>
+                    {data.map((cityGroup, index) => (
+                        <AccordionItem value={cityGroup.ciudad} key={`${title}-${cityGroup.ciudad}-${index}`}>
+                            <AccordionTrigger className="text-xl font-semibold">{cityGroup.ciudad}</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {cityGroup.contactos.map((contacto: any, index: number) => (
+                                    <Card key={index} className="flex flex-col cursor-pointer hover:border-primary" onClick={() => setEditingContact(contacto)}>
+                                        <CardHeader className="flex flex-row justify-between items-start pb-2">
+                                           <CardTitle className="text-lg">{contacto.nombre}</CardTitle>
+                                           <Badge variant={getPriorityVariant(contacto.prioridad)}>{contacto.prioridad}</Badge>
+                                        </CardHeader>
+                                        <CardContent className="text-sm text-muted-foreground space-y-1">
+                                           <p><strong>Tel:</strong> {contacto.telefono}</p>
+                                           <p><strong>Email:</strong> {contacto.email}</p>
+                                           <p className="pt-1 text-xs truncate"><strong>Info:</strong> {contacto.origen ? JSON.parse(contacto.origen)['Información adicional'] : 'N/A'}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            ) : (
+                <p className="text-muted-foreground">No se encontraron contactos para esta categoría.</p>
+            )}
+        </div>
+    );
+    
+    return (
+        <div className="space-y-8 mt-6">
+            <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Detalles del Contacto: {editingContact?.nombre}</DialogTitle>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1">
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Datos Originales del Formulario</h4>
+                            <pre className="text-xs bg-muted p-3 rounded-md whitespace-pre-wrap">
+                                {JSON.stringify(editingContact?.origen ? JSON.parse(editingContact.origen) : {}, null, 2)}
+                            </pre>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Notas</h4>
+                            <Textarea 
+                                placeholder="Añade tus notas aquí..."
+                                value={editingContact?.notas || ""}
+                                onChange={handleNotesChange}
+                                rows={4}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="secondary" onClick={() => setEditingContact(null)}>Cancelar</Button>
+                        <Button onClick={handleSaveNotes}>Guardar Notas</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold">Resumen del Reporte</h2>
+                <Badge variant="outline" className="text-lg py-1 px-3">
+                    Total de Contactos Analizados: {totalContacts}
+                </Badge>
+            </div>
+            {renderCategory('Obra Nueva', report?.obraNueva)}
+            {renderCategory('Reformas', report?.reformas)}
+        </div>
+    )
+}
+
+function AiReportGenerator({ forms, onReportGenerated }: { forms: any[], onReportGenerated: (report: FormsReport) => void }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+
+    const handleGenerateReport = async () => {
+        if (forms.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No hay datos',
+                description: 'No hay formularios externos para analizar. Carga un CSV o conecta Google Sheets.',
+            });
+            return;
+        }
+        setIsLoading(true);
+        
+        try {
+            const formsJson = JSON.stringify(forms);
+            const result = await createFormsReport({ formsJson });
+            const reportDocRef = doc(db, 'ia_reports', 'latest');
+            await setDoc(reportDocRef, JSON.parse(JSON.stringify(result)));
+            onReportGenerated(result);
+            toast({
+                title: 'Reporte Generado y Guardado',
+                description: 'El análisis de los formularios se ha completado.',
+            });
+        } catch (error) {
+            console.error("Error generating AI report:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error de IA',
+                description: `No se pudo generar el reporte. ${(error as Error).message}`,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Generador de Reporte con IA</CardTitle>
+                <CardDescription>
+                    Analiza los contactos de "Formularios Externos" para clasificarlos, agruparlos y priorizarlos. El reporte se guarda y se muestra en la pestaña "Reporte IA".
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button onClick={handleGenerateReport} disabled={isLoading}>
+                    {isLoading ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <BrainCircuit className="mr-2 h-4 w-4" /> )}
+                    {isLoading ? 'Analizando...' : 'Generar Reporte con IA'}
+                </Button>
+            </CardContent>
+        </Card>
+    )
+}
+
+
+function AiReportViewer() {
+    const [report, setReport] = useState<FormsReport | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+    const reportDocRef = useMemo(() => doc(db, 'ia_reports', 'latest'), []);
+
+     useEffect(() => {
+        const unsubscribe = onSnapshot(reportDocRef, (doc) => {
+            if (doc.exists()) {
+                setReport(doc.data() as FormsReport);
+            } else {
+                setReport(null);
+            }
+            setIsLoading(false);
+        }, (error) => {
+             console.error("Error fetching report from snapshot: ", error);
+             toast({ variant: 'destructive', title: 'Error de Sincronización', description: 'No se pudo actualizar el reporte en tiempo real.'});
+             setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [reportDocRef, toast]);
+    
+    const handleDeleteReport = async () => {
+        setIsLoading(true);
+        try {
+            await deleteDoc(reportDocRef);
+            setReport(null);
+            toast({ title: 'Reporte Borrado', description: 'El reporte guardado ha sido eliminado.' });
+        } catch(error) {
+            console.error("Error deleting report:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo borrar el reporte.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleUpdateReport = async (updatedReport: FormsReport) => {
+        try {
+            await setDoc(reportDocRef, updatedReport, { merge: true });
+            toast({ title: 'Notas guardadas', description: 'Tus notas se han actualizado en el reporte.' });
+        } catch (error) {
+            console.error("Error updating report:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron guardar las notas.' });
+        }
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Visor de Reporte IA</CardTitle>
+                        <CardDescription>
+                            Aquí puedes ver el último reporte generado. Se actualiza en tiempo real.
+                        </CardDescription>
+                    </div>
+                     {report && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                               <Button variant="destructive" disabled={isLoading}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Borrar Reporte
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción borrará el reporte guardado. Tendrás que generarlo de nuevo.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteReport}>Sí, borrar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading && (
+                    <div className="flex flex-col items-center justify-center text-center py-12">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className="mt-4 text-muted-foreground">Cargando último reporte...</p>
+                    </div>
+                )}
+                
+                {report && !isLoading ? (
+                   <ReportDisplay report={report} onUpdateReport={handleUpdateReport} />
+                ) : (
+                   !isLoading && (
+                        <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg mt-6">
+                            <AlertCircle className="h-12 w-12 text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-semibold">No hay ningún reporte generado</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Ve a la pestaña "Generador de Reportes" para crear uno.
+                            </p>
+                        </div>
+                   )
+                )}
+
+            </CardContent>
+        </Card>
+    );
+}
+
 
 // --- Sección Principal de IA ---
 export function AiSection({
-    companies
+    companies,
+    forms
 }: {
-    companies: Company[]
+    companies: Company[],
+    forms: any[]
 }) {
     const { toast } = useToast();
+    const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
 
     const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
       const pricesRef = collection(db, "preciosMaestros");
@@ -1303,73 +1598,75 @@ export function AiSection({
     }, [toast]);
     
     return (
-        <Tabs defaultValue="upload-for-prices" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="upload-for-prices">
-                  <Database className="mr-2" /> Subir para Precios
-                </TabsTrigger>
-                <TabsTrigger value="upload-for-budgets">
-                  <Server className="mr-2" /> Subir para Presupuestos IA
-                </TabsTrigger>
-                <TabsTrigger value="view-and-edit">
-                  <BrainCircuit className="mr-2" /> Consulta y Edición
-                </TabsTrigger>
+        <Tabs defaultValue="budgets" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="budgets"><BrainCircuit className="mr-2" />Presupuestos y Precios</TabsTrigger>
+                <TabsTrigger value="reports"><BrainCircuit className="mr-2" />Reportes de Formularios</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="upload-for-prices" className="mt-6">
-                 <BudgetUploader 
-                    title="Subir para Base de Precios"
-                    description="Sube un PDF para añadir o actualizar partidas en tu base de datos de precios centralizada."
-                    onAnalysisComplete={handleSaveToPriceBase}
-                    saveButtonLabel="Añadir a Base de Precios"
-                    saveButtonIcon={<Database className="mr-2 h-4 w-4" />}
-                />
-            </TabsContent>
-
-            <TabsContent value="upload-for-budgets" className="mt-6">
-                <BudgetUploader 
-                    title="Subir para Presupuestos IA"
-                    description="Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'."
-                    onAnalysisComplete={handleSaveToAiBudgets}
-                    saveButtonLabel="Guardar Presupuesto"
-                    saveButtonIcon={<Save className="mr-2 h-4 w-4" />}
-                />
-            </TabsContent>
-
-            <TabsContent value="view-and-edit" className="mt-6">
-                <Tabs defaultValue="ai-budgets" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
-                        <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
+            <TabsContent value="budgets" className="mt-6">
+                <Tabs defaultValue="upload-for-prices" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="upload-for-prices">
+                        <Database className="mr-2" /> Subir para Precios
+                        </TabsTrigger>
+                        <TabsTrigger value="upload-for-budgets">
+                        <Server className="mr-2" /> Subir para Presupuestos IA
+                        </TabsTrigger>
+                        <TabsTrigger value="view-and-edit">
+                        <BrainCircuit className="mr-2" /> Consulta y Edición
+                        </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="ai-budgets" className="mt-6">
-                       <AiBudgetsSection companies={companies} />
+
+                    <TabsContent value="upload-for-prices" className="mt-6">
+                        <BudgetUploader 
+                            title="Subir para Base de Precios"
+                            description="Sube un PDF para añadir o actualizar partidas en tu base de datos de precios centralizada."
+                            onAnalysisComplete={handleSaveToPriceBase}
+                            saveButtonLabel="Añadir a Base de Precios"
+                            saveButtonIcon={<Database className="mr-2 h-4 w-4" />}
+                        />
                     </TabsContent>
-                    <TabsContent value="price-database" className="mt-6">
-                        <PriceDatabaseSection />
+
+                    <TabsContent value="upload-for-budgets" className="mt-6">
+                        <BudgetUploader 
+                            title="Subir para Presupuestos IA"
+                            description="Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'."
+                            onAnalysisComplete={handleSaveToAiBudgets}
+                            saveButtonLabel="Guardar Presupuesto"
+                            saveButtonIcon={<Save className="mr-2 h-4 w-4" />}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="view-and-edit" className="mt-6">
+                        <Tabs defaultValue="ai-budgets" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
+                                <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="ai-budgets" className="mt-6">
+                            <AiBudgetsSection companies={companies} />
+                            </TabsContent>
+                            <TabsContent value="price-database" className="mt-6">
+                                <PriceDatabaseSection />
+                            </TabsContent>
+                        </Tabs>
+                    </TabsContent>
+                </Tabs>
+            </TabsContent>
+            <TabsContent value="reports" className="mt-6">
+                <Tabs defaultValue="generator" className="w-full">
+                     <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="generator">Generador de Reportes</TabsTrigger>
+                        <TabsTrigger value="viewer">Visor de Reporte IA</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="generator" className="mt-6">
+                        <AiReportGenerator forms={forms} onReportGenerated={setLatestReport} />
+                    </TabsContent>
+                    <TabsContent value="viewer" className="mt-6">
+                        <AiReportViewer />
                     </TabsContent>
                 </Tabs>
             </TabsContent>
         </Tabs>
     );
 }
-
-
-    
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-

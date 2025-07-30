@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -31,7 +31,7 @@ const reformistaSchema = z.object({
 
 export type Reformista = z.infer<typeof reformistaSchema> & { id: string };
 
-function ReformistaForm({ reformista, onSubmit, open, onOpenChange, categories }: { reformista?: Reformista, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, categories: string[] }) {
+function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformista?: Reformista, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof reformistaSchema>>({
         resolver: zodResolver(reformistaSchema),
         defaultValues: { name: "", role: "Reformista", localidad: "", phone: "", email: "", instagram: "", web: "", category: "General" },
@@ -110,7 +110,6 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const [activeReformista, setActiveReformista] = useState<Reformista | undefined>(undefined);
     const [newCategory, setNewCategory] = useState("");
     
-    // This state will hold the reformistas, we will modify it on drag and drop
     const [localReformistas, setLocalReformistas] = useState(reformistas);
 
     useEffect(() => {
@@ -119,7 +118,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
 
 
     const groupedReformistas = useMemo(() => {
-        return localReformistas.reduce((acc, reformista) => {
+        const groups = localReformistas.reduce((acc, reformista) => {
             const category = reformista.category || "General";
             if (!acc[category]) {
                 acc[category] = [];
@@ -127,16 +126,25 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
             acc[category].push(reformista);
             return acc;
         }, {} as Record<string, Reformista[]>);
+        
+        // Ensure all categories exist, even if empty
+        categories.forEach(cat => {
+            if (!groups[cat]) {
+                groups[cat] = [];
+            }
+        });
+        return groups;
+
     }, [localReformistas]);
 
-    const [categories, setCategories] = useState(Object.keys(groupedReformistas));
+    const [categories, setCategories] = useState(() => Array.from(new Set(reformistas.map(r => r.category || 'General'))));
 
     useEffect(() => {
-        const newCategories = Array.from(new Set([...Object.keys(groupedReformistas), ...categories])).sort();
-        if (JSON.stringify(newCategories) !== JSON.stringify(categories.sort())) {
-            setCategories(newCategories);
+        const newCats = Array.from(new Set(reformistas.map(r => r.category || 'General')));
+        if(JSON.stringify(newCats.sort()) !== JSON.stringify(categories.sort())) {
+            setCategories(newCats);
         }
-    }, [groupedReformistas, categories]);
+    }, [reformistas, categories]);
 
 
     const handleEdit = (reformista: Reformista) => {
@@ -154,6 +162,10 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
             onUpdateReformista(values);
         } else {
             onAddReformista(values);
+            // If new category, add it to the list
+            if (values.category && !categories.includes(values.category)) {
+                setCategories(prev => [...prev, values.category]);
+            }
         }
     };
     
@@ -161,36 +173,18 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         const { source, destination, draggableId } = result;
         if (!destination) return;
 
-        // Find the reformista that was moved
         const reformistaToMove = localReformistas.find(r => r.id === draggableId);
         if (!reformistaToMove) return;
 
-        // If moved to a different category (droppableId)
+        // If moved to a different category
         if (source.droppableId !== destination.droppableId) {
             onUpdateReformista({ ...reformistaToMove, category: destination.droppableId });
-        } else {
-            // Reordering within the same list
-            const items = Array.from(groupedReformistas[source.droppableId]);
-            const [reorderedItem] = items.splice(source.index, 1);
-            items.splice(destination.index, 0, reorderedItem);
-
-            const updatedLocalReformistas = localReformistas.map(r => {
-                const itemIndex = items.findIndex(item => item.id === r.id);
-                if(r.category === source.droppableId && itemIndex !== -1) {
-                    // This is not a perfect reordering persistence logic,
-                    // but it's a simple way to reflect the change visually
-                    // A proper implementation would involve saving an 'order' field.
-                }
-                return r;
-            });
-            // To reflect visual change immediately before DB update propogates
-            setLocalReformistas(updatedLocalReformistas);
         }
     };
     
     const handleAddCategory = () => {
       if (newCategory && !categories.includes(newCategory)) {
-        setCategories([...categories, newCategory]);
+        setCategories([...categories, newCategory].sort());
         setNewCategory("");
       }
     };
@@ -202,7 +196,6 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
               onSubmit={handleSubmit} 
               open={isFormOpen} 
               onOpenChange={setFormOpen} 
-              categories={categories}
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -215,6 +208,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                         value={newCategory} 
                         onChange={(e) => setNewCategory(e.target.value)} 
                         className="w-48"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
                     />
                     <Button size="icon" onClick={handleAddCategory}><Plus className="h-4 w-4" /></Button>
                     <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Reformista</Button>
@@ -228,8 +222,8 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                 <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
                                 <AccordionContent>
                                     <Droppable droppableId={category}>
-                                        {(provided) => (
-                                            <div className="w-full overflow-x-auto">
+                                        {(provided, snapshot) => (
+                                            <div className={`w-full overflow-x-auto rounded-md ${snapshot.isDraggingOver ? 'bg-secondary' : ''}`}>
                                                 <Table {...provided.droppableProps} ref={provided.innerRef}>
                                                     <TableHeader>
                                                         <TableRow>
@@ -282,8 +276,8 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                                         {provided.placeholder}
                                                         {(!groupedReformistas[category] || groupedReformistas[category].length === 0) && (
                                                             <TableRow>
-                                                                <TableCell colSpan={9} className="h-24 text-center">
-                                                                    Arrastra reformistas aquí o edítalos para asignarlos a esta categoría.
+                                                                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                                                                    Arrastra reformistas aquí.
                                                                 </TableCell>
                                                             </TableRow>
                                                         )}
@@ -301,5 +295,3 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         </Card>
     );
 }
-
-    

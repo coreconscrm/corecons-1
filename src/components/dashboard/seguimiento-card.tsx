@@ -33,7 +33,17 @@ const seguimientoSchema = z.object({
   siguienteLlamada: z.date().optional().nullable(),
 });
 
-export type Seguimiento = z.infer<typeof seguimientoSchema> & { id: string, siguienteLlamada: string | null };
+export type Seguimiento = { 
+    id: string, 
+    name?: string,
+    phone?: string,
+    email?: string,
+    localizacion?: string,
+    informacion?: string,
+    estado?: string,
+    porHacer?: string,
+    siguienteLlamada: string | null 
+};
 
 function OptionsSettingsDialog({ 
     estadoOptions, 
@@ -301,17 +311,8 @@ export function SeguimientoListCard({
     
     const formatDisplayDate = (dateString: string | null): string => {
         if (!dateString) return 'N/A';
-        // Intenta parsear como dd/MM/yyyy primero
-        let date = parse(dateString, 'dd/MM/yyyy', new Date());
-        // Si no es válido, intenta parsear como ISO string
-        if (!isValid(date)) {
-            date = new Date(dateString);
-        }
-        // Si sigue sin ser válido, devuelve el string original o N/A
-        if (!isValid(date)) {
-            return dateString;
-        }
-        return format(date, 'dd/MM/yyyy');
+        const date = parse(dateString, 'dd/MM/yyyy', new Date());
+        return isValid(date) ? format(date, 'dd/MM/yyyy') : 'Fecha inválida';
     };
 
 
@@ -427,5 +428,3 @@ export function SeguimientoListCard({
         </Card>
     );
 }
-
-    
