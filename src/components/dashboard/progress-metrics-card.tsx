@@ -66,6 +66,7 @@ export function DashboardTabs({
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="w-full justify-start overflow-x-auto md:justify-between">
+        {visibleTabs.oficina && <TabsTrigger value="oficina">Oficina</TabsTrigger>}
         {visibleTabs.seguimiento && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
         {(visibleTabs.clients || visibleTabs.reformas) && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
@@ -73,11 +74,24 @@ export function DashboardTabs({
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas || visibleTabs.prices) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
         {visibleTabs.ia && <TabsTrigger value="ia">IA</TabsTrigger>}
-        {visibleTabs.oficina && <TabsTrigger value="oficina">Oficina</TabsTrigger>}
         {(visibleTabs.companies || visibleTabs.team) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
       
+      {visibleTabs.oficina && <TabsContent value="oficina" className="mt-6">
+        <OfficeSection 
+            juanfranNotes={juanfranNotes}
+            onAddJuanfranNote={onAddJuanfranNote}
+            onUpdateJuanfranNote={onUpdateJuanfranNote}
+            onDeleteJuanfranNote={onDeleteJuanfranNote}
+            chatMessages={chatMessages}
+            team={team}
+            onAddChatMessage={onAddChatMessage}
+            onUpdateChatMessage={onUpdateChatMessage}
+            onDeleteChatMessage={onDeleteChatMessage}
+        />
+      </TabsContent>}
+
       {visibleTabs.seguimiento && <TabsContent value="seguimiento">
         <div className="mt-6">
          <SeguimientoListCard 
@@ -172,20 +186,6 @@ export function DashboardTabs({
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
         <AiSection companies={companies} />
-      </TabsContent>}
-      
-      {visibleTabs.oficina && <TabsContent value="oficina" className="mt-6">
-        <OfficeSection 
-            juanfranNotes={juanfranNotes}
-            onAddJuanfranNote={onAddJuanfranNote}
-            onUpdateJuanfranNote={onUpdateJuanfranNote}
-            onDeleteJuanfranNote={onDeleteJuanfranNote}
-            chatMessages={chatMessages}
-            team={team}
-            onAddChatMessage={onAddChatMessage}
-            onUpdateChatMessage={onUpdateChatMessage}
-            onDeleteChatMessage={onDeleteChatMessage}
-        />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">
