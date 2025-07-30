@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ const reformistaSchema = z.object({
   category: z.string().optional(),
 });
 
-export type Reformista = z.infer<typeof reformistaSchema> & { id: string };
+export type Reformista = z.infer<typeof reformistaSchema> & { id: string, order: number };
 
 function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformista?: Reformista, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof reformistaSchema>>({
@@ -107,13 +107,13 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformis
 export function ReformistasListCard({ reformistas, onAddReformista, onUpdateReformista, onDeleteReformista }: { reformistas: Reformista[], onAddReformista: (m: any) => void, onUpdateReformista: (m: any) => void, onDeleteReformista: (id: string) => void }) {
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeReformista, setActiveReformista] = useState<Reformista | undefined>(undefined);
-    
-    const [localReformistas, setLocalReformistas] = useState(reformistas);
+    const [localReformistas, setLocalReformistas] = useState<Reformista[]>([]);
 
     useEffect(() => {
-        setLocalReformistas(reformistas);
+        // Sort by order, or by some other default if order is not present
+        const sorted = [...reformistas].sort((a, b) => (a.order || 0) - (b.order || 0));
+        setLocalReformistas(sorted);
     }, [reformistas]);
-
 
     const handleEdit = (reformista: Reformista) => {
         setActiveReformista(reformista);
@@ -129,7 +129,9 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         if (activeReformista) {
             onUpdateReformista(values);
         } else {
-            onAddReformista(values);
+            // Assign a default order for new items
+            const maxOrder = Math.max(0, ...reformistas.map(r => r.order || 0));
+            onAddReformista({ ...values, order: maxOrder + 1 });
         }
     };
     
@@ -142,8 +144,13 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         items.splice(destination.index, 0, reorderedItem);
 
         setLocalReformistas(items);
-        // Note: This only reorders on the client. To persist order, you'd need to
-        // add an 'order' field to your data and update it in Firestore.
+        
+        // Update the order in the database
+        items.forEach((item, index) => {
+            if (item.order !== index) {
+                onUpdateReformista({ ...item, order: index });
+            }
+        });
     };
 
     return (
@@ -180,14 +187,14 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
-                            <Droppable droppableId="reformistas">
+                            <Droppable droppableId="reformistas-list">
                                 {(provided) => (
                                     <TableBody ref={provided.innerRef} {...provided.droppableProps}>
                                         {localReformistas.length > 0 ? localReformistas.map((reformista, index) => (
                                             <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
                                                 {(provided) => (
-                                                    <TableRow ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                        <TableCell><GripVertical className="text-muted-foreground" /></TableCell>
+                                                    <TableRow ref={provided.innerRef} {...provided.draggableProps}>
+                                                        <TableCell {...provided.dragHandleProps}><GripVertical className="text-muted-foreground" /></TableCell>
                                                         <TableCell className="font-medium">{reformista.name}</TableCell>
                                                         <TableCell>{reformista.role}</TableCell>
                                                         <TableCell>{reformista.category}</TableCell>
