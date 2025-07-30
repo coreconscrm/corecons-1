@@ -1,7 +1,9 @@
 
+"use client";
+
+import dynamic from 'next/dynamic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsSection } from "@/components/dashboard/clients-section";
-import { ProjectListCard } from "@/components/dashboard/performance-chart";
 import { ProviderSection } from "@/components/dashboard/tasks-card";
 import { FormsSection } from "@/components/dashboard/recent-achievements-card";
 import { SettingsCard } from "@/components/dashboard/settings-card";
@@ -12,6 +14,8 @@ import { AiSection } from "./ai-section";
 import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
 import type { JuanFranNote } from "./juanfran-notes-card";
+
+const ProjectListCard = dynamic(() => import('@/components/dashboard/performance-chart').then(mod => mod.ProjectListCard), { ssr: false });
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -185,7 +189,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
-        <AiSection companies={companies} />
+        <AiSection companies={companies} forms={forms} />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">
