@@ -189,8 +189,8 @@ function ReportDisplay({ report, onUpdateReport }: { report: FormsReport, onUpda
             </h3>
             {data && data.length > 0 ? (
                 <Accordion type="multiple" className="w-full" defaultValue={data.map(city => city.ciudad)}>
-                    {data.map((cityGroup) => (
-                        <AccordionItem value={cityGroup.ciudad} key={`${title}-${cityGroup.ciudad}`}>
+                    {data.map((cityGroup, index) => (
+                        <AccordionItem value={cityGroup.ciudad} key={`${title}-${cityGroup.ciudad}-${index}`}>
                             <AccordionTrigger className="text-xl font-semibold">{cityGroup.ciudad}</AccordionTrigger>
                             <AccordionContent>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -255,8 +255,8 @@ function ReportDisplay({ report, onUpdateReport }: { report: FormsReport, onUpda
                     Total de Contactos Analizados: {totalContacts}
                 </Badge>
             </div>
-            {renderCategory('Obra Nueva', report.obraNueva)}
-            {renderCategory('Reformas', report.reformas)}
+            {renderCategory('Obra Nueva', report?.obraNueva)}
+            {renderCategory('Reformas', report?.reformas)}
         </div>
     )
 }
@@ -932,4 +932,5 @@ export function FormsSection({
     </Tabs>
   );
 }
+
 
