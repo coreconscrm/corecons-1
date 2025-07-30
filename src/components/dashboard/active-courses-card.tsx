@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -219,6 +219,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeClient, setActiveClient] = useState<Client | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<number | null>(null);
 
   const handleEdit = (client: Client) => {
     setActiveClient(client);
@@ -243,6 +244,18 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     }
   };
 
+  const filteredClients = useMemo(() => {
+    if (priorityFilter === null) {
+      return clients;
+    }
+    return clients.filter(client => client.priority === priorityFilter);
+  }, [clients, priorityFilter]);
+
+  const handleFilterClick = (priority: number) => {
+    setPriorityFilter(prev => (prev === priority ? null : priority));
+  };
+
+
   return (
     <Card>
       <Dialog open={!!viewingInfo} onOpenChange={() => setViewingInfo(null)}>
@@ -261,10 +274,32 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
         </div>
         <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Obra</Button>
       </CardHeader>
+      
+      <div className="flex items-center gap-4 px-6 pb-4 border-b">
+        <span className="text-sm font-medium">Filtrar por prioridad:</span>
+        <div className="flex items-center gap-2">
+            {[1, 2, 3].map((p) => (
+            <Button
+                key={p}
+                variant={priorityFilter === p ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 w-8 rounded-full"
+                onClick={() => handleFilterClick(p)}
+            >
+                {p}
+            </Button>
+            ))}
+        </div>
+        {priorityFilter !== null && (
+            <Button variant="ghost" size="sm" onClick={() => setPriorityFilter(null)}>
+                Limpiar filtro
+            </Button>
+        )}
+      </div>
 
-      <CardContent>
+      <CardContent className="pt-6">
         <Accordion type="single" collapsible className="w-full space-y-4">
-          {clients.map(client => {
+          {filteredClients.map(client => {
             const provider = providers.find(p => p.id === client.providerId);
             return (
               <AccordionItem value={client.id} key={client.id} className="border-none">
