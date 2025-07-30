@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,7 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange, categories }
             if(reformista) {
                 form.reset({
                     name: reformista.name || "",
-                    role: reformista.role || "",
+                    role: reformista.role || "Reformista",
                     localidad: reformista.localidad || "",
                     phone: reformista.phone || "",
                     email: reformista.email || "",
@@ -109,9 +109,17 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeReformista, setActiveReformista] = useState<Reformista | undefined>(undefined);
     const [newCategory, setNewCategory] = useState("");
+    
+    // This state will hold the reformistas, we will modify it on drag and drop
+    const [localReformistas, setLocalReformistas] = useState(reformistas);
+
+    useEffect(() => {
+        setLocalReformistas(reformistas);
+    }, [reformistas]);
+
 
     const groupedReformistas = useMemo(() => {
-        return reformistas.reduce((acc, reformista) => {
+        return localReformistas.reduce((acc, reformista) => {
             const category = reformista.category || "General";
             if (!acc[category]) {
                 acc[category] = [];
@@ -119,13 +127,13 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
             acc[category].push(reformista);
             return acc;
         }, {} as Record<string, Reformista[]>);
-    }, [reformistas]);
+    }, [localReformistas]);
 
     const [categories, setCategories] = useState(Object.keys(groupedReformistas));
 
     useEffect(() => {
-        const newCategories = Object.keys(groupedReformistas);
-        if (JSON.stringify(newCategories.sort()) !== JSON.stringify(categories.sort())) {
+        const newCategories = Array.from(new Set([...Object.keys(groupedReformistas), ...categories])).sort();
+        if (JSON.stringify(newCategories) !== JSON.stringify(categories.sort())) {
             setCategories(newCategories);
         }
     }, [groupedReformistas, categories]);
@@ -152,11 +160,24 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const onDragEnd = (result: DropResult) => {
         const { source, destination, draggableId } = result;
         if (!destination) return;
-        if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+        
+        const sourceCategory = source.droppableId;
+        const destCategory = destination.droppableId;
 
-        const reformistaToMove = reformistas.find(r => r.id === draggableId);
-        if (reformistaToMove) {
-            onUpdateReformista({ ...reformistaToMove, category: destination.droppableId });
+        // Reordering within the same category
+        if (sourceCategory === destCategory) {
+            const items = Array.from(groupedReformistas[sourceCategory]);
+            const [reorderedItem] = items.splice(source.index, 1);
+            items.splice(destination.index, 0, reorderedItem);
+            
+            const reorderedReformistas = localReformistas.filter(r => r.category !== sourceCategory);
+            setLocalReformistas([...reorderedReformistas, ...items]);
+
+        } else { // Moving to a different category
+            const reformistaToMove = localReformistas.find(r => r.id === draggableId);
+            if (reformistaToMove) {
+                onUpdateReformista({ ...reformistaToMove, category: destCategory });
+            }
         }
     };
     
@@ -196,27 +217,27 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Accordion type="multiple" defaultValue={categories} className="w-full space-y-4">
                         {categories.map((category) => (
-                            <Droppable droppableId={category} key={category}>
-                                {(provided) => (
-                                    <AccordionItem value={category} className="border rounded-md px-4" ref={provided.innerRef} {...provided.droppableProps}>
-                                        <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="w-full overflow-x-auto">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead className="w-8"></TableHead>
-                                                            <TableHead>Nombre</TableHead>
-                                                            <TableHead>Rol</TableHead>
-                                                            <TableHead>Localidad</TableHead>
-                                                            <TableHead>Teléfono</TableHead>
-                                                            <TableHead>Email</TableHead>
-                                                            <TableHead>Instagram</TableHead>
-                                                            <TableHead>Web</TableHead>
-                                                            <TableHead className="text-right">Acciones</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
+                           <AccordionItem value={category} key={category} className="border rounded-md px-4">
+                                <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="w-full overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-8"></TableHead>
+                                                    <TableHead>Nombre</TableHead>
+                                                    <TableHead>Rol</TableHead>
+                                                    <TableHead>Localidad</TableHead>
+                                                    <TableHead>Teléfono</TableHead>
+                                                    <TableHead>Email</TableHead>
+                                                    <TableHead>Instagram</TableHead>
+                                                    <TableHead>Web</TableHead>
+                                                    <TableHead className="text-right">Acciones</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <Droppable droppableId={category}>
+                                                {(provided) => (
+                                                    <TableBody ref={provided.innerRef} {...provided.droppableProps}>
                                                         {(groupedReformistas[category] || []).map((reformista, index) => (
                                                             <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
                                                                 {(provided) => (
@@ -260,12 +281,12 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                                             </TableRow>
                                                         )}
                                                     </TableBody>
-                                                </Table>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                )}
-                            </Droppable>
+                                                )}
+                                            </Droppable>
+                                        </Table>
+                                    </div>
+                                </AccordionContent>
+                           </AccordionItem>
                         ))}
                     </Accordion>
                 </DragDropContext>
@@ -273,3 +294,5 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         </Card>
     );
 }
+
+    
