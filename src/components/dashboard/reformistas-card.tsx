@@ -112,10 +112,18 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     
     const [localReformistas, setLocalReformistas] = useState(reformistas);
 
+    const [categories, setCategories] = useState(() => Array.from(new Set(reformistas.map(r => r.category || 'General'))));
+
     useEffect(() => {
         setLocalReformistas(reformistas);
     }, [reformistas]);
 
+    useEffect(() => {
+        const newCats = Array.from(new Set(reformistas.map(r => r.category || 'General')));
+        if(JSON.stringify(newCats.sort()) !== JSON.stringify(categories.sort())) {
+            setCategories(newCats);
+        }
+    }, [reformistas, categories]);
 
     const groupedReformistas = useMemo(() => {
         const groups = localReformistas.reduce((acc, reformista) => {
@@ -135,16 +143,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         });
         return groups;
 
-    }, [localReformistas]);
-
-    const [categories, setCategories] = useState(() => Array.from(new Set(reformistas.map(r => r.category || 'General'))));
-
-    useEffect(() => {
-        const newCats = Array.from(new Set(reformistas.map(r => r.category || 'General')));
-        if(JSON.stringify(newCats.sort()) !== JSON.stringify(categories.sort())) {
-            setCategories(newCats);
-        }
-    }, [reformistas, categories]);
+    }, [localReformistas, categories]);
 
 
     const handleEdit = (reformista: Reformista) => {
@@ -224,7 +223,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                     <Droppable droppableId={category}>
                                         {(provided, snapshot) => (
                                             <div className={`w-full overflow-x-auto rounded-md ${snapshot.isDraggingOver ? 'bg-secondary' : ''}`}>
-                                                <Table {...provided.droppableProps} ref={provided.innerRef}>
+                                                <Table>
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead className="w-8"></TableHead>
@@ -238,7 +237,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                                             <TableHead className="text-right">Acciones</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
-                                                    <TableBody>
+                                                    <TableBody {...provided.droppableProps} ref={provided.innerRef}>
                                                         {(groupedReformistas[category] || []).map((reformista, index) => (
                                                             <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
                                                                 {(provided) => (
