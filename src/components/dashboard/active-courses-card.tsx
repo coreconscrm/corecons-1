@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat, Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -37,6 +37,7 @@ const clientSchema = z.object({
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
+  priority: z.number().optional(),
 });
 
 type Client = z.infer<typeof clientSchema> & { id: string };
@@ -88,7 +89,7 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined },
   });
 
   useEffect(() => {
@@ -107,9 +108,10 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
+            priority: client.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined });
       }
     }
   }, [client, open, form]);
@@ -228,6 +230,11 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     setFormOpen(true);
   }
 
+  const handlePriorityChange = (client: Client, priority: number) => {
+    const newPriority = client.priority === priority ? undefined : priority;
+    onUpdateClient({ ...client, priority: newPriority });
+  };
+
   const handleSubmit = (values: any) => {
     if (activeClient) {
       onUpdateClient(values);
@@ -266,7 +273,9 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                       <AccordionTrigger className="flex-1 p-0 hover:no-underline">
                         <div className="text-left">
                           <h3 className="font-semibold text-lg">{client.name}</h3>
-                          {client.estado && <Badge variant="secondary" className="mt-1">{client.estado}</Badge>}
+                          <div className="flex items-center gap-2 mt-1">
+                            {client.estado && <Badge variant="secondary">{client.estado}</Badge>}
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AlertDialog>
@@ -293,6 +302,21 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                   </CardHeader>
                   <AccordionContent className="px-6 pb-6 pt-0">
                     <div className="space-y-4 flex-grow text-sm">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">Prioridad:</h4>
+                        {[1, 2, 3].map((p) => (
+                          <Button
+                            key={p}
+                            variant={client.priority === p ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => handlePriorityChange(client, p)}
+                          >
+                            {p}
+                          </Button>
+                        ))}
+                      </div>
+                      <Separator />
                       <div>
                         <h4 className="font-semibold mb-2">Contacto</h4>
                         <div className="space-y-1 text-muted-foreground">

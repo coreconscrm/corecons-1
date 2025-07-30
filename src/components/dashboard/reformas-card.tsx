@@ -37,6 +37,7 @@ const reformaSchema = z.object({
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
+  priority: z.number().optional(),
 });
 
 type Reforma = z.infer<typeof reformaSchema> & { id: string };
@@ -87,7 +88,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined },
   });
 
   useEffect(() => {
@@ -106,9 +107,10 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             infoAdicional: reforma.infoAdicional || "",
             memoria: reforma.memoria || "",
             planos: reforma.planos || "",
+            priority: reforma.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "" });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined });
       }
     }
   }, [reforma, open, form]);
@@ -226,6 +228,11 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
     setActiveReforma(undefined);
     setFormOpen(true);
   }
+
+  const handlePriorityChange = (reforma: Reforma, priority: number) => {
+    const newPriority = reforma.priority === priority ? undefined : priority;
+    onUpdateReforma({ ...reforma, priority: newPriority });
+  };
   
   const handleSubmit = (values: any) => {
     if (activeReforma) {
@@ -292,6 +299,21 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                   </CardHeader>
                   <AccordionContent className="px-6 pb-6 pt-0">
                     <div className="space-y-4 flex-grow text-sm">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">Prioridad:</h4>
+                        {[1, 2, 3].map((p) => (
+                          <Button
+                            key={p}
+                            variant={reforma.priority === p ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => handlePriorityChange(reforma, p)}
+                          >
+                            {p}
+                          </Button>
+                        ))}
+                      </div>
+                      <Separator />
                       <div>
                         <h4 className="font-semibold mb-2">Contacto</h4>
                         <div className="space-y-1 text-muted-foreground">
