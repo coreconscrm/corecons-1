@@ -56,7 +56,7 @@ const formsReportPrompt = ai.definePrompt({
 
     Instrucciones:
     1.  Analiza la lista de contactos proporcionada en formato JSON.
-    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse en las respuestas del formulario de cada contacto. Busca palabras clave como "construir", "solar", "terreno", "obra nueva" para la primera categoría, y "reformar", "reforma", "piso", "local" para la segunda. Si un contacto no encaja claramente en ninguna de las dos, clasifícalo como 'Reformas' por defecto.
+    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse **principalmente** en el campo \`¿Que Tipo de Proyecto Necesitas?\` del formulario. Si el valor es \`Obra Nueva\`, clasifícalo como tal. Si es \`Reforma\`, clasifícalo en \`Reformas\`. Como apoyo, también puedes buscar palabras clave como "construir", "solar", "terreno" para la primera categoría, y "reformar", "piso", "local" para la segunda.
     3.  Dentro de cada categoría, agrupa los contactos por ciudad. Si la ciudad no está especificada, agrúpalos en "Ciudad no especificada".
     4.  Para cada contacto, asigna una prioridad: "Alta", "Media" o "Baja".
         -   **Prioridad Alta**: Asigna esta prioridad a los contactos que indiquen explícitamente que ya tienen "terreno" o "solar" Y que también tienen "proyecto de arquitecto". También considera alta prioridad si proporcionan muchos datos de contacto y detalles del proyecto.
