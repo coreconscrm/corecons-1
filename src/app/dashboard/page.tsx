@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy } from "firebase/firestore";
 import Papa from 'papaparse';
 import { Header } from "@/components/dashboard/header";
 import { SeguimientoOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [juanfranNotes, setJuanfranNotes] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
   const [estadoOptions, setEstadoOptions] = useState<string[]>(defaultEstadoOptions);
@@ -126,6 +127,8 @@ export default function DashboardPage() {
         console.log("Attempting to fetch data from Firestore...");
         const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
+        const chatQuery = query(collection(db, 'chat_messages'), orderBy('createdAt', 'desc'));
+        const chatSnapshot = await getDocs(chatQuery);
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
 
@@ -146,7 +149,8 @@ export default function DashboardPage() {
         setInmobiliarias(mapSnapToState(snapshots[14]));
         setSeguimientos(mapSnapToState(snapshots[15]));
         setJuanfranNotes(mapSnapToState(snapshots[16]));
-        
+        setChatMessages(mapSnapToState(chatSnapshot));
+
         // Fetch config options
         const seguimientoOptionsRef = doc(db, 'config', 'seguimientoOptions');
         const seguimientoOptionsSnap = await getDoc(seguimientoOptionsRef);
@@ -538,6 +542,11 @@ export default function DashboardPage() {
               onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Nota de JuanFran')}
               onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Nota de JuanFran')}
               onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Nota de JuanFran')}
+
+              chatMessages={chatMessages}
+              onAddChatMessage={(message) => handleCreate('chat_messages', message, 'Mensaje de Chat')}
+              onUpdateChatMessage={(message) => handleUpdate('chat_messages', message, 'Mensaje de Chat')}
+              onDeleteChatMessage={(id) => handleDelete('chat_messages', id, 'Mensaje de Chat')}
 
               visibleTabs={visibleTabs}
               onTabVisibilityChange={handleTabVisibilityChange}

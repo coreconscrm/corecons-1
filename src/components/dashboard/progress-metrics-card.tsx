@@ -34,6 +34,7 @@ export function DashboardTabs({
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
     estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
+    chatMessages, onAddChatMessage, onUpdateChatMessage, onDeleteChatMessage,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -57,6 +58,7 @@ export function DashboardTabs({
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
+    chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -178,6 +180,11 @@ export function DashboardTabs({
             onAddJuanfranNote={onAddJuanfranNote}
             onUpdateJuanfranNote={onUpdateJuanfranNote}
             onDeleteJuanfranNote={onDeleteJuanfranNote}
+            chatMessages={chatMessages}
+            team={team}
+            onAddChatMessage={onAddChatMessage}
+            onUpdateChatMessage={onUpdateChatMessage}
+            onDeleteChatMessage={onDeleteChatMessage}
         />
       </TabsContent>}
 

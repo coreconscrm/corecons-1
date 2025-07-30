@@ -12,11 +12,21 @@ export function OfficeSection({
     onAddJuanfranNote,
     onUpdateJuanfranNote,
     onDeleteJuanfranNote,
+    chatMessages,
+    team,
+    onAddChatMessage,
+    onUpdateChatMessage,
+    onDeleteChatMessage,
 }: {
     juanfranNotes: JuanFranNote[];
     onAddJuanfranNote: (note: any) => void;
     onUpdateJuanfranNote: (note: any) => void;
     onDeleteJuanfranNote: (id: string) => void;
+    chatMessages: any[];
+    team: any[];
+    onAddChatMessage: (message: any) => void;
+    onUpdateChatMessage: (message: any) => void;
+    onDeleteChatMessage: (id: string) => void;
 }) {
     return (
         <Tabs defaultValue="juanfran" className="w-full">
@@ -39,7 +49,13 @@ export function OfficeSection({
                 />
             </TabsContent>
             <TabsContent value="chat" className="mt-6">
-                <ChatSection />
+                <ChatSection 
+                    messages={chatMessages}
+                    team={team}
+                    onAddMessage={onAddChatMessage}
+                    onUpdateMessage={onUpdateChatMessage}
+                    onDeleteMessage={onDeleteChatMessage}
+                />
             </TabsContent>
         </Tabs>
     );
