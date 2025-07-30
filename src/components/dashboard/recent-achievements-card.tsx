@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { AiReportSection } from './ai-report-section';
 
 
 const itemSchema = z.record(z.any());
@@ -581,9 +582,10 @@ export function FormsSection({
         onSave={onSaveSheetUrl}
       />
 
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="main">Formularios y Contactos</TabsTrigger>
           <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
+          <TabsTrigger value="ai-report"><BrainCircuit className="mr-2"/>Reporte IA</TabsTrigger>
       </TabsList>
       <TabsContent value="main" className="mt-6">
         <div className="space-y-6">
@@ -638,9 +640,9 @@ export function FormsSection({
               )}
           />
       </TabsContent>
+      <TabsContent value="ai-report" className="mt-6">
+        <AiReportSection forms={forms} />
+      </TabsContent>
     </Tabs>
   );
 }
-
-
-    
