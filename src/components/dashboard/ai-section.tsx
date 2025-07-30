@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -31,6 +31,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AiBudgetPrintLayout } from "./budget-print-layout";
 import type { Company } from "./company-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 
 // --- Tipos de Datos ---
@@ -82,6 +83,12 @@ const budgetDetailsSchema = z.object({
 
 const mergeBudgetSchema = z.object({
   targetBudgetId: z.string().min(1, "Debes seleccionar un presupuesto de destino."),
+});
+
+const addToBudgetSchema = z.object({
+  category: z.enum(["obra_nueva", "reformas"], {
+    required_error: "Debes seleccionar una categoría.",
+  }),
 });
 
 
@@ -435,6 +442,84 @@ function MergeBudgetDialog({
     );
 }
 
+function AddToBudgetDialog({
+    budget,
+    open,
+    onOpenChange,
+    onConfirm
+}: {
+    budget: AiBudgetItem;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: (category: 'obra_nueva' | 'reformas') => void;
+}) {
+    const form = useForm<z.infer<typeof addToBudgetSchema>>({
+        resolver: zodResolver(addToBudgetSchema),
+    });
+
+    const handleSubmit = (values: z.infer<typeof addToBudgetSchema>) => {
+        onConfirm(values.category);
+        onOpenChange(false);
+    };
+    
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Añadir a Presupuestos</DialogTitle>
+                    <DialogDescription>
+                        Selecciona a qué sección de presupuestos quieres añadir "{budget.title}".
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>Elige una categoría:</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-col space-y-1"
+                                    >
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="obra_nueva" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Obra Nueva
+                                        </FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="reformas" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Reformas
+                                        </FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Cancelar</Button>
+                            </DialogClose>
+                            <Button type="submit">Añadir Presupuesto</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 // --- Componente para una tarjeta de presupuesto de IA ---
 function AiBudgetCard({ 
@@ -443,14 +528,16 @@ function AiBudgetCard({
     onDetailsChange,
     onDelete,
     onPrint,
-    onMergeClick
+    onMergeClick,
+    onAddToBudgetClick
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
     onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
     onDelete: (id: string) => void,
     onPrint: (budget: AiBudgetItem) => void,
-    onMergeClick: (budget: AiBudgetItem) => void
+    onMergeClick: (budget: AiBudgetItem) => void,
+    onAddToBudgetClick: (budget: AiBudgetItem) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const budgetTotals = useMemo(() => {
@@ -499,6 +586,10 @@ function AiBudgetCard({
                                 <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => onAddToBudgetClick(budget)}>
+                                    <FolderPlus className="mr-2 h-4 w-4" /> Añadir a Presupuestos
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
                                     <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
                                 </DropdownMenuItem>
@@ -627,14 +718,17 @@ function AiBudgetCard({
 
 // --- Componente de la Sección de Presupuestos de IA ---
 function AiBudgetsSection({ 
-    companies 
+    companies,
+    onCreateBudgetFromAi,
 }: { 
-    companies: Company[] 
+    companies: Company[],
+    onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void;
 }) {
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [printingBudget, setPrintingBudget] = useState<AiBudgetItem | null>(null);
     const [mergingBudget, setMergingBudget] = useState<AiBudgetItem | null>(null);
+    const [addingToBudget, setAddingToBudget] = useState<AiBudgetItem | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -779,6 +873,14 @@ function AiBudgetsSection({
                     onMerge={handleMergeBudgets}
                 />
             )}
+            {addingToBudget && (
+                <AddToBudgetDialog
+                    budget={addingToBudget}
+                    open={!!addingToBudget}
+                    onOpenChange={() => setAddingToBudget(null)}
+                    onConfirm={(category) => onCreateBudgetFromAi(addingToBudget, category)}
+                />
+            )}
           <div className="printable-area">
                 <AiBudgetPrintLayout 
                     budget={printingBudget}
@@ -796,6 +898,7 @@ function AiBudgetsSection({
                         onDelete={handleDeleteBudget}
                         onPrint={setPrintingBudget}
                         onMergeClick={setMergingBudget}
+                        onAddToBudgetClick={setAddingToBudget}
                     />
                 ))}
             </Accordion>
@@ -1511,10 +1614,12 @@ function AiReportViewer() {
 // --- Sección Principal de IA ---
 export function AiSection({
     companies,
-    forms
+    forms,
+    onCreateBudgetFromAi
 }: {
     companies: Company[],
-    forms: any[]
+    forms: any[],
+    onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void;
 }) {
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
@@ -1644,7 +1749,7 @@ export function AiSection({
                                 <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
                             </TabsList>
                             <TabsContent value="ai-budgets" className="mt-6">
-                            <AiBudgetsSection companies={companies} />
+                            <AiBudgetsSection companies={companies} onCreateBudgetFromAi={onCreateBudgetFromAi} />
                             </TabsContent>
                             <TabsContent value="price-database" className="mt-6">
                                 <PriceDatabaseSection />

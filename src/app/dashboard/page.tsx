@@ -16,6 +16,7 @@ import { isWithinInterval, addDays, isValid, parse, startOfWeek, endOfWeek } fro
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import type { BudgetCategory } from '@/components/dashboard/budgets-card';
+import type { AiBudgetItem } from '@/components/dashboard/ai-section';
 
 
 const initialFormSubmissions: any[] = [];
@@ -328,6 +329,35 @@ export default function DashboardPage() {
     });
   };
 
+  const handleCreateBudgetFromAi = (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => {
+    const lineItems = aiBudget.breakdown.capitulos.flatMap(capitulo => 
+        capitulo.partidas.map(partida => ({
+            description: partida.descripcion,
+            quantity: parseFloat(String(partida.medicion).replace(',', '.')) || 1,
+            unit: partida.unidad?.toLowerCase() || 'ud',
+            unitPrice: aiBudget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0,
+        }))
+    );
+
+    const total = lineItems.reduce((sum, item) => sum + (item.unitPrice || 0), 0);
+
+    const newBudget = {
+        name: aiBudget.title,
+        clientId: null, // No client associated yet
+        status: 'Pendiente',
+        total: total,
+        lineItems: lineItems,
+        category: category,
+        documents: [],
+    };
+    
+    handleCreate('budgets', newBudget, 'Presupuesto');
+    toast({
+      title: 'Presupuesto Añadido',
+      description: `Se ha creado un nuevo presupuesto en "${category === 'obra_nueva' ? 'Obra Nueva' : 'Reformas'}".`,
+    });
+  };
+
 
   const handleLoadForms = (data: any[]) => {
     const dataWithIdsAndStatus = data.map((item, index) => ({
@@ -547,7 +577,9 @@ export default function DashboardPage() {
               onAddChatMessage={(message) => handleCreate('chat_messages', message, 'Mensaje de Chat')}
               onUpdateChatMessage={(message) => handleUpdate('chat_messages', message, 'Mensaje de Chat')}
               onDeleteChatMessage={(id) => handleDelete('chat_messages', id, 'Mensaje de Chat')}
-
+              
+              onCreateBudgetFromAi={handleCreateBudgetFromAi}
+              
               visibleTabs={visibleTabs}
               onTabVisibilityChange={handleTabVisibilityChange}
               

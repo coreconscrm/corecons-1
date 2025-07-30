@@ -10,7 +10,7 @@ import { SettingsCard } from "@/components/dashboard/settings-card";
 import { BudgetSection } from "@/components/dashboard/budgets-card";
 import { CompanySection } from "@/components/dashboard/company-card";
 import { SeguimientoListCard } from "./seguimiento-card";
-import { AiSection } from "./ai-section";
+import { AiSection, type AiBudgetItem } from "./ai-section";
 import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
 import type { JuanFranNote } from "./juanfran-notes-card";
@@ -39,6 +39,7 @@ export function DashboardTabs({
     estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
     chatMessages, onAddChatMessage, onUpdateChatMessage, onDeleteChatMessage,
+    onCreateBudgetFromAi,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -63,6 +64,7 @@ export function DashboardTabs({
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
+    onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -189,7 +191,7 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
-        <AiSection companies={companies} forms={forms} />
+        <AiSection companies={companies} forms={forms} onCreateBudgetFromAi={onCreateBudgetFromAi} />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">
