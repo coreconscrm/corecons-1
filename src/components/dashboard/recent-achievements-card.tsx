@@ -590,7 +590,7 @@ export function FormsSection({
       <TabsContent value="main" className="mt-6">
         <div className="space-y-6">
             <DynamicTableCard
-                title="Contactos Manuales"
+                title={`Contactos Manuales (${contacts.length})`}
                 description="Añade y gestiona contactos que no provienen de formularios."
                 items={contacts}
                 columnConfig={columnConfigs.contacts}
@@ -603,7 +603,7 @@ export function FormsSection({
                 )}
             />
             <DynamicTableCard
-                title="Formularios Externos"
+                title={`Formularios Externos (${forms.length})`}
                 description="Gestiona las respuestas de tus formularios y añade contactos manualmente."
                 items={forms}
                 columnConfig={columnConfigs.forms}
@@ -627,7 +627,7 @@ export function FormsSection({
       </TabsContent>
       <TabsContent value="priority" className="mt-6">
           <DynamicTableCard
-              title="Llamada Prioritaria"
+              title={`Llamada Prioritaria (${priorityCalls.length})`}
               description="Contactos marcados como prioritarios desde la bandeja de entrada de formularios."
               items={priorityCalls}
               columnConfig={columnConfigs.priority}
