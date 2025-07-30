@@ -74,7 +74,7 @@ export default function DashboardPage() {
 
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
-  const [showOverviewPanels, setShowOverviewPanels] = useState(true);
+  const [showOverviewPanels, setShowOverviewPanels] = useState(false);
   
   const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer', newOptions: string[]) => {
     try {
