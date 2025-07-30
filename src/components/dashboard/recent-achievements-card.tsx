@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useRef, useState, useEffect, useMemo } from 'react';
@@ -189,7 +190,7 @@ function ReportDisplay({ report, onUpdateReport }: { report: FormsReport, onUpda
             {data && data.length > 0 ? (
                 <Accordion type="multiple" className="w-full" defaultValue={data.map(city => city.ciudad)}>
                     {data.map((cityGroup) => (
-                        <AccordionItem value={cityGroup.ciudad} key={cityGroup.ciudad}>
+                        <AccordionItem value={cityGroup.ciudad} key={`${title}-${cityGroup.ciudad}`}>
                             <AccordionTrigger className="text-xl font-semibold">{cityGroup.ciudad}</AccordionTrigger>
                             <AccordionContent>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -268,7 +269,6 @@ function AiReportSection({ forms }: { forms: any[] }) {
 
     useEffect(() => {
         const getInitialReport = async () => {
-             setIsLoading(true);
              try {
                 const docSnap = await getDoc(reportDocRef);
                 if (docSnap.exists()) {
@@ -277,11 +277,11 @@ function AiReportSection({ forms }: { forms: any[] }) {
              } catch (error) {
                  console.error("Error fetching initial report: ", error);
                  toast({ variant: 'destructive', title: 'Error de Carga', description: 'No se pudo cargar el reporte guardado.'});
-             } finally {
-                setIsLoading(false);
              }
         }
-        getInitialReport();
+        
+        setIsLoading(true);
+        getInitialReport().finally(() => setIsLoading(false));
 
         const unsubscribe = onSnapshot(reportDocRef, (doc) => {
             if (doc.exists()) {
@@ -932,3 +932,4 @@ export function FormsSection({
     </Tabs>
   );
 }
+
