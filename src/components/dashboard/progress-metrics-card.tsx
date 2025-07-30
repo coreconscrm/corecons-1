@@ -11,6 +11,7 @@ import { SeguimientoListCard } from "./seguimiento-card";
 import { AiSection } from "./ai-section";
 import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
+import type { JuanFranNote } from "./juanfran-notes-card";
 
 export function DashboardTabs({
     activeTab, onTabChange,
@@ -32,6 +33,7 @@ export function DashboardTabs({
     documents, onAddDocument, onDeleteDocument,
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
     estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
+    juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -54,6 +56,7 @@ export function DashboardTabs({
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
+    juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -170,7 +173,12 @@ export function DashboardTabs({
       </TabsContent>}
       
       {visibleTabs.oficina && <TabsContent value="oficina" className="mt-6">
-        <OfficeSection />
+        <OfficeSection 
+            juanfranNotes={juanfranNotes}
+            onAddJuanfranNote={onAddJuanfranNote}
+            onUpdateJuanfranNote={onUpdateJuanfranNote}
+            onDeleteJuanfranNote={onDeleteJuanfranNote}
+        />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">

@@ -2,28 +2,37 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building } from "lucide-react";
+import { Building, BookUser } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { JuanFranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
 
-export function OfficeSection() {
+export function OfficeSection({
+    juanfranNotes,
+    onAddJuanfranNote,
+    onUpdateJuanfranNote,
+    onDeleteJuanfranNote,
+}: {
+    juanfranNotes: JuanFranNote[];
+    onAddJuanfranNote: (note: any) => void;
+    onUpdateJuanfranNote: (note: any) => void;
+    onDeleteJuanfranNote: (id: string) => void;
+}) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Building />
-                    Oficina
-                </CardTitle>
-                <CardDescription>
-                    Este es el espacio central para la gestión interna. Próximamente añadiremos más herramientas aquí.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
-                    <h3 className="text-lg font-semibold">Sección en Construcción</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Dime qué necesitas construir en esta sección.
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
+        <Tabs defaultValue="juanfran" className="w-full">
+            <TabsList className="grid w-full grid-cols-1">
+                <TabsTrigger value="juanfran">
+                    <BookUser className="mr-2" />
+                    Apuntes de JuanFran
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="juanfran" className="mt-6">
+                 <JuanFranNotesCard
+                    notes={juanfranNotes}
+                    onAddNote={onAddJuanfranNote}
+                    onUpdateNote={onUpdateJuanfranNote}
+                    onDeleteNote={onDeleteJuanfranNote}
+                />
+            </TabsContent>
+        </Tabs>
     );
 }

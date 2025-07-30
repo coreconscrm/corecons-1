@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
+  const [juanfranNotes, setJuanfranNotes] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
   const [estadoOptions, setEstadoOptions] = useState<string[]>(defaultEstadoOptions);
@@ -123,7 +124,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         
         const mapSnapToState = (snap: any) => snap.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
@@ -144,6 +145,7 @@ export default function DashboardPage() {
         setReformistas(mapSnapToState(snapshots[13]));
         setInmobiliarias(mapSnapToState(snapshots[14]));
         setSeguimientos(mapSnapToState(snapshots[15]));
+        setJuanfranNotes(mapSnapToState(snapshots[16]));
         
         // Fetch config options
         const seguimientoOptionsRef = doc(db, 'config', 'seguimientoOptions');
@@ -531,6 +533,11 @@ export default function DashboardPage() {
               estadoOptions={estadoOptions}
               porHacerOptions={porHacerOptions}
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
+              
+              juanfranNotes={juanfranNotes}
+              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Nota de JuanFran')}
+              onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Nota de JuanFran')}
+              onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Nota de JuanFran')}
 
               visibleTabs={visibleTabs}
               onTabVisibilityChange={handleTabVisibilityChange}
