@@ -15,7 +15,7 @@ import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, onSnapshot, query, orderBy, where, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc, limit, startAt, endAt, getDoc } from "firebase/firestore";
 import { format } from "date-fns";
-import { createProjectBreakdown, type ProjectBreakdown, type ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
+import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createFormsReport, type FormsReport } from '@/ai/flows/create-forms-report';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "../ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { AiBudgetPrintLayout } from "./budget-print-layout";
+import { AiBudgetPrintLayout, type ProjectBreakdownChapter } from "./budget-print-layout";
 import type { Company } from "./company-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
@@ -884,7 +884,7 @@ function AiBudgetsSection({
           <div className="printable-area">
                 <AiBudgetPrintLayout 
                     budget={printingBudget}
-                    company={companies[0] || null}
+                    company={companies.length > 0 ? companies[0] : null}
                 />
             </div>
           {aiBudgets.length > 0 ? (

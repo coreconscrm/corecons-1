@@ -8,6 +8,16 @@ import type { Company } from './company-card';
 import { Building2, Globe, Mail, Phone } from "lucide-react";
 import type { AiBudgetItem } from "./ai-section";
 
+export type ProjectBreakdownChapter = {
+    nombre: string;
+    partidas: {
+      descripcion: string;
+      medicion?: string;
+      unidad?: string;
+      precioUnitario?: string;
+    }[];
+};
+
 function PrintLayoutHeader({ company }: { company: Company | null }) {
   if (!company) {
     return (

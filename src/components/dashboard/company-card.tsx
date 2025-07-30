@@ -58,6 +58,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                 form.reset({ name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." });
                 setPreviewUrl(null);
             }
+             setLogoFile(null); // Reset file on open
         }
     }, [company, open, form]);
 
@@ -82,10 +83,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                 submissionData.logo = downloadURL;
             }
 
-            onSubmit({ ...company, ...submissionData });
-            form.reset();
-            setLogoFile(null);
-            setPreviewUrl(null);
+            await onSubmit({ ...company, ...submissionData });
             onOpenChange(false);
 
         } catch (error) {
@@ -97,13 +95,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
     };
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => {
-            if (!isOpen) {
-                setLogoFile(null);
-                setPreviewUrl(company?.logo || null);
-            }
-            onOpenChange(isOpen);
-        }}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{company ? "Editar Empresa" : "Añadir Nueva Empresa"}</DialogTitle>
@@ -175,11 +167,11 @@ function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDelet
         setFormOpen(true);
     };
     
-    const handleSubmit = (values: any) => {
+    const handleSubmit = async (values: any) => {
         if(activeCompany) {
-            onUpdateCompany(values);
+            await onUpdateCompany(values);
         } else {
-            onAddCompany(values);
+            await onAddCompany(values);
         }
     }
 
@@ -246,7 +238,7 @@ export function CompanySection({
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     visibleTabs
 }: {
-    companies: Company[], onAddCompany: (c: any) => void, onUpdateCompany: (c: any) => void, onDeleteCompany: (id: string) => void,
+    companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     visibleTabs: any
