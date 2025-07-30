@@ -73,7 +73,7 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange }: { reformis
                             <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Reformas Integrales" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="role" render={({ field }) => (
-                            <FormItem><FormLabel>Rol / Especialidad</FormLabel><FormControl><Input placeholder="Reformas de baños y cocinas" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Especialidad</FormLabel><FormControl><Input placeholder="Reformas de baños y cocinas" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="category" render={({ field }) => (
                            <FormItem><FormLabel>Categoría</FormLabel><FormControl><Input placeholder="Fontanería, Electricidad..." {...field} value={field.value ?? 'General'} /></FormControl><FormMessage /></FormItem>
@@ -110,7 +110,6 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const [localReformistas, setLocalReformistas] = useState<Reformista[]>([]);
 
     useEffect(() => {
-        // Sort by order, or by some other default if order is not present
         const sorted = [...reformistas].sort((a, b) => (a.order || 0) - (b.order || 0));
         setLocalReformistas(sorted);
     }, [reformistas]);
@@ -129,7 +128,6 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         if (activeReformista) {
             onUpdateReformista(values);
         } else {
-            // Assign a default order for new items
             const maxOrder = Math.max(0, ...reformistas.map(r => r.order || 0));
             onAddReformista({ ...values, order: maxOrder + 1 });
         }
@@ -145,7 +143,6 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
 
         setLocalReformistas(items);
         
-        // Update the order in the database
         items.forEach((item, index) => {
             if (item.order !== index) {
                 onUpdateReformista({ ...item, order: index });
@@ -183,6 +180,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                     <TableHead>Localidad</TableHead>
                                     <TableHead>Teléfono</TableHead>
                                     <TableHead>Email</TableHead>
+                                    <TableHead>Instagram</TableHead>
                                     <TableHead>Web</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
@@ -201,6 +199,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                                         <TableCell>{reformista.localidad}</TableCell>
                                                         <TableCell>{reformista.phone}</TableCell>
                                                         <TableCell>{reformista.email}</TableCell>
+                                                        <TableCell>{reformista.instagram}</TableCell>
                                                         <TableCell>{reformista.web}</TableCell>
                                                         <TableCell className="text-right">
                                                             <AlertDialog>
@@ -225,7 +224,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                             </Draggable>
                                         )) : (
                                             <TableRow>
-                                                <TableCell colSpan={9} className="h-24 text-center">
+                                                <TableCell colSpan={10} className="h-24 text-center">
                                                     No hay reformistas añadidos.
                                                 </TableCell>
                                             </TableRow>
