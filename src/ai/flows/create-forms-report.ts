@@ -56,13 +56,13 @@ const formsReportPrompt = ai.definePrompt({
 
     Instrucciones:
     1.  Analiza la lista de contactos proporcionada en formato JSON.
-    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse en las respuestas del formulario de cada contacto. Busca palabras clave como "construir", "solar", "terreno", "obra nueva" para la primera categoría, y "reformar", "reforma", "piso", "local" para la segunda. Si no hay contactos para una categoría, puedes omitir esa clave en el JSON de salida.
+    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse en las respuestas del formulario de cada contacto. Busca palabras clave como "construir", "solar", "terreno", "obra nueva" para la primera categoría, y "reformar", "reforma", "piso", "local" para la segunda. Si un contacto no encaja claramente en ninguna de las dos, clasifícalo como 'Reformas' por defecto.
     3.  Dentro de cada categoría, agrupa los contactos por ciudad. Si la ciudad no está especificada, agrúpalos en "Ciudad no especificada".
     4.  Para cada contacto, asigna una prioridad: "Alta", "Media" o "Baja".
         -   **Prioridad Alta**: Asigna esta prioridad a los contactos que indiquen explícitamente que ya tienen "terreno" o "solar" Y que también tienen "proyecto de arquitecto". También considera alta prioridad si proporcionan muchos datos de contacto y detalles del proyecto.
         -   **Prioridad Media**: Contactos que tienen terreno o proyecto, pero no ambos, o que proporcionan información de contacto completa pero pocos detalles del proyecto.
         -   **Prioridad Baja**: Contactos con información muy limitada o que parecen estar en una fase muy inicial de exploración.
-    5.  Asegúrate de incluir a TODOS los contactos del formulario en el reporte, correctamente agrupados y priorizados.
+    5.  **MUY IMPORTANTE**: Asegúrate de incluir a TODOS los contactos del formulario en el reporte, correctamente agrupados y priorizados. No dejes ninguno fuera.
     6.  En el campo 'origen' de cada contacto en el resultado, incluye el objeto JSON original completo del lead.
     7.  Extrae el nombre, teléfono y email de cada contacto si están disponibles. Los nombres de los campos en el JSON de entrada pueden variar (ej: 'Nombre', 'nombre', 'Teléfono', 'telefono', 'email', 'Email', etc.). Sé inteligente para identificarlos.
 
