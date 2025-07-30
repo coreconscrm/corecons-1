@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
@@ -178,15 +178,19 @@ export function JuanFranNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote
                             <TableRow>
                                 <TableHead className="w-[200px]">Fecha</TableHead>
                                 <TableHead>Título</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
+                                <TableHead className="text-right w-[100px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {sortedNotes.map(note => (
-                                <TableRow key={note.id}>
+                                <TableRow 
+                                    key={note.id} 
+                                    onClick={() => setViewingNote(note)}
+                                    className="cursor-pointer"
+                                >
                                     <TableCell>{note.date?.toDate ? format(note.date.toDate(), "d MMM yyyy, HH:mm", { locale: es }) : 'N/A'}</TableCell>
                                     <TableCell className="font-medium">{note.title}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         <AlertDialog>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
