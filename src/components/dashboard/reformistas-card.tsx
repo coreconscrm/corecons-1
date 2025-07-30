@@ -64,12 +64,12 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange, categories }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+             <DialogContent className="max-w-2xl h-screen sm:h-auto sm:max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{reformista ? "Editar Reformista" : "Añadir Nuevo Reformista"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 overflow-y-auto pr-6 -mr-6 space-y-4">
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Reformas Integrales" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -94,7 +94,7 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange, categories }
                         <FormField control={form.control} name="web" render={({ field }) => (
                             <FormItem><FormLabel>Página Web</FormLabel><FormControl><Input placeholder="www.reformas.com" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <DialogFooter>
+                         <DialogFooter className="mt-auto pt-4 border-t sticky bottom-0 bg-background">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">{reformista ? "Guardar Cambios" : "Guardar Reformista"}</Button>
                         </DialogFooter>
@@ -229,8 +229,8 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                 <AccordionContent>
                                     <Droppable droppableId={category}>
                                         {(provided) => (
-                                            <div {...provided.droppableProps} ref={provided.innerRef} className="w-full overflow-x-auto">
-                                                <Table>
+                                            <div className="w-full overflow-x-auto">
+                                                <Table {...provided.droppableProps} ref={provided.innerRef}>
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead className="w-8"></TableHead>
@@ -301,3 +301,5 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         </Card>
     );
 }
+
+    
