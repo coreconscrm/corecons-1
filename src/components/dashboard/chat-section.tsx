@@ -185,7 +185,10 @@ export function ChatSection({
         team={team}
         onSubmit={handleSubmit}
         open={isFormOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(isOpen) => {
+            if (!isOpen) setActiveMessage(undefined);
+            setFormOpen(isOpen);
+        }}
       />
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
@@ -206,7 +209,11 @@ export function ChatSection({
                 const recipient = getTeamMember(message.recipientId);
 
                 return (
-                    <div key={message.id} className="flex items-start gap-4 p-4 rounded-lg bg-secondary/50">
+                    <div 
+                        key={message.id} 
+                        className="flex items-start gap-4 p-4 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary"
+                        onClick={() => handleEdit(message)}
+                    >
                         <Avatar>
                             <AvatarImage src={sender?.avatar} />
                             <AvatarFallback>{sender?.name.substring(0, 2).toUpperCase()}</AvatarFallback>
@@ -218,17 +225,17 @@ export function ChatSection({
                                     <span className="text-sm font-normal text-muted-foreground mx-2">&rarr;</span>
                                     {recipient?.name}
                                 </p>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                      <p className="text-xs text-muted-foreground">
                                         {message.createdAt?.toDate ? format(message.createdAt.toDate(), "d MMM, HH:mm", { locale: es }) : 'Enviando...'}
                                     </p>
                                     <AlertDialog>
                                         <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onSelect={() => handleEdit(message)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                        </DropdownMenuContent>
+                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handleEdit(message)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                            </DropdownMenuContent>
                                         </DropdownMenu>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción eliminará el mensaje permanentemente.</AlertDialogDescription></AlertDialogHeader>
