@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,6 +17,7 @@ import { UserPlus, MoreHorizontal, Pencil, Trash2, Plus, GripVertical } from "lu
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const reformistaSchema = z.object({
@@ -80,9 +81,18 @@ function ReformistaForm({ reformista, onSubmit, open, onOpenChange, categories }
                         <FormField control={form.control} name="category" render={({ field }) => (
                            <FormItem>
                                 <FormLabel>Categoría / Profesión</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Fontanería, Electricidad..." {...field} value={field.value ?? 'General'} />
-                                </FormControl>
+                                 <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? 'General'}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona una profesión" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {categories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                            </FormItem>
                         )} />
@@ -116,7 +126,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeReformista, setActiveReformista] = useState<Reformista | undefined>(undefined);
     const [localReformistas, setLocalReformistas] = useState<Reformista[]>([]);
-    const [categories, setCategories] = useState<string[]>([]);
+    const [categories, setCategories] = useState<string[]>(['General']);
     const [newCategory, setNewCategory] = useState("");
     const { toast } = useToast();
 
@@ -124,7 +134,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         const sorted = [...reformistas].sort((a, b) => (a.order || 0) - (b.order || 0));
         setLocalReformistas(sorted);
         
-        const uniqueCategories = Array.from(new Set(reformistas.map(r => r.category || 'General')));
+        const uniqueCategories = Array.from(new Set(['General',...reformistas.map(r => r.category || 'General')]));
         setCategories(uniqueCategories);
 
     }, [reformistas]);
@@ -231,13 +241,13 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
             <CardContent>
                  <DragDropContext onDragEnd={onDragEnd}>
                     <Accordion type="multiple" defaultValue={categories} className="w-full space-y-4">
-                        {categories.map((category) => (
+                        {Object.entries(groupedReformistas).map(([category, reformistasInCategory]) => (
                             <AccordionItem value={category} key={category} className="border rounded-md px-4">
-                                <AccordionTrigger className="text-lg font-semibold">{category} ({groupedReformistas[category]?.length || 0})</AccordionTrigger>
+                                <AccordionTrigger className="text-lg font-semibold">{category} ({reformistasInCategory.length})</AccordionTrigger>
                                 <AccordionContent>
                                     <Droppable droppableId={category}>
                                         {(provided, snapshot) => (
-                                            <div className={`w-full overflow-x-auto rounded-md ${snapshot.isDraggingOver ? 'bg-secondary' : ''}`} ref={provided.innerRef} {...provided.droppableProps}>
+                                            <div ref={provided.innerRef} {...provided.droppableProps} className={`w-full overflow-x-auto rounded-md ${snapshot.isDraggingOver ? 'bg-secondary' : ''}`}>
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
@@ -253,7 +263,7 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {groupedReformistas[category] && groupedReformistas[category].length > 0 ? groupedReformistas[category].map((reformista, index) => (
+                                                        {reformistasInCategory.length > 0 ? reformistasInCategory.map((reformista, index) => (
                                                             <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
                                                                 {(provided) => (
                                                                     <TableRow ref={provided.innerRef} {...provided.draggableProps}>
@@ -308,3 +318,5 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         </Card>
     );
 }
+
+    
