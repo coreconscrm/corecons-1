@@ -154,7 +154,8 @@ function ReportDisplay({ report, onUpdateReport }: { report: FormsReport, onUpda
     
         const updatedReport = JSON.parse(JSON.stringify(report)); // Deep copy
     
-        const findAndReplaceContact = (category: any[]) => {
+        const findAndReplaceContact = (category: any[] | undefined) => {
+            if (!category) return false;
             for (const city of category) {
                 const contactIndex = city.contactos.findIndex((c: any) => c.nombre === editingContact.nombre && c.email === editingContact.email);
                 if (contactIndex > -1) {
@@ -263,31 +264,38 @@ function AiReportSection({ forms }: { forms: any[] }) {
     const [report, setReport] = useState<FormsReport | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-    const reportDocRef = doc(db, 'ia_reports', 'latest');
+    const reportDocRef = useMemo(() => doc(db, 'ia_reports', 'latest'), []);
 
     useEffect(() => {
+        const getInitialReport = async () => {
+             setIsLoading(true);
+             try {
+                const docSnap = await getDoc(reportDocRef);
+                if (docSnap.exists()) {
+                    setReport(docSnap.data() as FormsReport);
+                }
+             } catch (error) {
+                 console.error("Error fetching initial report: ", error);
+                 toast({ variant: 'destructive', title: 'Error de Carga', description: 'No se pudo cargar el reporte guardado.'});
+             } finally {
+                setIsLoading(false);
+             }
+        }
+        getInitialReport();
+
         const unsubscribe = onSnapshot(reportDocRef, (doc) => {
             if (doc.exists()) {
                 setReport(doc.data() as FormsReport);
             } else {
                 setReport(null);
             }
-            setIsLoading(false);
+        }, (error) => {
+             console.error("Error fetching report from snapshot: ", error);
+             toast({ variant: 'destructive', title: 'Error de Sincronización', description: 'No se pudo actualizar el reporte en tiempo real.'});
         });
 
-        // Initial load check
-        const getInitialReport = async () => {
-             setIsLoading(true);
-             const docSnap = await getDoc(reportDocRef);
-             if (docSnap.exists()) {
-                 setReport(docSnap.data() as FormsReport);
-             }
-             setIsLoading(false);
-        }
-        getInitialReport();
-
         return () => unsubscribe();
-    }, [reportDocRef]);
+    }, [reportDocRef, toast]);
 
     const handleGenerateReport = async () => {
         if (forms.length === 0) {
