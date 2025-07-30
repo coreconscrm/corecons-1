@@ -32,7 +32,7 @@ const FormsReportSchema = z.object({
           email: z.string().optional().describe("Email de contacto."),
           origen: z.string().optional().describe("El registro original del formulario en formato JSON string."),
       })).describe("Lista de contactos de obra nueva para esta ciudad."),
-  })).describe("Lista de ciudades con proyectos de obra nueva."),
+  })).describe("Lista de ciudades con proyectos de obra nueva.").optional(),
   reformas: z.array(z.object({
       ciudad: z.string().describe("La ciudad donde se agrupan los contactos."),
       contactos: z.array(z.object({
@@ -42,7 +42,7 @@ const FormsReportSchema = z.object({
           email: z.string().optional().describe("Email de contacto."),
           origen: z.string().optional().describe("El registro original del formulario en formato JSON string."),
       })).describe("Lista de contactos de reformas para esta ciudad."),
-  })).describe("Lista de ciudades con proyectos de reforma."),
+  })).describe("Lista de ciudades con proyectos de reforma.").optional(),
 });
 export type FormsReport = z.infer<typeof FormsReportSchema>;
 
@@ -56,7 +56,7 @@ const formsReportPrompt = ai.definePrompt({
 
     Instrucciones:
     1.  Analiza la lista de contactos proporcionada en formato JSON.
-    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse en las respuestas del formulario de cada contacto. Busca palabras clave como "construir", "solar", "terreno", "obra nueva" para la primera categoría, y "reformar", "reforma", "piso", "local" para la segunda.
+    2.  Clasifica cada contacto en una de dos categorías principales: "Obra Nueva" o "Reformas". La clasificación debe basarse en las respuestas del formulario de cada contacto. Busca palabras clave como "construir", "solar", "terreno", "obra nueva" para la primera categoría, y "reformar", "reforma", "piso", "local" para la segunda. Si no hay contactos para una categoría, puedes omitir esa clave en el JSON de salida.
     3.  Dentro de cada categoría, agrupa los contactos por ciudad. Si la ciudad no está especificada, agrúpalos en "Ciudad no especificada".
     4.  Para cada contacto, asigna una prioridad: "Alta", "Media" o "Baja".
         -   **Prioridad Alta**: Asigna esta prioridad a los contactos que indiquen explícitamente que ya tienen "terreno" o "solar" Y que también tienen "proyecto de arquitecto". También considera alta prioridad si proporcionan muchos datos de contacto y detalles del proyecto.
@@ -83,7 +83,11 @@ const createFormsReportFlow = ai.defineFlow(
     if (!output) {
       throw new Error("La IA no pudo generar un reporte de los formularios.");
     }
-    return output;
+    // Ensure both keys exist in the final output, even if empty.
+    return {
+        obraNueva: output.obraNueva || [],
+        reformas: output.reformas || [],
+    };
   }
 );
 
