@@ -15,7 +15,7 @@ import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
 import type { JuanFranNote } from "./juanfran-notes-card";
 import type { SandraNote } from './sandra-notes-card';
-import type { Checklist } from './jordan-checklist-card';
+import type { JordanItem } from './jordan-checklist-card';
 import type { DaniPriority } from './dani-priorities-card';
 
 const ProjectListCard = dynamic(() => import('@/components/dashboard/performance-chart').then(mod => mod.ProjectListCard), { ssr: false });
@@ -64,13 +64,13 @@ export function DashboardTabs({
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
     priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void,
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
-    companies: any[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: any) => void,
+    companies: any[], onAddCompany: (company: any) => Promise<void>, onUpdateCompany: (company: any) => Promise<void>, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
-    jordanChecklists: Checklist[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
+    jordanChecklists: JordanItem[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
     daniPriorities: DaniPriority[], onAddDaniPriority: (p: any) => void, onUpdateDaniPriority: (p: any) => void, onDeleteDaniPriority: (id: string) => void,
     chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void,

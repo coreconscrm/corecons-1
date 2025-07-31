@@ -268,6 +268,14 @@ export default function DashboardPage() {
           }
       }
 
+       if (collectionName === 'jordan_checklists' || collectionName === 'juanfran_notes' || collectionName === 'sandra_notes') {
+            newItem = {
+                ...newItem,
+                completed: false,
+                date: new Date(),
+            }
+        }
+
       if (newItem.id) {
         const { id, ...data } = newItem;
         await setDoc(doc(db, collectionName, id), data);
@@ -293,6 +301,9 @@ export default function DashboardPage() {
             if (data.priority === undefined) {
                 data.priority = null;
             }
+        }
+         if (collectionName === 'jordan_checklists' && !item.type) {
+            data.type = 'checklist';
         }
         await updateDoc(doc(db, collectionName, id), data);
         toast({ title: `${type} actualizada`, description: `Los cambios se han guardado.` });
@@ -618,9 +629,9 @@ export default function DashboardPage() {
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
               
               juanfranNotes={juanfranNotes}
-              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', {...note, completed: false}, 'Nota de JuanFran')}
-              onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Nota de JuanFran')}
-              onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Nota de JuanFran')}
+              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Apunte de JuanFran')}
+              onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Apunte de JuanFran')}
+              onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Apunte de JuanFran')}
 
               sandraNotes={sandraNotes}
               onAddSandraNote={(note) => handleCreate('sandra_notes', {...note, completed: false}, 'Nota de Sandra')}

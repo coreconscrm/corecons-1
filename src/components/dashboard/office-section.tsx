@@ -7,7 +7,7 @@ import { BookUser, MessageSquare, ListChecks } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JuanFranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
 import { SandraNotesCard, type SandraNote } from "./sandra-notes-card";
-import { JordanChecklistCard, type Checklist } from "./jordan-checklist-card";
+import { JordanSectionCard, type JordanItem } from "./jordan-checklist-card";
 import { DaniPrioritiesCard, type DaniPriority } from "./dani-priorities-card";
 import { ChatSection } from "./chat-section";
 
@@ -42,7 +42,7 @@ export function OfficeSection({
     onAddSandraNote: (note: any) => void;
     onUpdateSandraNote: (note: any) => void;
     onDeleteSandraNote: (id: string) => void;
-    jordanChecklists: Checklist[];
+    jordanChecklists: JordanItem[];
     onAddJordanChecklist: (c: any) => void;
     onUpdateJordanChecklist: (c: any) => void;
     onDeleteJordanChecklist: (id: string) => void;
@@ -111,11 +111,11 @@ export function OfficeSection({
                 />
             </TabsContent>
              <TabsContent value="jordan" className="mt-6">
-                <JordanChecklistCard
-                    checklists={jordanChecklists}
-                    onAddChecklist={onAddJordanChecklist}
-                    onUpdateChecklist={onUpdateJordanChecklist}
-                    onDeleteChecklist={onDeleteJordanChecklist}
+                <JordanSectionCard
+                    items={jordanChecklists}
+                    onAddItem={onAddJordanChecklist}
+                    onUpdateItem={onUpdateJordanChecklist}
+                    onDeleteItem={onDeleteJordanChecklist}
                 />
             </TabsContent>
             <TabsContent value="dani" className="mt-6">
