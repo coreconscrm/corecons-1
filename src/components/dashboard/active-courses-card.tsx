@@ -37,7 +37,7 @@ const clientSchema = z.object({
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
-  priority: z.number().optional(),
+  priority: z.number().nullable().optional(),
 });
 
 type Client = z.infer<typeof clientSchema> & { id: string };
@@ -89,7 +89,7 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
   });
 
   useEffect(() => {
@@ -111,7 +111,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             priority: client.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
       }
     }
   }, [client, open, form]);
@@ -232,7 +232,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
   }
 
   const handlePriorityChange = (client: Client, priority: number) => {
-    const newPriority = client.priority === priority ? undefined : priority;
+    const newPriority = client.priority === priority ? null : priority;
     onUpdateClient({ ...client, priority: newPriority });
   };
 

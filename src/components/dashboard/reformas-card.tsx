@@ -37,7 +37,7 @@ const reformaSchema = z.object({
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
-  priority: z.number().optional(),
+  priority: z.number().nullable().optional(),
 });
 
 type Reforma = z.infer<typeof reformaSchema> & { id: string };
@@ -88,7 +88,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
   });
 
   useEffect(() => {
@@ -110,7 +110,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             priority: reforma.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: undefined });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
       }
     }
   }, [reforma, open, form]);
@@ -231,7 +231,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
   }
 
   const handlePriorityChange = (reforma: Reforma, priority: number) => {
-    const newPriority = reforma.priority === priority ? undefined : priority;
+    const newPriority = reforma.priority === priority ? null : priority;
     onUpdateReforma({ ...reforma, priority: newPriority });
   };
   
