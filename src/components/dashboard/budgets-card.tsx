@@ -292,7 +292,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => sum + (item.unitPrice || 0), 0);
-    const budgetData = { ...values, id: budget?.id, total };
+    const budgetData = { ...budget, ...values, total };
     onSubmit(budgetData);
     onOpenChange(false);
 };
@@ -398,7 +398,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                             </TableCell>
                             <TableCell>
                                 <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Ud."/></SelectTrigger></FormControl>
                                     <SelectContent>
                                     <SelectItem value="m">m</SelectItem>
@@ -668,14 +668,16 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                         </TableHeader>
                         <TableBody>
                             {(viewingBudget.lineItems || []).map((item, index) => {
-                                const lineTotal = (item.quantity || 0) * (item.unitPrice || 0);
+                                const lineTotal = item.unitPrice || 0; // unitPrice is now the total
+                                const quantity = item.quantity || 0;
+                                const unitPrice = quantity > 0 ? lineTotal / quantity : 0;
                                 const costPerM2 = (viewingBudget.m2 && viewingBudget.m2 > 0) ? lineTotal / viewingBudget.m2 : 0;
                                 return (
                                     <TableRow key={index}>
                                         <TableCell>{item.description}</TableCell>
-                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                        <TableCell className="text-right">{quantity}</TableCell>
                                         <TableCell>{item.unit}</TableCell>
-                                        <TableCell className="text-right font-mono">€{(item.unitPrice || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell className="text-right font-mono">€{unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         <TableCell className="text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
                                             <TableCell className="text-right font-mono">
