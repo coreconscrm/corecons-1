@@ -36,7 +36,7 @@ export function NotepadSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
       <SheetContent className="flex flex-col">
         <SheetHeader>
           <SheetTitle>Bloc de Notas Temporal</SheetTitle>
