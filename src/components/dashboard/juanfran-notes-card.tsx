@@ -2,73 +2,67 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ListChecks, PlusCircle, Trash2, Pencil, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-const noteSchema = z.object({
-  title: z.string().min(1, "El título es requerido."),
-  content: z.string().min(1, "El contenido no puede estar vacío."),
-  date: z.date(),
+const checklistItemSchema = z.object({
+  text: z.string().min(1, "El texto no puede estar vacío."),
   completed: z.boolean(),
 });
 
-export type JuanFranNote = {
+const checklistSchema = z.object({
+  title: z.string().min(1, "El título es requerido."),
+  items: z.array(checklistItemSchema),
+});
+
+export type ChecklistItem = z.infer<typeof checklistItemSchema>;
+export type JuanFranChecklist = {
   id: string;
   title: string;
-  content: string;
-  date: any; // Firestore Timestamp
-  completed: boolean;
+  items: ChecklistItem[];
 };
 
-function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const form = useForm<z.infer<typeof noteSchema>>({
-        resolver: zodResolver(noteSchema),
-        defaultValues: {
-            title: "",
-            content: "",
-            date: new Date(),
-            completed: false,
-        },
+function ChecklistForm({ checklist, onSubmit, open, onOpenChange }: { checklist?: JuanFranChecklist, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const form = useForm<z.infer<typeof checklistSchema>>({
+        resolver: zodResolver(checklistSchema),
+        defaultValues: { title: "", items: [{ text: "", completed: false }] },
+    });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "items"
     });
 
     useEffect(() => {
         if (open) {
-            if (note) {
+            if (checklist) {
                 form.reset({
-                    title: note.title,
-                    content: note.content,
-                    date: note.date?.toDate ? note.date.toDate() : new Date(),
-                    completed: note.completed || false,
+                    title: checklist.title,
+                    items: checklist.items.length > 0 ? checklist.items : [{ text: "", completed: false }],
                 });
             } else {
                 form.reset({
                     title: "",
-                    content: "",
-                    date: new Date(),
-                    completed: false,
+                    items: [{ text: "", completed: false }],
                 });
             }
         }
-    }, [note, open, form]);
+    }, [checklist, open, form]);
 
-    const handleSubmit = (values: z.infer<typeof noteSchema>) => {
-        onSubmit({ ...note, ...values });
+    const handleSubmit = (values: z.infer<typeof checklistSchema>) => {
+        onSubmit({ ...checklist, ...values, date: new Date() });
         onOpenChange(false);
     };
 
@@ -76,7 +70,7 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote,
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{note ? "Editar Nota" : "Añadir Nueva Nota"}</DialogTitle>
+                    <DialogTitle>{checklist ? "Editar Checklist" : "Nueva Checklist"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -85,30 +79,31 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote,
                             name="title"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Título</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Ej: Reunión de seguimiento semanal" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Título de la Checklist</FormLabel>
+                                    <FormControl><Input placeholder="Ej: Tareas de la semana" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="content"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Contenido</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Pega o escribe tu texto aquí..." {...field} rows={10} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="flex items-center gap-2">
+                                    <FormField control={form.control} name={`items.${index}.completed`} render={({ field }) => (
+                                        <FormItem><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name={`items.${index}.text`} render={({ field }) => (
+                                        <FormItem className="flex-1"><FormControl><Input placeholder="Nueva tarea..." {...field} /></FormControl></FormItem>
+                                    )} />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button type="button" variant="outline" size="sm" onClick={() => append({ text: "", completed: false })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Tarea
+                        </Button>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                            <Button type="submit">{note ? "Guardar Cambios" : "Guardar Nota"}</Button>
+                            <Button type="submit">{checklist ? "Guardar Cambios" : "Guardar Checklist"}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -117,133 +112,112 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote,
     );
 }
 
-export function JuanFranNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }: { notes: JuanFranNote[], onAddNote: (note: any) => void, onUpdateNote: (note: any) => void, onDeleteNote: (id: string) => void }) {
+export function JuanFranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote }: { notes: JuanFranChecklist[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void }) {
     const [isFormOpen, setFormOpen] = useState(false);
-    const [activeNote, setActiveNote] = useState<JuanFranNote | undefined>(undefined);
-    const [viewingNote, setViewingNote] = useState<JuanFranNote | null>(null);
+    const [activeChecklist, setActiveChecklist] = useState<JuanFranChecklist | undefined>(undefined);
 
-    const handleEdit = (note: JuanFranNote) => {
-        setActiveNote(note);
+    const handleEdit = (checklist: JuanFranChecklist) => {
+        setActiveChecklist(checklist);
         setFormOpen(true);
     };
 
     const handleAdd = () => {
-        setActiveNote(undefined);
+        setActiveChecklist(undefined);
         setFormOpen(true);
     };
 
     const handleSubmit = (values: any) => {
-        if (activeNote) {
-            onUpdateNote(values);
+        if (activeChecklist) {
+            onUpdateJuanfranNote(values);
         } else {
-            onAddNote(values);
+            onAddJuanfranNote(values);
         }
     };
     
-    const handleToggleCompleted = (note: JuanFranNote) => {
-        onUpdateNote({ ...note, completed: !note.completed });
+    const handleToggleItem = (checklist: JuanFranChecklist, itemIndex: number) => {
+        const newItems = [...checklist.items];
+        newItems[itemIndex] = { ...newItems[itemIndex], completed: !newItems[itemIndex].completed };
+        onUpdateJuanfranNote({ ...checklist, items: newItems });
     };
 
-    const sortedNotes = [...notes].sort((a, b) => {
-        const dateA = a.date?.toDate ? a.date.toDate().getTime() : 0;
-        const dateB = b.date?.toDate ? b.date.toDate().getTime() : 0;
-        return dateB - dateA;
-    });
+    const calculateProgress = (items: ChecklistItem[] = []) => {
+        if (items.length === 0) return 0;
+        const completedCount = items.filter(item => item.completed).length;
+        return (completedCount / items.length) * 100;
+    };
 
     return (
         <Card>
-            <NoteForm
-                note={activeNote}
+            <ChecklistForm
+                checklist={activeChecklist}
                 onSubmit={handleSubmit}
                 open={isFormOpen}
                 onOpenChange={setFormOpen}
             />
-            <Dialog open={!!viewingNote} onOpenChange={() => setViewingNote(null)}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>{viewingNote?.title}</DialogTitle>
-                         <DialogDescription>
-                            {viewingNote?.date?.toDate ? format(viewingNote.date.toDate(), "d 'de' LLLL 'de' yyyy, HH:mm", { locale: es }) : 'Fecha no disponible'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="max-h-[70vh] my-4">
-                        <div className="whitespace-pre-wrap pr-4 text-sm">{viewingNote?.content}</div>
-                    </ScrollArea>
-                    <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
+            
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <CardTitle className="flex items-center gap-2"><BookUser /> Apuntes de JuanFran</CardTitle>
-                    <CardDescription>Un espacio para guardar y consultar notas, reuniones y listas de tareas.</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><ListChecks /> Apuntes y Tareas de JuanFran</CardTitle>
+                    <CardDescription>Crea y gestiona listas de tareas para mantener todo bajo control.</CardDescription>
                 </div>
-                <Button onClick={handleAdd}><PlusCircle className="mr-2 h-4 w-4" />Añadir Nota</Button>
+                <Button onClick={handleAdd}><PlusCircle className="mr-2 h-4 w-4" />Crear Checklist</Button>
             </CardHeader>
             <CardContent>
-                <div className="w-full overflow-x-auto rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]"></TableHead>
-                                <TableHead className="w-[200px]">Fecha</TableHead>
-                                <TableHead>Título</TableHead>
-                                <TableHead className="text-right w-[100px]">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedNotes.map(note => (
-                                <TableRow 
-                                    key={note.id}
-                                    className={cn("cursor-pointer", note.completed && "text-muted-foreground line-through")}
-                                >
-                                     <TableCell className="cursor-default" onClick={(e) => e.stopPropagation()}>
-                                        <Checkbox
-                                            checked={note.completed}
-                                            onCheckedChange={() => handleToggleCompleted(note)}
-                                            aria-label="Marcar como completado"
-                                        />
-                                    </TableCell>
-                                    <TableCell onClick={() => setViewingNote(note)}>
-                                      {note.date?.toDate ? format(note.date.toDate(), "dd/MM/yy HH:mm", { locale: es }) : 'N/A'}
-                                    </TableCell>
-                                    <TableCell className="font-medium" onClick={() => setViewingNote(note)}>{note.title}</TableCell>
-                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                {notes.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full space-y-4">
+                        {notes.map(checklist => (
+                            <AccordionItem value={checklist.id} key={checklist.id} className="border rounded-md px-4">
+                                <AccordionTrigger className="hover:no-underline">
+                                    <div className="flex-1 text-left">
+                                        <div className="flex justify-between items-center w-full">
+                                            <span className="font-semibold text-lg">{checklist.title}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Progress value={calculateProgress(checklist.items)} className="w-1/3 h-2" />
+                                            <span className="text-sm text-muted-foreground">
+                                                {(checklist.items || []).filter(i => i.completed).length} de {(checklist.items || []).length} completadas
+                                            </span>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="space-y-2 mb-4">
+                                        {(checklist.items || []).map((item, index) => (
+                                            <div key={index} className="flex items-center gap-3 p-2 rounded hover:bg-secondary/50">
+                                                <Checkbox id={`item-${checklist.id}-${index}`} checked={item.completed} onCheckedChange={() => handleToggleItem(checklist, index)} />
+                                                <label htmlFor={`item-${checklist.id}-${index}`} className={cn("flex-1 text-sm cursor-pointer", item.completed && "line-through text-muted-foreground")}>{item.text}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handleEdit(checklist)}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
                                         <AlertDialog>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => setViewingNote(note)}><Eye className="mr-2" />Ver Nota</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => handleEdit(note)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" />Eliminar</Button>
+                                            </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                    <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará la nota permanentemente.</AlertDialogDescription>
+                                                    <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará la checklist "{checklist.title}" y todas sus tareas.</AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteNote(note.id)}>Eliminar</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => onDeleteJuanfranNote(checklist.id)}>Eliminar</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {sortedNotes.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        No hay notas añadidas.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                        <CheckCircle2 className="mx-auto h-12 w-12" />
+                        <h3 className="mt-4 text-lg font-semibold">Todo en orden</h3>
+                        <p className="mt-1 text-sm">No hay checklists. ¡Crea una para empezar!</p>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
