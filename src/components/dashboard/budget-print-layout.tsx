@@ -7,6 +7,8 @@ import type { Budget } from './budgets-card';
 import type { Company } from './company-card';
 import { Building2, Globe, Mail, Phone } from "lucide-react";
 import type { AiBudgetItem } from "./ai-section";
+import type { ProjectBreakdownChapter } from "./ai-section";
+
 
 // --- Header Component ---
 function PrintLayoutHeader({ company }: { company: Company | null }) {
@@ -132,8 +134,8 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
                   <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
                   <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{item.quantity}</td>
                   <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
-                  {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">{unitPriceValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td>}
-                  <td className="p-3 print:py-1 text-right font-mono print:text-xs">{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td>
+                  {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs">{`${unitPriceValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>}
+                  <td className="p-3 print:py-1 text-right font-mono print:text-xs">{`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
                 </tr>
               );
             })}
@@ -156,7 +158,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
                       <tr key={nombre} className="border-b border-gray-100">
                           <td className="p-3 print:py-1 font-semibold">{nombre}</td>
                           <td className="p-3 print:py-1 text-right font-mono">
-                            €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {`€${total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </td>
                       </tr>
                   ))}
@@ -176,7 +178,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
                 <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
                     <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                     <span className="text-xl font-bold font-mono text-gray-900">
-                        €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {`€${grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     </span>
                 </div>
                 <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
@@ -260,7 +262,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                                     <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{partida.medicion}</td>
                                     <td className="p-3 print:py-1 text-center print:text-xs">{partida.unidad}</td>
                                     <td className="p-3 print:py-1 text-right font-mono print:text-xs">
-                                    {lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                    {`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
                                     </td>
                                 </tr>
                                 );
@@ -286,7 +288,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                                 <tr key={nombre} className="border-b border-gray-100">
                                     <td className="p-3 print:py-1 font-semibold">{nombre}</td>
                                     <td className="p-3 print:py-1 text-right font-mono">
-                                        €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        {`€${total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                                     </td>
                                 </tr>
                             ))}
@@ -306,7 +308,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                         <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
                             <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                             <span className="text-xl font-bold font-mono text-gray-900">
-                                €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {`€${grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </span>
                         </div>
                         <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
