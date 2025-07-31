@@ -292,7 +292,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => sum + (item.unitPrice || 0), 0);
-    onSubmit({ ...(budget || {}), ...values, total, id: budget?.id || `bud-${Date.now()}` });
+    onSubmit({ ...values, total, id: budget?.id });
     onOpenChange(false);
   };
 
