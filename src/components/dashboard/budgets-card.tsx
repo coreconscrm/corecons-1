@@ -30,7 +30,7 @@ import { Badge } from "../ui/badge";
 const lineItemSchema = z.object({
   description: z.string().optional(),
   quantity: z.coerce.number().optional(),
-  unit: z.enum(["m", "m2", "m3", "pa", "ud", "cap"]).optional(),
+  unit: z.string().optional(),
   unitPrice: z.coerce.number().optional(), // This will now hold the total
 });
 
@@ -231,7 +231,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
       companyId: "",
       status: "Pendiente",
       m2: 0,
-      lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
+      lineItems: [{ description: "", quantity: 0, unit: "", unitPrice: 0 }],
       category: activeCategory,
     },
   });
@@ -283,7 +283,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
           companyId: "",
           status: "Pendiente",
           m2: 0,
-          lineItems: [{ description: "", quantity: 0, unit: "ud", unitPrice: 0 }],
+          lineItems: [{ description: "", quantity: 0, unit: "", unitPrice: 0 }],
           category: activeCategory,
         });
       }
@@ -292,9 +292,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => sum + (item.unitPrice || 0), 0);
-    onSubmit({ ...values, total, id: budget?.id });
+    const budgetData = { ...values, id: budget?.id, total };
+    onSubmit(budgetData);
     onOpenChange(false);
-  };
+};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -398,7 +399,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                             <TableCell>
                                 <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Ud."/></SelectTrigger></FormControl>
                                     <SelectContent>
                                     <SelectItem value="m">m</SelectItem>
                                     <SelectItem value="m2">m2</SelectItem>
@@ -421,7 +422,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     </TableBody>
                     </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: "ud", unitPrice: 0 })}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: "", unitPrice: 0 })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Línea
                 </Button>
               </CardContent>
