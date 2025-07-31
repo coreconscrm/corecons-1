@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useRef, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -8,6 +9,8 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -26,6 +29,14 @@ export function NotepadSheet({
   onContentChange: (content: string) => void;
 }) {
   const { toast } = useToast();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      triggerRef.current.click();
+    }
+  }, [open]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -35,8 +46,19 @@ export function NotepadSheet({
     });
   };
 
+  const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen);
+  };
+  
+  const handleClose = () => {
+      if(closeRef.current) {
+          closeRef.current.click();
+      }
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+    <Sheet onOpenChange={handleOpenChange} modal={false}>
+      <SheetTrigger ref={triggerRef} className="hidden" />
       <SheetContent className="flex flex-col">
         <SheetHeader>
           <SheetTitle>Bloc de Notas Temporal</SheetTitle>
@@ -54,10 +76,14 @@ export function NotepadSheet({
           />
         </div>
         <SheetFooter>
-          <Button variant="outline" onClick={handleCopy} disabled={!content}>
-            <Copy className="mr-2 h-4 w-4" />
-            Copiar todo
-          </Button>
+            <SheetClose ref={closeRef} className="hidden" />
+            <Button variant="outline" onClick={handleCopy} disabled={!content}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar todo
+            </Button>
+             <Button variant="secondary" onClick={handleClose}>
+                Cerrar
+            </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
