@@ -247,7 +247,7 @@ export default function DashboardPage() {
           ...newItem,
           memoria: item.memoria || "",
           planos: item.planos || "",
-          priority: item.priority || null,
+          priority: item.priority === undefined ? null : item.priority,
         };
       }
 
@@ -275,7 +275,7 @@ export default function DashboardPage() {
         await addDoc(collection(db, collectionName), newItem);
       }
       toast({ title: `${type} guardada`, description: `La ${type.toLowerCase()} se ha guardado correctamente.` });
-      fetchData();
+      await fetchData();
     } catch (error) {
         console.error(`Error adding ${type}: `, error);
         toast({ variant: 'destructive', title: `Error al añadir ${type}`, description: `No se pudo guardar. Error: ${(error as Error).message}`});
@@ -289,9 +289,14 @@ export default function DashboardPage() {
         return;
     }
     try {
+        if (type === 'Obra Nueva' || type === 'Reforma') {
+            if (data.priority === undefined) {
+                data.priority = null;
+            }
+        }
         await updateDoc(doc(db, collectionName, id), data);
         toast({ title: `${type} actualizada`, description: `Los cambios se han guardado.` });
-        fetchData();
+        await fetchData();
     } catch (error) {
         console.error(`Error updating ${type}: `, error);
         toast({ variant: 'destructive', title: `Error al actualizar ${type}`, description: `No se pudo guardar. Error: ${(error as Error).message}`});
@@ -306,7 +311,7 @@ export default function DashboardPage() {
     try {
         await deleteDoc(doc(db, collectionName, id));
         toast({ title: `${type} eliminada`, description: `La ${type.toLowerCase()} ha sido eliminada.`, variant: 'destructive' });
-        fetchData();
+        await fetchData();
     } catch (error) {
         console.error(`Error deleting ${type}: `, error);
         toast({ variant: 'destructive', title: `Error al eliminar ${type}`, description: `No se pudo eliminar. Error: ${(error as Error).message}`});

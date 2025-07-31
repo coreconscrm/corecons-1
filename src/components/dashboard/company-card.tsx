@@ -38,7 +38,7 @@ const companySchema = z.object({
 
 export type Company = z.infer<typeof companySchema> & { id: string };
 
-function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Company, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Company, onSubmit: (values: any) => Promise<void>, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof companySchema>>({
         resolver: zodResolver(companySchema),
         defaultValues: { name: "", address: "", cif: "", phone: "", email: "", web: "", logo: "", validity: "Validez del presupuesto: 30 días.", paymentMethods: "Precios indicados sin IVA. El pago se realizará 50% al inicio y 50% a la finalización." },
@@ -81,6 +81,8 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
                 const snapshot = await uploadBytesResumable(storageRef, logoFile);
                 const downloadURL = await getDownloadURL(snapshot.ref);
                 submissionData.logo = downloadURL;
+            } else {
+                submissionData.logo = company?.logo || "";
             }
 
             await onSubmit({ ...company, ...submissionData });
@@ -153,7 +155,7 @@ function CompanyForm({ company, onSubmit, onOpenChange, open }: { company?: Comp
     );
 }
 
-function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDeleteCompany }: { companies: Company[], onAddCompany: (company: any) => void, onUpdateCompany: (company: any) => void, onDeleteCompany: (id: string) => void }) {
+function CompanyProfilesCard({ companies, onAddCompany, onUpdateCompany, onDeleteCompany }: { companies: Company[], onAddCompany: (company: any) => Promise<void>, onUpdateCompany: (company: any) => Promise<void>, onDeleteCompany: (id: string) => void }) {
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeCompany, setActiveCompany] = useState<Company | undefined>(undefined);
     
