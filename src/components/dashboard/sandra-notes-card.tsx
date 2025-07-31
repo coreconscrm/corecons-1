@@ -18,11 +18,14 @@ import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye } from "lucid
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 const noteSchema = z.object({
   title: z.string().min(1, "El título es requerido."),
   content: z.string().min(1, "El contenido no puede estar vacío."),
   date: z.date(),
+  completed: z.boolean(),
 });
 
 export type SandraNote = {
@@ -30,6 +33,7 @@ export type SandraNote = {
   title: string;
   content: string;
   date: any; // Firestore Timestamp
+  completed: boolean;
 };
 
 function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: SandraNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
@@ -39,6 +43,7 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: SandraNote, o
             title: "",
             content: "",
             date: new Date(),
+            completed: false,
         },
     });
 
@@ -49,12 +54,14 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: SandraNote, o
                     title: note.title,
                     content: note.content,
                     date: note.date?.toDate ? note.date.toDate() : new Date(),
+                    completed: note.completed || false,
                 });
             } else {
                 form.reset({
                     title: "",
                     content: "",
                     date: new Date(),
+                    completed: false,
                 });
             }
         }
@@ -132,6 +139,10 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
             onAddNote(values);
         }
     };
+    
+    const handleToggleCompleted = (note: SandraNote) => {
+        onUpdateNote({ ...note, completed: !note.completed });
+    };
 
     const sortedNotes = [...notes].sort((a, b) => {
         const dateA = a.date?.toDate ? a.date.toDate().getTime() : 0;
@@ -176,6 +187,7 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[50px]"></TableHead>
                                 <TableHead className="w-[200px]">Fecha</TableHead>
                                 <TableHead>Título</TableHead>
                                 <TableHead className="text-right w-[100px]">Acciones</TableHead>
@@ -184,12 +196,20 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
                         <TableBody>
                             {sortedNotes.map(note => (
                                 <TableRow 
-                                    key={note.id} 
-                                    onClick={() => setViewingNote(note)}
-                                    className="cursor-pointer"
+                                    key={note.id}
+                                    className={cn("cursor-pointer", note.completed && "text-muted-foreground line-through")}
                                 >
-                                    <TableCell>{note.date?.toDate ? format(note.date.toDate(), "d MMM yyyy, HH:mm", { locale: es }) : 'N/A'}</TableCell>
-                                    <TableCell className="font-medium">{note.title}</TableCell>
+                                     <TableCell className="cursor-default" onClick={(e) => e.stopPropagation()}>
+                                        <Checkbox
+                                            checked={note.completed}
+                                            onCheckedChange={() => handleToggleCompleted(note)}
+                                            aria-label="Marcar como completado"
+                                        />
+                                    </TableCell>
+                                    <TableCell onClick={() => setViewingNote(note)}>
+                                      {note.date?.toDate ? format(note.date.toDate(), "dd/MM/yy HH:mm", { locale: es }) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className="font-medium" onClick={() => setViewingNote(note)}>{note.title}</TableCell>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         <AlertDialog>
                                             <DropdownMenu>
@@ -216,7 +236,7 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
                             ))}
                             {sortedNotes.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         No hay notas añadidas.
                                     </TableCell>
                                 </TableRow>

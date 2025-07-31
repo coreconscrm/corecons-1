@@ -18,11 +18,14 @@ import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye } from "lucid
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 const prioritySchema = z.object({
   title: z.string().min(1, "El título es requerido."),
   content: z.string().min(1, "El contenido no puede estar vacío."),
   date: z.date(),
+  completed: z.boolean(),
 });
 
 export type DaniPriority = {
@@ -30,6 +33,7 @@ export type DaniPriority = {
   title: string;
   content: string;
   date: any; // Firestore Timestamp
+  completed: boolean;
 };
 
 function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: DaniPriority, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
@@ -39,6 +43,7 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
             title: "",
             content: "",
             date: new Date(),
+            completed: false,
         },
     });
 
@@ -49,12 +54,14 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
                     title: priority.title,
                     content: priority.content,
                     date: priority.date?.toDate ? priority.date.toDate() : new Date(),
+                    completed: priority.completed || false,
                 });
             } else {
                 form.reset({
                     title: "",
                     content: "",
                     date: new Date(),
+                    completed: false,
                 });
             }
         }
@@ -132,6 +139,10 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
             onAddPriority(values);
         }
     };
+    
+    const handleToggleCompleted = (priority: DaniPriority) => {
+        onUpdatePriority({ ...priority, completed: !priority.completed });
+    };
 
     const sortedPriorities = [...priorities].sort((a, b) => {
         const dateA = a.date?.toDate ? a.date.toDate().getTime() : 0;
@@ -176,6 +187,7 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[50px]"></TableHead>
                                 <TableHead className="w-[200px]">Fecha</TableHead>
                                 <TableHead>Título</TableHead>
                                 <TableHead className="text-right w-[100px]">Acciones</TableHead>
@@ -185,11 +197,19 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                             {sortedPriorities.map(priority => (
                                 <TableRow 
                                     key={priority.id} 
-                                    onClick={() => setViewingPriority(priority)}
-                                    className="cursor-pointer"
+                                    className={cn("cursor-pointer", priority.completed && "text-muted-foreground line-through")}
                                 >
-                                    <TableCell>{priority.date?.toDate ? format(priority.date.toDate(), "d MMM yyyy, HH:mm", { locale: es }) : 'N/A'}</TableCell>
-                                    <TableCell className="font-medium">{priority.title}</TableCell>
+                                    <TableCell className="cursor-default" onClick={(e) => e.stopPropagation()}>
+                                        <Checkbox
+                                            checked={priority.completed}
+                                            onCheckedChange={() => handleToggleCompleted(priority)}
+                                            aria-label="Marcar como completado"
+                                        />
+                                    </TableCell>
+                                    <TableCell onClick={() => setViewingPriority(priority)}>
+                                      {priority.date?.toDate ? format(priority.date.toDate(), "dd/MM/yy HH:mm", { locale: es }) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className="font-medium" onClick={() => setViewingPriority(priority)}>{priority.title}</TableCell>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         <AlertDialog>
                                             <DropdownMenu>
@@ -216,7 +236,7 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                             ))}
                             {sortedPriorities.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         No hay prioridades añadidas.
                                     </TableCell>
                                 </TableRow>

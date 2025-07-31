@@ -587,12 +587,12 @@ export default function DashboardPage() {
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
               
               juanfranNotes={juanfranNotes}
-              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Nota de JuanFran')}
+              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', {...note, completed: false}, 'Nota de JuanFran')}
               onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Nota de JuanFran')}
               onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Nota de JuanFran')}
 
               sandraNotes={sandraNotes}
-              onAddSandraNote={(note) => handleCreate('sandra_notes', note, 'Nota de Sandra')}
+              onAddSandraNote={(note) => handleCreate('sandra_notes', {...note, completed: false}, 'Nota de Sandra')}
               onUpdateSandraNote={(note) => handleUpdate('sandra_notes', note, 'Nota de Sandra')}
               onDeleteSandraNote={(id) => handleDelete('sandra_notes', id, 'Nota de Sandra')}
 
@@ -602,7 +602,7 @@ export default function DashboardPage() {
               onDeleteJordanChecklist={(id) => handleDelete('jordan_checklists', id, 'Checklist de Jordan')}
               
               daniPriorities={daniPriorities}
-              onAddDaniPriority={(priority) => handleCreate('dani_priorities', priority, 'Prioridad de Dani')}
+              onAddDaniPriority={(priority) => handleCreate('dani_priorities', {...priority, completed: false}, 'Prioridad de Dani')}
               onUpdateDaniPriority={(priority) => handleUpdate('dani_priorities', priority, 'Prioridad de Dani')}
               onDeleteDaniPriority={(id) => handleDelete('dani_priorities', id, 'Prioridad de Dani')}
 
