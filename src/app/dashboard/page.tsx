@@ -10,7 +10,7 @@ import { SeguimientoOverview, BudgetOverview, FormOverview } from "@/components/
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, StickyNote } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { isWithinInterval, addDays, isValid, parse, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -487,8 +487,19 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onSettingsClick={() => handleTabChange("settings")} onNotepadClick={() => setNotepadOpen(true)} />
+      <Header onSettingsClick={() => handleTabChange("settings")} />
       <NotepadSheet open={isNotepadOpen} onOpenChange={setNotepadOpen} content={notepadContent} onContentChange={setNotepadContent} />
+      
+      <Button
+        variant="default"
+        size="icon"
+        className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg z-50"
+        onClick={() => setNotepadOpen(true)}
+        aria-label="Abrir bloc de notas"
+      >
+        <StickyNote className="h-6 w-6" />
+      </Button>
+
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
