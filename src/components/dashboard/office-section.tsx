@@ -72,7 +72,7 @@ export function OfficeSection({
 
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="h-auto flex-col md:flex-row md:h-10">
+            <TabsList className="h-auto flex-col md:flex-row md:h-10 md:justify-between">
                 <TabsTrigger value="juanfran">
                     <ListChecks className="mr-2" />
                     Apuntes de JuanFran
