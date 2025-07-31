@@ -32,6 +32,7 @@ const lineItemSchema = z.object({
   quantity: z.coerce.number().optional(),
   unit: z.string().optional(),
   unitPrice: z.coerce.number().optional(), // This will now hold the total
+  isChapter: z.boolean().optional(),
 });
 
 const budgetSchema = z.object({
@@ -249,6 +250,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   const grandTotal = useMemo(() => {
     if (!watchedLineItems) return 0;
     return watchedLineItems.reduce((total, item) => {
+      if (item.isChapter) return total;
       return total + (item.unitPrice || 0); // Summing up unitPrice directly as it's the total now
     }, 0);
   }, [watchedLineItems]);
@@ -291,7 +293,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   }, [budget, open, form, activeCategory]);
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
-    const total = (values.lineItems || []).reduce((sum, item) => sum + (item.unitPrice || 0), 0);
+    const total = (values.lineItems || []).reduce((sum, item) => {
+        if (item.isChapter) return sum;
+        return sum + (item.unitPrice || 0);
+    }, 0);
     const budgetData = { ...budget, ...values, total };
     onSubmit(budgetData);
     onOpenChange(false);
@@ -388,16 +393,17 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     <TableBody>
                         {fields.map((field, index) => {
                          const itemTotal = watchedLineItems?.[index]?.unitPrice || 0;
+                         const isChapter = watchedLineItems?.[index]?.isChapter;
                         return (
-                            <TableRow key={field.id}>
+                            <TableRow key={field.id} className={isChapter ? 'bg-secondary/50 font-semibold' : ''}>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => <Input {...field} placeholder="Demolición tabiquería" value={field.value ?? ''}/>} />
+                                <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => <Input {...field} placeholder={isChapter ? "Nombre del capítulo" : "Demolición tabiquería"} value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />
+                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />}
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
+                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Ud."/></SelectTrigger></FormControl>
                                     <SelectContent>
@@ -409,10 +415,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                                     <SelectItem value="cap">cap</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                )} />
+                                )} />}
                             </TableCell>
                             <TableCell>
-                                <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} placeholder="0.00" value={field.value ?? ''}/>} />
+                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} placeholder="0.00" value={field.value ?? ''}/>} />}
                             </TableCell>
                             <TableCell>
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -422,8 +428,11 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     </TableBody>
                     </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: "", unitPrice: 0 })}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: "", unitPrice: 0, isChapter: false })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Línea
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="mt-4 ml-2" onClick={() => append({ description: "", isChapter: true, quantity: 0, unit: "", unitPrice: 0 })}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Añadir Capítulo
                 </Button>
               </CardContent>
               <CardFooter className="justify-end bg-secondary/50 p-4">
@@ -668,6 +677,13 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
                         </TableHeader>
                         <TableBody>
                             {(viewingBudget.lineItems || []).map((item, index) => {
+                                if (item.isChapter) {
+                                    return (
+                                        <TableRow key={index} className="bg-secondary/50 hover:bg-secondary/50">
+                                            <TableCell colSpan={6} className="font-semibold">{item.description}</TableCell>
+                                        </TableRow>
+                                    );
+                                }
                                 const lineTotal = item.unitPrice || 0; // unitPrice is now the total
                                 const quantity = item.quantity || 0;
                                 const unitPrice = quantity > 0 ? lineTotal / quantity : 0;

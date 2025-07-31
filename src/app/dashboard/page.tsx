@@ -15,7 +15,7 @@ import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { isWithinInterval, addDays, isValid, parse, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
-import type { BudgetCategory } from '@/components/dashboard/budgets-card';
+import type { BudgetCategory, LineItem } from '@/components/dashboard/budgets-card';
 import type { AiBudgetItem } from '@/components/dashboard/ai-section';
 
 
@@ -349,22 +349,38 @@ export default function DashboardPage() {
   };
 
   const handleCreateBudgetFromAi = (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => {
-    const lineItems = aiBudget.breakdown.capitulos.flatMap(capitulo => 
-        capitulo.partidas.map(partida => ({
-            description: partida.descripcion,
-            quantity: parseFloat(String(partida.medicion).replace(',', '.')) || 1,
-            unit: partida.unidad?.toLowerCase() || 'ud',
-            unitPrice: aiBudget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0,
-        }))
-    );
+    const lineItems: LineItem[] = [];
 
-    const total = lineItems.reduce((sum, item) => sum + (item.unitPrice || 0), 0);
+    let grandTotal = 0;
+
+    aiBudget.breakdown.capitulos.forEach(capitulo => {
+        // Add chapter title as a line item
+        lineItems.push({
+            description: capitulo.nombre,
+            isChapter: true,
+            quantity: 0,
+            unit: '',
+            unitPrice: 0,
+        });
+
+        capitulo.partidas.forEach(partida => {
+            const lineTotal = aiBudget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+            grandTotal += lineTotal;
+            lineItems.push({
+                description: partida.descripcion,
+                quantity: parseFloat(String(partida.medicion).replace(',', '.')) || 1,
+                unit: partida.unidad?.toLowerCase() || '',
+                unitPrice: lineTotal, // This is the total for the line
+                isChapter: false,
+            });
+        });
+    });
 
     const newBudget = {
         name: aiBudget.title,
-        clientId: null, // No client associated yet
+        clientId: null,
         status: 'Pendiente',
-        total: total,
+        total: grandTotal,
         lineItems: lineItems,
         category: category,
         documents: [],
