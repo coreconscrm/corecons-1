@@ -300,33 +300,39 @@ export function JuanFranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNo
                     {simpleNotes.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {simpleNotes.map(note => (
-                            <Card key={note.id} className={cn("flex flex-col", note.completed && "bg-muted/50 text-muted-foreground")}>
+                            <Card 
+                                key={note.id} 
+                                className={cn("flex flex-col cursor-pointer hover:border-primary", note.completed && "bg-muted/50 text-muted-foreground")}
+                                onClick={() => setViewingNote(note)}
+                            >
                                 <CardHeader className="flex-row items-center justify-between pb-2">
                                     <CardTitle className={cn("text-lg", note.completed && "line-through")}>{note.title}</CardTitle>
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setViewingNote(note)}><Eye className="mr-2" />Ver</DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleEdit(note)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el apunte permanentemente.</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteJuanfranNote(note.id)}>Eliminar</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setViewingNote(note)}><Eye className="mr-2" />Ver</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleEdit(note)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el apunte permanentemente.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteJuanfranNote(note.id)}>Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="flex-grow">
                                      <p className={cn("text-sm text-muted-foreground truncate", note.completed && "line-through")}>
                                         {note.content}
                                     </p>
                                 </CardContent>
-                                <CardFooter>
+                                <CardFooter onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center space-x-2">
                                         <Checkbox id={`note-check-${note.id}`} checked={note.completed} onCheckedChange={() => handleToggleCompleted(note)} />
                                         <label htmlFor={`note-check-${note.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
