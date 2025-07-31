@@ -612,7 +612,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   }
 
   const handleSubmit = (values: any) => {
-    if(editingBudget) {
+    if(values.id) {
         onUpdateBudget(values);
     } else {
         onAddBudget(values);
