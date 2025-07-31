@@ -16,6 +16,7 @@ import type { BudgetCategory } from "./budgets-card";
 import type { JuanFranNote } from "./juanfran-notes-card";
 import type { SandraNote } from './sandra-notes-card';
 import type { Checklist } from './jordan-checklist-card';
+import type { DaniPriority } from './dani-priorities-card';
 
 const ProjectListCard = dynamic(() => import('@/components/dashboard/performance-chart').then(mod => mod.ProjectListCard), { ssr: false });
 
@@ -42,6 +43,7 @@ export function DashboardTabs({
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
     sandraNotes, onAddSandraNote, onUpdateSandraNote, onDeleteSandraNote,
     jordanChecklists, onAddJordanChecklist, onUpdateJordanChecklist, onDeleteJordanChecklist,
+    daniPriorities, onAddDaniPriority, onUpdateDaniPriority, onDeleteDaniPriority,
     chatMessages, onAddChatMessage, onUpdateChatMessage, onDeleteChatMessage,
     onCreateBudgetFromAi,
     visibleTabs, onTabVisibilityChange,
@@ -69,6 +71,7 @@ export function DashboardTabs({
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
     jordanChecklists: Checklist[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
+    daniPriorities: DaniPriority[], onAddDaniPriority: (p: any) => void, onUpdateDaniPriority: (p: any) => void, onDeleteDaniPriority: (id: string) => void,
     chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
@@ -104,6 +107,10 @@ export function DashboardTabs({
             onAddJordanChecklist={onAddJordanChecklist}
             onUpdateJordanChecklist={onUpdateJordanChecklist}
             onDeleteJordanChecklist={onDeleteJordanChecklist}
+            daniPriorities={daniPriorities}
+            onAddDaniPriority={onAddDaniPriority}
+            onUpdateDaniPriority={onUpdateDaniPriority}
+            onDeleteDaniPriority={onDeleteDaniPriority}
             chatMessages={chatMessages}
             team={team}
             onAddChatMessage={onAddChatMessage}

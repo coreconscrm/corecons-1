@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [juanfranNotes, setJuanfranNotes] = useState<any[]>([]);
   const [sandraNotes, setSandraNotes] = useState<any[]>([]);
   const [jordanChecklists, setJordanChecklists] = useState<any[]>([]);
+  const [daniPriorities, setDaniPriorities] = useState<any[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
@@ -140,7 +141,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes', 'sandra_notes', 'jordan_checklists'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes', 'sandra_notes', 'jordan_checklists', 'dani_priorities'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         const chatQuery = query(collection(db, 'chat_messages'), orderBy('createdAt', 'desc'));
         const chatSnapshot = await getDocs(chatQuery);
@@ -166,6 +167,7 @@ export default function DashboardPage() {
         setJuanfranNotes(mapSnapToState(snapshots[16]));
         setSandraNotes(mapSnapToState(snapshots[17]));
         setJordanChecklists(mapSnapToState(snapshots[18]));
+        setDaniPriorities(mapSnapToState(snapshots[19]));
         setChatMessages(mapSnapToState(chatSnapshot));
 
         // Fetch config options
@@ -554,7 +556,7 @@ export default function DashboardPage() {
 
               forms={forms}
               onLoadForms={handleLoadForms}
-              onUpdateForm={handleUpdateForm}
+              onUpdateForm={onUpdateForm}
               onDeleteForm={handleDeleteForm}
 
               priorityCalls={priorityCalls}
@@ -598,6 +600,11 @@ export default function DashboardPage() {
               onAddJordanChecklist={(checklist) => handleCreate('jordan_checklists', checklist, 'Checklist de Jordan')}
               onUpdateJordanChecklist={(checklist) => handleUpdate('jordan_checklists', checklist, 'Checklist de Jordan')}
               onDeleteJordanChecklist={(id) => handleDelete('jordan_checklists', id, 'Checklist de Jordan')}
+              
+              daniPriorities={daniPriorities}
+              onAddDaniPriority={(priority) => handleCreate('dani_priorities', priority, 'Prioridad de Dani')}
+              onUpdateDaniPriority={(priority) => handleUpdate('dani_priorities', priority, 'Prioridad de Dani')}
+              onDeleteDaniPriority={(id) => handleDelete('dani_priorities', id, 'Prioridad de Dani')}
 
               chatMessages={chatMessages}
               onAddChatMessage={(message) => handleCreate('chat_messages', message, 'Mensaje de Chat')}

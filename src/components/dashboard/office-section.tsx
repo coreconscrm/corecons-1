@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JuanFranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
 import { SandraNotesCard, type SandraNote } from "./sandra-notes-card";
 import { JordanChecklistCard, type Checklist } from "./jordan-checklist-card";
+import { DaniPrioritiesCard, type DaniPriority } from "./dani-priorities-card";
 import { ChatSection } from "./chat-section";
 
 export function OfficeSection({
@@ -23,6 +24,10 @@ export function OfficeSection({
     onAddJordanChecklist,
     onUpdateJordanChecklist,
     onDeleteJordanChecklist,
+    daniPriorities,
+    onAddDaniPriority,
+    onUpdateDaniPriority,
+    onDeleteDaniPriority,
     chatMessages,
     team,
     onAddChatMessage,
@@ -41,6 +46,10 @@ export function OfficeSection({
     onAddJordanChecklist: (c: any) => void;
     onUpdateJordanChecklist: (c: any) => void;
     onDeleteJordanChecklist: (id: string) => void;
+    daniPriorities: DaniPriority[];
+    onAddDaniPriority: (p: any) => void;
+    onUpdateDaniPriority: (p: any) => void;
+    onDeleteDaniPriority: (id: string) => void;
     chatMessages: any[];
     team: any[];
     onAddChatMessage: (message: any) => void;
@@ -63,7 +72,7 @@ export function OfficeSection({
 
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="juanfran">
                     <BookUser className="mr-2" />
                     Apuntes de JuanFran
@@ -75,6 +84,10 @@ export function OfficeSection({
                 <TabsTrigger value="jordan">
                     <ListChecks className="mr-2" />
                     CheckList de Jordan
+                </TabsTrigger>
+                 <TabsTrigger value="dani">
+                    <BookUser className="mr-2" />
+                    Prioridades para Dani
                 </TabsTrigger>
                  <TabsTrigger value="chat">
                     <MessageSquare className="mr-2" />
@@ -103,6 +116,14 @@ export function OfficeSection({
                     onAddChecklist={onAddJordanChecklist}
                     onUpdateChecklist={onUpdateJordanChecklist}
                     onDeleteChecklist={onDeleteJordanChecklist}
+                />
+            </TabsContent>
+            <TabsContent value="dani" className="mt-6">
+                <DaniPrioritiesCard
+                    priorities={daniPriorities}
+                    onAddPriority={onAddDaniPriority}
+                    onUpdatePriority={onUpdateDaniPriority}
+                    onDeletePriority={onDeleteDaniPriority}
                 />
             </TabsContent>
             <TabsContent value="chat" className="mt-6">
