@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookUser, MessageSquare, ListChecks } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,8 +47,22 @@ export function OfficeSection({
     onUpdateChatMessage: (message: any) => void;
     onDeleteChatMessage: (id: string) => void;
 }) {
+    const [activeTab, setActiveTab] = useState('juanfran');
+    
+    useEffect(() => {
+        const savedTab = localStorage.getItem('officeSection_activeTab');
+        if (savedTab) {
+            setActiveTab(savedTab);
+        }
+    }, []);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        localStorage.setItem('officeSection_activeTab', value);
+    };
+
     return (
-        <Tabs defaultValue="juanfran" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="juanfran">
                     <BookUser className="mr-2" />

@@ -1623,6 +1623,44 @@ export function AiSection({
 }) {
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
+    const [activeTab, setActiveTab] = useState('budgets');
+    const [subTab, setSubTab] = useState('upload-for-prices');
+    const [viewEditSubTab, setViewEditSubTab] = useState('ai-budgets');
+    const [reportsSubTab, setReportsSubTab] = useState('generator');
+    
+    useEffect(() => {
+        const savedTab = localStorage.getItem('aiSection_activeTab');
+        const savedSubTab = localStorage.getItem('aiSection_subTab');
+        const savedViewEditSubTab = localStorage.getItem('aiSection_viewEditSubTab');
+        const savedReportsSubTab = localStorage.getItem('aiSection_reportsSubTab');
+
+        if (savedTab) setActiveTab(savedTab);
+        if (savedSubTab) setSubTab(savedSubTab);
+        if (savedViewEditSubTab) setViewEditSubTab(savedViewEditSubTab);
+        if (savedReportsSubTab) setReportsSubTab(savedReportsSubTab);
+    }, []);
+
+    const handleTabChange = (value: string, type: 'main' | 'sub' | 'viewEdit' | 'reports') => {
+        switch (type) {
+            case 'main':
+                setActiveTab(value);
+                localStorage.setItem('aiSection_activeTab', value);
+                break;
+            case 'sub':
+                setSubTab(value);
+                localStorage.setItem('aiSection_subTab', value);
+                break;
+            case 'viewEdit':
+                setViewEditSubTab(value);
+                localStorage.setItem('aiSection_viewEditSubTab', value);
+                break;
+            case 'reports':
+                setReportsSubTab(value);
+                localStorage.setItem('aiSection_reportsSubTab', value);
+                break;
+        }
+    };
+
 
     const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
       const pricesRef = collection(db, "preciosMaestros");
@@ -1703,13 +1741,13 @@ export function AiSection({
     }, [toast]);
     
     return (
-        <Tabs defaultValue="budgets" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v, 'main')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="budgets"><BrainCircuit className="mr-2" />Presupuestos y Precios</TabsTrigger>
                 <TabsTrigger value="reports"><BrainCircuit className="mr-2" />Reportes de Formularios</TabsTrigger>
             </TabsList>
             <TabsContent value="budgets" className="mt-6">
-                <Tabs defaultValue="upload-for-prices" className="w-full">
+                <Tabs value={subTab} onValueChange={(v) => handleTabChange(v, 'sub')} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="upload-for-prices">
                         <Database className="mr-2" /> Subir para Precios
@@ -1743,7 +1781,7 @@ export function AiSection({
                     </TabsContent>
 
                     <TabsContent value="view-and-edit" className="mt-6">
-                        <Tabs defaultValue="ai-budgets" className="w-full">
+                        <Tabs value={viewEditSubTab} onValueChange={(v) => handleTabChange(v, 'viewEdit')} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
                                 <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
@@ -1759,7 +1797,7 @@ export function AiSection({
                 </Tabs>
             </TabsContent>
             <TabsContent value="reports" className="mt-6">
-                <Tabs defaultValue="generator" className="w-full">
+                <Tabs value={reportsSubTab} onValueChange={(v) => handleTabChange(v, 'reports')} className="w-full">
                      <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="generator">Generador de Reportes</TabsTrigger>
                         <TabsTrigger value="viewer">Visor de Reporte IA</TabsTrigger>

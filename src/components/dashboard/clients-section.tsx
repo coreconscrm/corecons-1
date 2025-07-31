@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientListCard } from "./active-courses-card";
 import { ReformaListCard } from "./reformas-card";
@@ -19,9 +20,25 @@ export function ClientsSection({
     ].filter(tab => tab.visible);
 
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
+    const [activeTab, setActiveTab] = useState(defaultTab);
+    
+    useEffect(() => {
+        const savedTab = localStorage.getItem('clientsSection_activeTab');
+        if (savedTab && tabs.some(t => t.value === savedTab)) {
+            setActiveTab(savedTab);
+        } else if (tabs.length > 0) {
+            setActiveTab(tabs[0].value);
+        }
+    }, [visibleTabs]);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        localStorage.setItem('clientsSection_activeTab', value);
+    };
+
 
     return (
-        <Tabs defaultValue={defaultTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
                 {tabs.map(tab => (
                     <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>

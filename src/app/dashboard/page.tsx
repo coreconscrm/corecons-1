@@ -79,6 +79,18 @@ export default function DashboardPage() {
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
   const [showOverviewPanels, setShowOverviewPanels] = useState(false);
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem('mainTab');
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    localStorage.setItem('mainTab', tab);
+  };
   
   const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer', newOptions: string[]) => {
     try {
@@ -431,7 +443,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onSettingsClick={() => setActiveTab("settings")} onNotepadClick={() => setNotepadOpen(true)} />
+      <Header onSettingsClick={() => handleTabChange("settings")} onNotepadClick={() => setNotepadOpen(true)} />
       <NotepadSheet open={isNotepadOpen} onOpenChange={setNotepadOpen} content={notepadContent} onContentChange={setNotepadContent} />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {isLoading ? (
@@ -474,7 +486,7 @@ export default function DashboardPage() {
             
             <DashboardTabs
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={handleTabChange}
 
               clients={clients}
               onAddClient={(client) => handleCreate('clients', client, 'Obra Nueva')}

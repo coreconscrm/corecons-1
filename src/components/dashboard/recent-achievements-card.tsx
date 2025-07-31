@@ -410,6 +410,19 @@ export function FormsSection({
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
   const { toast } = useToast();
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('main');
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem('formsSection_activeTab');
+    if (savedTab) {
+        setActiveTab(savedTab);
+    }
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    localStorage.setItem('formsSection_activeTab', value);
+  };
 
   const [columnConfigs, setColumnConfigs] = useState<{ [key: string]: ColumnConfig[] }>({
       forms: [],
@@ -557,7 +570,7 @@ export function FormsSection({
   };
 
   return (
-    <Tabs defaultValue="main" className="w-full">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
        <AlertDialog open={!!promotingItem} onOpenChange={(open) => !open && setPromotingItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
