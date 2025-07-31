@@ -72,28 +72,30 @@ export function OfficeSection({
 
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="h-auto flex-col items-center md:flex-row md:h-10 md:justify-between">
-                <TabsTrigger value="juanfran">
-                    <ListChecks className="mr-2" />
-                    Apuntes de JuanFran
-                </TabsTrigger>
-                <TabsTrigger value="sandra">
-                    <BookUser className="mr-2" />
-                    Apuntes de Sandra
-                </TabsTrigger>
-                <TabsTrigger value="jordan">
-                    <ListChecks className="mr-2" />
-                    CheckList de Jordan
-                </TabsTrigger>
-                 <TabsTrigger value="dani">
-                    <BookUser className="mr-2" />
-                    Prioridades para Dani
-                </TabsTrigger>
-                 <TabsTrigger value="chat">
-                    <MessageSquare className="mr-2" />
-                    Chat
-                </TabsTrigger>
-            </TabsList>
+            <div className="flex justify-center">
+                <TabsList className="h-auto flex-col md:flex-row">
+                    <TabsTrigger value="juanfran">
+                        <ListChecks className="mr-2" />
+                        Apuntes de JuanFran
+                    </TabsTrigger>
+                    <TabsTrigger value="sandra">
+                        <BookUser className="mr-2" />
+                        Apuntes de Sandra
+                    </TabsTrigger>
+                    <TabsTrigger value="jordan">
+                        <ListChecks className="mr-2" />
+                        CheckList de Jordan
+                    </TabsTrigger>
+                    <TabsTrigger value="dani">
+                        <BookUser className="mr-2" />
+                        Prioridades para Dani
+                    </TabsTrigger>
+                    <TabsTrigger value="chat">
+                        <MessageSquare className="mr-2" />
+                        Chat
+                    </TabsTrigger>
+                </TabsList>
+            </div>
             <TabsContent value="juanfran" className="mt-6">
                  <JuanFranNotesCard
                     notes={juanfranNotes}
