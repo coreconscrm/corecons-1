@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserPlus, MoreHorizontal, Pencil, Trash2, Plus, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -142,18 +141,18 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
     const groupedReformistas = useMemo(() => {
         const groups: Record<string, Reformista[]> = {};
         
+        // Ensure all defined categories exist in the groups object
+        categories.forEach(cat => {
+            groups[cat] = [];
+        });
+
+        // Populate the groups with reformistas
         localReformistas.forEach(r => {
             const category = r.category || 'General';
             if (!groups[category]) {
                 groups[category] = [];
             }
             groups[category].push(r);
-        });
-
-        categories.forEach(cat => {
-            if (!groups[cat]) {
-                groups[cat] = [];
-            }
         });
         
         return groups;
@@ -182,25 +181,24 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
         const { source, destination } = result;
         if (!destination) return;
 
-        const sourceCategory = source.droppableId;
-        if (source.droppableId !== destination.droppableId) {
-             toast({ title: "Acción no permitida", description: "Por favor, edita el reformista para cambiar su categoría.", variant: "destructive" });
-             return;
+        // Reordering within the same list
+        if (source.droppableId === destination.droppableId) {
+            const category = source.droppableId;
+            const items = Array.from(groupedReformistas[category]);
+            const [reorderedItem] = items.splice(source.index, 1);
+            items.splice(destination.index, 0, reorderedItem);
+
+            const updatedReformistas = [...localReformistas];
+            
+            items.forEach((item, index) => {
+                const originalIndex = updatedReformistas.findIndex(r => r.id === item.id);
+                if (originalIndex !== -1) {
+                    updatedReformistas[originalIndex] = { ...updatedReformistas[originalIndex], order: index };
+                    onUpdateReformista({ ...updatedReformistas[originalIndex], order: index });
+                }
+            });
+             toast({ title: "Orden actualizado", description: "Se ha guardado el nuevo orden de los reformistas."});
         }
-
-        const items = Array.from(groupedReformistas[sourceCategory]);
-        const [reorderedItem] = items.splice(source.index, 1);
-        items.splice(destination.index, 0, reorderedItem);
-
-        const updatedReformistas = [...localReformistas];
-        
-        items.forEach((item, index) => {
-            const originalIndex = updatedReformistas.findIndex(r => r.id === item.id);
-            if (originalIndex !== -1) {
-                updatedReformistas[originalIndex] = { ...updatedReformistas[originalIndex], order: index };
-                onUpdateReformista({ ...updatedReformistas[originalIndex], order: index });
-            }
-        });
     };
 
     const handleAddCategory = () => {
@@ -239,84 +237,78 @@ export function ReformistasListCard({ reformistas, onAddReformista, onUpdateRefo
                 </div>
             </CardHeader>
             <CardContent>
-                 <DragDropContext onDragEnd={onDragEnd}>
-                    <Accordion type="multiple" defaultValue={categories} className="w-full space-y-4">
-                        {Object.entries(groupedReformistas).map(([category, reformistasInCategory]) => (
-                            <AccordionItem value={category} key={category} className="border rounded-md px-4">
-                                <AccordionTrigger className="text-lg font-semibold">{category} ({reformistasInCategory.length})</AccordionTrigger>
-                                <AccordionContent>
-                                    <Droppable droppableId={category}>
-                                        {(provided, snapshot) => (
-                                            <div ref={provided.innerRef} {...provided.droppableProps} className={`w-full overflow-x-auto rounded-md ${snapshot.isDraggingOver ? 'bg-secondary' : ''}`}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead className="w-8"></TableHead>
-                                                            <TableHead>Nombre</TableHead>
-                                                            <TableHead>Especialidad</TableHead>
-                                                            <TableHead>Localidad</TableHead>
-                                                            <TableHead>Teléfono</TableHead>
-                                                            <TableHead>Email</TableHead>
-                                                            <TableHead>Instagram</TableHead>
-                                                            <TableHead>Web</TableHead>
-                                                            <TableHead className="text-right">Acciones</TableHead>
+                <div className="rounded-md border">
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-8"></TableHead>
+                                    <TableHead>Nombre</TableHead>
+                                    <TableHead>Especialidad</TableHead>
+                                    <TableHead>Localidad</TableHead>
+                                    <TableHead>Teléfono</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Instagram</TableHead>
+                                    <TableHead>Web</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            {Object.entries(groupedReformistas).map(([category, reformistasInCategory]) => (
+                                <Droppable droppableId={category} key={category}>
+                                    {(provided) => (
+                                        <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                                            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                                                <TableCell colSpan={9} className="font-semibold text-lg">{category} ({reformistasInCategory.length})</TableCell>
+                                            </TableRow>
+                                            {reformistasInCategory.length > 0 ? reformistasInCategory.map((reformista, index) => (
+                                                <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
+                                                    {(provided) => (
+                                                        <TableRow ref={provided.innerRef} {...provided.draggableProps}>
+                                                            <TableCell {...provided.dragHandleProps}><GripVertical className="text-muted-foreground" /></TableCell>
+                                                            <TableCell className="font-medium">{reformista.name}</TableCell>
+                                                            <TableCell>{reformista.role}</TableCell>
+                                                            <TableCell>{reformista.localidad}</TableCell>
+                                                            <TableCell>{reformista.phone}</TableCell>
+                                                            <TableCell>{reformista.email}</TableCell>
+                                                            <TableCell>{reformista.instagram}</TableCell>
+                                                            <TableCell>{reformista.web}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <AlertDialog>
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                                        <DropdownMenuContent>
+                                                                            <DropdownMenuItem onSelect={() => handleEdit(reformista)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el reformista.</AlertDialogDescription></AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={() => onDeleteReformista(reformista.id)}>Eliminar</AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </TableCell>
                                                         </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {reformistasInCategory.length > 0 ? reformistasInCategory.map((reformista, index) => (
-                                                            <Draggable key={reformista.id} draggableId={reformista.id} index={index}>
-                                                                {(provided) => (
-                                                                    <TableRow ref={provided.innerRef} {...provided.draggableProps}>
-                                                                        <TableCell {...provided.dragHandleProps}><GripVertical className="text-muted-foreground" /></TableCell>
-                                                                        <TableCell className="font-medium">{reformista.name}</TableCell>
-                                                                        <TableCell>{reformista.role}</TableCell>
-                                                                        <TableCell>{reformista.localidad}</TableCell>
-                                                                        <TableCell>{reformista.phone}</TableCell>
-                                                                        <TableCell>{reformista.email}</TableCell>
-                                                                        <TableCell>{reformista.instagram}</TableCell>
-                                                                        <TableCell>{reformista.web}</TableCell>
-                                                                        <TableCell className="text-right">
-                                                                            <AlertDialog>
-                                                                                <DropdownMenu>
-                                                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                                                    <DropdownMenuContent>
-                                                                                        <DropdownMenuItem onSelect={() => handleEdit(reformista)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                                                        <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                                                                    </DropdownMenuContent>
-                                                                                </DropdownMenu>
-                                                                                <AlertDialogContent>
-                                                                                    <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el reformista.</AlertDialogDescription></AlertDialogHeader>
-                                                                                    <AlertDialogFooter>
-                                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                                        <AlertDialogAction onClick={() => onDeleteReformista(reformista.id)}>Eliminar</AlertDialogAction>
-                                                                                    </AlertDialogFooter>
-                                                                                </AlertDialogContent>
-                                                                            </AlertDialog>
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                )}
-                                                            </Draggable>
-                                                        )) : (
-                                                            <TableRow>
-                                                                <TableCell colSpan={9} className="h-24 text-center">
-                                                                    No hay reformistas en esta categoría.
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        )}
-                                                        {provided.placeholder}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                </DragDropContext>
+                                                    )}
+                                                </Draggable>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={9} className="h-16 text-center text-muted-foreground">
+                                                        No hay reformistas en esta categoría.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {provided.placeholder}
+                                        </TableBody>
+                                    )}
+                                </Droppable>
+                            ))}
+                        </Table>
+                    </DragDropContext>
+                </div>
             </CardContent>
         </Card>
     );
 }
-
-    
