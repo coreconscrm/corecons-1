@@ -61,6 +61,8 @@ export default function DashboardPage() {
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [juanfranNotes, setJuanfranNotes] = useState<any[]>([]);
+  const [sandraNotes, setSandraNotes] = useState<any[]>([]);
+  const [jordanChecklists, setJordanChecklists] = useState<any[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [sheetUrl, setSheetUrl] = useState('');
 
@@ -72,7 +74,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   const [visibleTabs, setVisibleTabs] = useState(defaultVisibleTabs);
-  const [activeTab, setActiveTab] = useState("clients");
+  const [activeTab, setActiveTab] = useState("oficina");
 
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
@@ -126,7 +128,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes', 'sandra_notes', 'jordan_checklists'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         const chatQuery = query(collection(db, 'chat_messages'), orderBy('createdAt', 'desc'));
         const chatSnapshot = await getDocs(chatQuery);
@@ -150,6 +152,8 @@ export default function DashboardPage() {
         setInmobiliarias(mapSnapToState(snapshots[14]));
         setSeguimientos(mapSnapToState(snapshots[15]));
         setJuanfranNotes(mapSnapToState(snapshots[16]));
+        setSandraNotes(mapSnapToState(snapshots[17]));
+        setJordanChecklists(mapSnapToState(snapshots[18]));
         setChatMessages(mapSnapToState(chatSnapshot));
 
         // Fetch config options
@@ -572,6 +576,16 @@ export default function DashboardPage() {
               onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Nota de JuanFran')}
               onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Nota de JuanFran')}
               onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Nota de JuanFran')}
+
+              sandraNotes={sandraNotes}
+              onAddSandraNote={(note) => handleCreate('sandra_notes', note, 'Nota de Sandra')}
+              onUpdateSandraNote={(note) => handleUpdate('sandra_notes', note, 'Nota de Sandra')}
+              onDeleteSandraNote={(id) => handleDelete('sandra_notes', id, 'Nota de Sandra')}
+
+              jordanChecklists={jordanChecklists}
+              onAddJordanChecklist={(checklist) => handleCreate('jordan_checklists', checklist, 'Checklist de Jordan')}
+              onUpdateJordanChecklist={(checklist) => handleUpdate('jordan_checklists', checklist, 'Checklist de Jordan')}
+              onDeleteJordanChecklist={(id) => handleDelete('jordan_checklists', id, 'Checklist de Jordan')}
 
               chatMessages={chatMessages}
               onAddChatMessage={(message) => handleCreate('chat_messages', message, 'Mensaje de Chat')}

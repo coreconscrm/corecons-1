@@ -14,6 +14,8 @@ import { AiSection, type AiBudgetItem } from "./ai-section";
 import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
 import type { JuanFranNote } from "./juanfran-notes-card";
+import type { SandraNote } from './sandra-notes-card';
+import type { Checklist } from './jordan-checklist-card';
 
 const ProjectListCard = dynamic(() => import('@/components/dashboard/performance-chart').then(mod => mod.ProjectListCard), { ssr: false });
 
@@ -38,6 +40,8 @@ export function DashboardTabs({
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
     estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
+    sandraNotes, onAddSandraNote, onUpdateSandraNote, onDeleteSandraNote,
+    jordanChecklists, onAddJordanChecklist, onUpdateJordanChecklist, onDeleteJordanChecklist,
     chatMessages, onAddChatMessage, onUpdateChatMessage, onDeleteChatMessage,
     onCreateBudgetFromAi,
     visibleTabs, onTabVisibilityChange,
@@ -63,6 +67,8 @@ export function DashboardTabs({
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
+    sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
+    jordanChecklists: Checklist[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
     chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
@@ -90,6 +96,14 @@ export function DashboardTabs({
             onAddJuanfranNote={onAddJuanfranNote}
             onUpdateJuanfranNote={onUpdateJuanfranNote}
             onDeleteJuanfranNote={onDeleteJuanfranNote}
+            sandraNotes={sandraNotes}
+            onAddSandraNote={onAddSandraNote}
+            onUpdateSandraNote={onUpdateSandraNote}
+            onDeleteSandraNote={onDeleteSandraNote}
+            jordanChecklists={jordanChecklists}
+            onAddJordanChecklist={onAddJordanChecklist}
+            onUpdateJordanChecklist={onUpdateJordanChecklist}
+            onDeleteJordanChecklist={onDeleteJordanChecklist}
             chatMessages={chatMessages}
             team={team}
             onAddChatMessage={onAddChatMessage}
