@@ -115,7 +115,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
             {(budget.lineItems || []).map((item, index) => {
               if (item.isChapter) {
                 return (
-                  <tr key={index} className="page-break-before">
+                  <tr key={index} className={index !== 0 ? 'page-break-before' : ''}>
                     <td colSpan={hideUnitPrice ? 4 : 5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700">{item.description}</td>
                   </tr>
                 );
@@ -161,24 +161,26 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
               </tbody>
           </table>
         </section>
+      </div>
 
+      <div className="page-break-before">
         <section className="mt-8 flex justify-between items-end">
-          <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
-              <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
-              <p>{company?.validity}</p>
-              <p>{company?.paymentMethods}</p>
-          </div>
-          <div className="w-full max-w-sm">
-              <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
-                  <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
-                  <span className="text-xl font-bold font-mono text-gray-900">
-                      €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-              </div>
-              <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
-                  <p className="text-xs text-gray-500">Este es un documento informativo y no contractual hasta su firma.</p>
-              </div>
-          </div>
+            <div className="text-xs text-gray-500 w-1/2 whitespace-pre-line">
+                <h4 className="font-bold text-gray-600 uppercase mb-2">Condiciones y Notas</h4>
+                <p>{company?.validity}</p>
+                <p>{company?.paymentMethods}</p>
+            </div>
+            <div className="w-full max-w-sm">
+                <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
+                    <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
+                    <span className="text-xl font-bold font-mono text-gray-900">
+                        €{grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                </div>
+                <div className="border-l border-r border-b border-gray-200 p-4 rounded-b-lg">
+                    <p className="text-xs text-gray-500">Este es un documento informativo y no contractual hasta su firma.</p>
+                </div>
+            </div>
         </section>
       </div>
 
