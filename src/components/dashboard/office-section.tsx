@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookUser, MessageSquare, ListChecks } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JuanFranNotesCard, type JuanFranChecklist } from "./juanfran-notes-card";
+import { JuanFranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
 import { SandraNotesCard, type SandraNote } from "./sandra-notes-card";
 import { JordanChecklistCard, type Checklist } from "./jordan-checklist-card";
 import { DaniPrioritiesCard, type DaniPriority } from "./dani-priorities-card";
@@ -34,7 +34,7 @@ export function OfficeSection({
     onUpdateChatMessage,
     onDeleteChatMessage,
 }: {
-    juanfranNotes: JuanFranChecklist[];
+    juanfranNotes: JuanFranNote[];
     onAddJuanfranNote: (note: any) => void;
     onUpdateJuanfranNote: (note: any) => void;
     onDeleteJuanfranNote: (id: string) => void;

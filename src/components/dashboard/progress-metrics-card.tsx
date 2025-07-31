@@ -13,7 +13,7 @@ import { SeguimientoListCard } from "./seguimiento-card";
 import { AiSection, type AiBudgetItem } from "./ai-section";
 import { OfficeSection } from "./office-section";
 import type { BudgetCategory } from "./budgets-card";
-import type { JuanFranChecklist } from "./juanfran-notes-card";
+import type { JuanFranNote } from "./juanfran-notes-card";
 import type { SandraNote } from './sandra-notes-card';
 import type { Checklist } from './jordan-checklist-card';
 import type { DaniPriority } from './dani-priorities-card';
@@ -68,7 +68,7 @@ export function DashboardTabs({
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
-    juanfranNotes: JuanFranChecklist[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
+    juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
     jordanChecklists: Checklist[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
     daniPriorities: DaniPriority[], onAddDaniPriority: (p: any) => void, onUpdateDaniPriority: (p: any) => void, onDeleteDaniPriority: (id: string) => void,
