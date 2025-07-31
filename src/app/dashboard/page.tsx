@@ -247,6 +247,7 @@ export default function DashboardPage() {
           ...newItem,
           memoria: item.memoria || "",
           planos: item.planos || "",
+          priority: item.priority || null,
         };
       }
 
