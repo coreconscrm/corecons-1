@@ -14,18 +14,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
+import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye, FileText, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { useToast } from "@/hooks/use-toast";
 
 const prioritySchema = z.object({
   title: z.string().min(1, "El título es requerido."),
   content: z.string().min(1, "El contenido no puede estar vacío."),
   date: z.date(),
   completed: z.boolean(),
+  documentUrl: z.string().url().optional().or(z.literal('')),
+  documentName: z.string().optional(),
 });
 
 export type DaniPriority = {
@@ -34,9 +39,15 @@ export type DaniPriority = {
   content: string;
   date: any; // Firestore Timestamp
   completed: boolean;
+  documentUrl?: string;
+  documentName?: string;
 };
 
 function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: DaniPriority, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const { toast } = useToast();
+    const [isUploading, setIsUploading] = useState(false);
+    const [documentFile, setDocumentFile] = useState<File | null>(null);
+
     const form = useForm<z.infer<typeof prioritySchema>>({
         resolver: zodResolver(prioritySchema),
         defaultValues: {
@@ -44,6 +55,8 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
             content: "",
             date: new Date(),
             completed: false,
+            documentUrl: "",
+            documentName: "",
         },
     });
 
@@ -55,6 +68,8 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
                     content: priority.content,
                     date: priority.date?.toDate ? priority.date.toDate() : new Date(),
                     completed: priority.completed || false,
+                    documentUrl: priority.documentUrl || "",
+                    documentName: priority.documentName || "",
                 });
             } else {
                 form.reset({
@@ -62,14 +77,44 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
                     content: "",
                     date: new Date(),
                     completed: false,
+                    documentUrl: "",
+                    documentName: "",
                 });
             }
+            setDocumentFile(null);
         }
     }, [priority, open, form]);
 
-    const handleSubmit = (values: z.infer<typeof prioritySchema>) => {
-        onSubmit({ ...priority, ...values });
-        onOpenChange(false);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setDocumentFile(file);
+            form.setValue("documentName", file.name);
+        }
+    };
+    
+    const handleSubmit = async (values: z.infer<typeof prioritySchema>) => {
+        setIsUploading(true);
+        const priorityId = priority?.id || `priority-${Date.now()}`;
+        let submissionData = { ...values, id: priorityId };
+
+        try {
+            if (documentFile) {
+                const storageRef = ref(storage, `dani_priorities/${priorityId}/${documentFile.name}`);
+                const snapshot = await uploadBytesResumable(storageRef, documentFile);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                submissionData.documentUrl = downloadURL;
+                submissionData.documentName = documentFile.name;
+            }
+
+            onSubmit({ ...priority, ...submissionData });
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Error processing form:", error);
+            toast({ variant: 'destructive', title: "Error al guardar", description: (error as Error).message });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -106,9 +151,25 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
                                 </FormItem>
                             )}
                         />
+                         <FormItem>
+                            <FormLabel>Documento</FormLabel>
+                            <div className="flex items-center gap-4">
+                               <FormControl>
+                                  <Input type="file" onChange={handleFileChange} disabled={isUploading} className="flex-1" />
+                               </FormControl>
+                               {form.getValues("documentUrl") && !documentFile && (
+                                   <Button variant="outline" size="icon" asChild>
+                                       <a href={form.getValues("documentUrl")} target="_blank" rel="noopener noreferrer"><FileText className="h-5 w-5" /></a>
+                                   </Button>
+                               )}
+                            </div>
+                         </FormItem>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                            <Button type="submit">{priority ? "Guardar Cambios" : "Guardar Prioridad"}</Button>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {priority ? "Guardar Cambios" : "Guardar Prioridad"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -190,6 +251,7 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                                 <TableHead className="w-[50px]"></TableHead>
                                 <TableHead className="w-[200px]">Fecha</TableHead>
                                 <TableHead>Título</TableHead>
+                                <TableHead>Documento</TableHead>
                                 <TableHead className="text-right w-[100px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -210,6 +272,15 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                                       {priority.date?.toDate ? format(priority.date.toDate(), "dd/MM/yy HH:mm", { locale: es }) : 'N/A'}
                                     </TableCell>
                                     <TableCell className="font-medium" onClick={() => setViewingPriority(priority)}>{priority.title}</TableCell>
+                                    <TableCell>
+                                        {priority.documentUrl && (
+                                            <Button variant="outline" size="icon" asChild>
+                                                <a href={priority.documentUrl} target="_blank" rel="noopener noreferrer" title={priority.documentName}>
+                                                    <FileText className="h-4 w-4" />
+                                                </a>
+                                            </Button>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         <AlertDialog>
                                             <DropdownMenu>
@@ -236,7 +307,7 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                             ))}
                             {sortedPriorities.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         No hay prioridades añadidas.
                                     </TableCell>
                                 </TableRow>

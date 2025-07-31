@@ -258,6 +258,15 @@ export default function DashboardPage() {
             documents: item.documents || [],
         }
       }
+      
+      if (collectionName === 'dani_priorities') {
+          newItem = {
+              ...newItem,
+              completed: false,
+              documentUrl: item.documentUrl || "",
+              documentName: item.documentName || "",
+          }
+      }
 
       if (newItem.id) {
         const { id, ...data } = newItem;
@@ -619,7 +628,7 @@ export default function DashboardPage() {
               onDeleteJordanChecklist={(id) => handleDelete('jordan_checklists', id, 'Checklist de Jordan')}
               
               daniPriorities={daniPriorities}
-              onAddDaniPriority={(priority) => handleCreate('dani_priorities', {...priority, completed: false}, 'Prioridad de Dani')}
+              onAddDaniPriority={(priority) => handleCreate('dani_priorities', priority, 'Prioridad de Dani')}
               onUpdateDaniPriority={(priority) => handleUpdate('dani_priorities', priority, 'Prioridad de Dani')}
               onDeleteDaniPriority={(id) => handleDelete('dani_priorities', id, 'Prioridad de Dani')}
 
