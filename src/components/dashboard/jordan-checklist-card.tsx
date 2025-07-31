@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ListChecks, PlusCircle, Trash2, Pencil, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 
 const checklistItemSchema = z.object({
