@@ -30,7 +30,7 @@ import { Badge } from "../ui/badge";
 const lineItemSchema = z.object({
   description: z.string().optional(),
   quantity: z.coerce.number().optional(),
-  unit: z.string().optional(),
+  unit: z.string().optional().nullable(),
   unitPrice: z.coerce.number().optional(), // This will now hold the total
   isChapter: z.boolean().optional(),
 });
@@ -232,7 +232,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
       companyId: "",
       status: "Pendiente",
       m2: 0,
-      lineItems: [{ description: "", quantity: 0, unit: "", unitPrice: 0 }],
+      lineItems: [{ description: "", quantity: 0, unit: null, unitPrice: 0 }],
       category: activeCategory,
     },
   });
@@ -285,7 +285,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
           companyId: "",
           status: "Pendiente",
           m2: 0,
-          lineItems: [{ description: "", quantity: 0, unit: "", unitPrice: 0 }],
+          lineItems: [{ description: "", quantity: 0, unit: null, unitPrice: 0 }],
           category: activeCategory,
         });
       }
@@ -404,7 +404,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                             </TableCell>
                             <TableCell>
                                 {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
+                                <Select onValueChange={field.onChange} value={field.value ?? ''}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Ud."/></SelectTrigger></FormControl>
                                     <SelectContent>
                                     <SelectItem value="m">m</SelectItem>
@@ -428,10 +428,10 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     </TableBody>
                     </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: "", unitPrice: 0, isChapter: false })}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: "", quantity: 0, unit: null, unitPrice: 0, isChapter: false })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Línea
                 </Button>
-                <Button type="button" variant="outline" size="sm" className="mt-4 ml-2" onClick={() => append({ description: "", isChapter: true, quantity: 0, unit: "", unitPrice: 0 })}>
+                <Button type="button" variant="outline" size="sm" className="mt-4 ml-2" onClick={() => append({ description: "", isChapter: true, quantity: 0, unit: null, unitPrice: 0 })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Capítulo
                 </Button>
               </CardContent>
@@ -473,7 +473,7 @@ function BudgetAccordionItem({
     onDeleteBudget: (id: string) => void;
     setViewingBudget: (budget: Budget | undefined) => void;
     setMovingBudget: (budget: Budget | undefined) => void;
-    setPrintingBudget: (budget: Budget | null, hideUnitPrice?: boolean) => void;
+    setPrintingBudget: (budget: Budget | null, company: Company | null, hideUnitPrice?: boolean) => void;
     handleEditBudget: (budget: Budget) => void;
 }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -504,7 +504,7 @@ function BudgetAccordionItem({
     };
 
     const client = clients.find(c => c.id === budget.clientId);
-    const company = companies.find(c => c.id === budget.companyId);
+    const company = companies.find(c => c.id === budget.companyId) || null;
 
     return (
         <AccordionItem value={budget.id} key={budget.id} className="border-none">
@@ -525,7 +525,7 @@ function BudgetAccordionItem({
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget, budget.category === 'obra_nueva')}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget, company, budget.category === 'obra_nueva')}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                             </DropdownMenuContent>
@@ -593,7 +593,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
   const [movingBudget, setMovingBudget] = useState<Budget | undefined>(undefined);
-  const [printingBudget, setPrintingBudget] = useState<{budget: Budget, hideUnitPrice: boolean} | null>(null);
+  const [printingBudget, setPrintingBudget] = useState<{budget: Budget, company: Company | null, hideUnitPrice: boolean} | null>(null);
 
   useEffect(() => {
     if (printingBudget) {
@@ -630,9 +630,9 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
     setAddBudgetOpen(false);
   }
 
-  const handleSetPrintingBudget = (budget: Budget | null, hideUnitPrice: boolean = false) => {
+  const handleSetPrintingBudget = (budget: Budget | null, company: Company | null, hideUnitPrice: boolean = false) => {
     if (budget) {
-        setPrintingBudget({ budget, hideUnitPrice });
+        setPrintingBudget({ budget, company, hideUnitPrice });
     } else {
         setPrintingBudget(null);
     }
@@ -645,7 +645,7 @@ function BudgetListCard({ title, budgets, clients, companies, onAddBudget, onUpd
         <BudgetPrintLayout 
           budget={printingBudget?.budget || null}
           client={printingBudget ? clients.find(c => c.id === printingBudget.budget.clientId) : null}
-          company={printingBudget ? companies.find(c => c.id === printingBudget.budget.companyId) : null}
+          company={printingBudget?.company || null}
           hideUnitPrice={printingBudget?.hideUnitPrice}
         />
       </div>
