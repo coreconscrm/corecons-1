@@ -32,10 +32,7 @@ const ProjectBreakdownSchema = z.object({
       unidad: z.string().optional().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
       precioUnitario: z.string().optional().describe("El precio unitario de la partida. Extrae SÓLO el valor numérico. Ej: '12.50' o '12,50'. Si no hay precio, deja el campo vacío."),
     }))
-    .describe("Lista de partidas de obra para este capítulo.")
-    .refine(partidas => partidas.every(p => p.descripcion && p.descripcion.trim() !== ''), {
-      message: 'Todas las partidas deben tener una descripción no vacía.',
-    }),
+    .describe("Lista de partidas de obra para este capítulo."),
   })).describe("Lista de capítulos que componen el proyecto."),
 });
 export type ProjectBreakdown = z.infer<typeof ProjectBreakdownSchema>;
@@ -52,16 +49,17 @@ const projectBreakdownPrompt = ai.definePrompt({
 
     Instrucciones Generales:
     1.  Lee atentamente el documento PDF adjunto.
-    2.  Para cada partida de obra, extrae la 'descripcion' (debe ser lo más completa y detallada posible, extrayendo todo el texto descriptivo asociado a ella sin abreviar ni omitir detalles), 'medicion' (cantidad) y 'unidad' de medida si se especifican.
+    2.  Para cada partida de obra, extrae la 'descripcion', 'medicion' (cantidad) y 'unidad' de medida si se especifican. Es crucial que la 'descripcion' de cada partida sea lo más completa y detallada posible, extrayendo todo el texto descriptivo asociado a ella sin abreviar ni omitir detalles.
     3.  **MUY IMPORTANTE**: Para el campo 'precioUnitario', extrae ÚNICAMENTE el valor numérico del precio (ej: '12.50', '12,50'). NO incluyas el símbolo del euro (€), texto como '/ud' o '/m2'. Si no se especifica un precio numérico claro, deja el campo 'precioUnitario' vacío o nulo.
     4.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
     5.  IMPORTANTE: Ignora cualquier partida que esté vacía o no contenga una descripción clara.
     
     {{#if chapterName}}
     Instrucciones Específicas para este análisis:
-    -   NO busques títulos de capítulos en el documento PDF.
-    -   TODAS las partidas de obra que extraigas del documento deben asignarse a un único capítulo con el siguiente nombre: "{{chapterName}}".
-    -   El resultado final debe ser un objeto JSON con una sola entrada en el array "capitulos", y esa entrada debe tener el nombre "{{chapterName}}".
+    -   El documento puede contener partidas iniciales sin un título de capítulo claro. Agrupa todas estas partidas iniciales bajo un capítulo con el siguiente nombre: "{{chapterName}}".
+    -   Después de haber agrupado estas partidas iniciales, continúa analizando el resto del documento.
+    -   Si encuentras más títulos de capítulos en el PDF (ej: Demoliciones, Albañilería, etc.), identifícalos y crea capítulos separados para ellos con sus respectivas partidas.
+    -   El resultado final debe ser un objeto JSON que contenga el capítulo "{{chapterName}}" primero, seguido de cualquier otro capítulo que hayas identificado en el resto del documento.
     {{else}}
     Instrucciones Específicas para este análisis:
     -   Identifica los principales capítulos de la obra (ej: Demoliciones, Albañilería, Solados y Alicatados, etc.).
