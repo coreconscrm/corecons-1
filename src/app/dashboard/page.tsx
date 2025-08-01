@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy } from "firebase/firestore";
 import Papa from 'papaparse';
 import { Header } from "@/components/dashboard/header";
-import { SeguimientoOverview, BudgetOverview, FormOverview } from "@/components/dashboard/welcome-banner";
+import { SeguimientoOverview, BudgetOverview, FormOverview, OficinaOverview } from "@/components/dashboard/welcome-banner";
 import { DashboardTabs } from "@/components/dashboard/progress-metrics-card";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
@@ -288,6 +288,13 @@ export default function DashboardPage() {
                 date: new Date(),
             }
         }
+      
+      if (collectionName === 'chat_messages') {
+          newItem = {
+              ...newItem,
+              read: item.read || false,
+          }
+      }
 
       if (newItem.id) {
         const { id, ...data } = newItem;
@@ -499,6 +506,14 @@ export default function DashboardPage() {
   const ofrecerArquitecto = seguimientos.filter(s => s.porHacer?.toLowerCase().trim() === 'buscar arquitecto').length;
   const buscarTerreno = seguimientos.filter(s => s.estado?.toLowerCase().trim() === 'buscar terreno').length;
 
+  // Metrics for Oficina Overview
+  const juanfranPending = juanfranNotes.filter(n => !n.completed).length;
+  const sandraPending = sandraNotes.filter(n => !n.completed).length;
+  const jordanPending = jordanChecklists.filter(c => !c.completed).length;
+  const daniPending = daniPriorities.filter(p => !p.completed).length;
+  const unreadChats = chatMessages.filter(m => !m.read).length;
+
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header />
@@ -531,7 +546,14 @@ export default function DashboardPage() {
             </div>
             
             {showOverviewPanels && (
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                <OficinaOverview
+                    juanfran={juanfranPending}
+                    sandra={sandraPending}
+                    jordan={jordanPending}
+                    dani={daniPending}
+                    chats={unreadChats}
+                />
                 <SeguimientoOverview
                     llamarEstaSemana={llamarEstaSemana}
                     totalSeguimientos={totalSeguimientos}

@@ -17,11 +17,15 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageSquare, Send, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
+
 
 const messageSchema = z.object({
   content: z.string().min(1, "El mensaje no puede estar vacío."),
   senderId: z.string().min(1, "Debes seleccionar un remitente."),
   recipientId: z.string().min(1, "Debes seleccionar un destinatario."),
+  read: z.boolean().optional(),
 });
 
 type ChatMessage = {
@@ -30,6 +34,7 @@ type ChatMessage = {
   senderId: string;
   recipientId: string;
   createdAt: any; // Firestore Timestamp
+  read?: boolean;
 };
 
 type TeamMember = {
@@ -62,12 +67,14 @@ function MessageForm({
           content: message.content,
           senderId: message.senderId,
           recipientId: message.recipientId,
+          read: message.read || false,
         });
       } else {
         form.reset({
           content: "",
           senderId: "",
           recipientId: "",
+          read: false,
         });
       }
     }
@@ -174,6 +181,10 @@ export function ChatSection({
     }
   };
 
+  const handleToggleRead = (message: ChatMessage) => {
+    onUpdateMessage({ ...message, read: !message.read });
+  };
+  
   const getTeamMember = (id: string) => {
     return team.find(m => m.id === id);
   }
@@ -211,7 +222,9 @@ export function ChatSection({
                 return (
                     <div 
                         key={message.id} 
-                        className="flex items-start gap-4 p-4 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary"
+                        className={cn("flex items-start gap-4 p-4 rounded-lg cursor-pointer",
+                            message.read ? "bg-secondary/50 hover:bg-secondary/70" : "bg-primary/10 hover:bg-primary/20 border border-primary/50"
+                        )}
                         onClick={() => handleEdit(message)}
                     >
                         <Avatar>
@@ -248,6 +261,12 @@ export function ChatSection({
                                 </div>
                             </div>
                             <p className="mt-1 text-sm text-foreground/90 whitespace-pre-wrap">{message.content}</p>
+                            <div className="mt-2 flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox id={`read-${message.id}`} checked={message.read} onCheckedChange={() => handleToggleRead(message)} />
+                                <label htmlFor={`read-${message.id}`} className="text-xs font-medium text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    Marcar como leído
+                                </label>
+                            </div>
                         </div>
                     </div>
                 )

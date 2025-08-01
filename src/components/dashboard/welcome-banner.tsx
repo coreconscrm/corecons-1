@@ -12,7 +12,9 @@ import {
     Building,
     Map,
     CalendarCheck,
-    ListTodo
+    ListTodo,
+    NotebookText,
+    MessageSquareWarning
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +30,28 @@ function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, labe
     </div>
   );
 }
+
+export function OficinaOverview({ juanfran, sandra, jordan, dani, chats }: { juanfran: number, sandra: number, jordan: number, dani: number, chats: number }) {
+    const metrics = [
+      { icon: NotebookText, label: "JuanFran", value: juanfran },
+      { icon: NotebookText, label: "Sandra", value: sandra },
+      { icon: NotebookText, label: "Jordan", value: jordan },
+      { icon: NotebookText, label: "Dani", value: dani },
+      { icon: MessageSquareWarning, label: "Chats", value: chats },
+    ];
+    return (
+      <Card className="overview-card">
+        <CardHeader>
+          <CardTitle>Resumen de Oficina</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap justify-center gap-4 text-center">
+            {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
 export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrecerArquitecto, buscarTerreno }: { llamarEstaSemana: number, totalSeguimientos: number, ofrecerArquitecto: number, buscarTerreno: number }) {
   const metrics = [
