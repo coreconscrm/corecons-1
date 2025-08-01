@@ -325,6 +325,21 @@ export function SeguimientoListCard({
             }
             groups[category].push(s);
         });
+
+        // Sort items within each group
+        for (const category in groups) {
+            groups[category].sort((a, b) => {
+                const dateA = a.siguienteLlamada ? parse(a.siguienteLlamada, 'dd/MM/yyyy', new Date()) : null;
+                const dateB = b.siguienteLlamada ? parse(b.siguienteLlamada, 'dd/MM/yyyy', new Date()) : null;
+
+                if (dateA && isValid(dateA) && dateB && isValid(dateB)) {
+                    return dateA.getTime() - dateB.getTime();
+                }
+                if (dateA && isValid(dateA)) return -1; // a has date, b doesn't, a comes first
+                if (dateB && isValid(dateB)) return 1;  // b has date, a doesn't, b comes first
+                return 0; // both have no date
+            });
+        }
         
         return groups;
     }, [seguimientos, categories]);
