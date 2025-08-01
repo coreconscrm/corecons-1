@@ -1239,23 +1239,20 @@ export function AiSection({
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
     const [activeTab, setActiveTab] = useState('budgets');
-    const [subTab, setSubTab] = useState('upload-for-prices');
-    const [viewEditSubTab, setViewEditSubTab] = useState('ai-budgets');
+    const [subTab, setSubTab] = useState('upload-for-budgets');
     const [reportsSubTab, setReportsSubTab] = useState('generator');
     
     useEffect(() => {
         const savedTab = localStorage.getItem('aiSection_activeTab');
         const savedSubTab = localStorage.getItem('aiSection_subTab');
-        const savedViewEditSubTab = localStorage.getItem('aiSection_viewEditSubTab');
         const savedReportsSubTab = localStorage.getItem('aiSection_reportsSubTab');
 
         if (savedTab) setActiveTab(savedTab);
         if (savedSubTab) setSubTab(savedSubTab);
-        if (savedViewEditSubTab) setViewEditSubTab(savedViewEditSubTab);
         if (savedReportsSubTab) setReportsSubTab(savedReportsSubTab);
     }, []);
 
-    const handleTabChange = (value: string, type: 'main' | 'sub' | 'viewEdit' | 'reports') => {
+    const handleTabChange = (value: string, type: 'main' | 'sub' | 'reports') => {
         switch (type) {
             case 'main':
                 setActiveTab(value);
@@ -1264,10 +1261,6 @@ export function AiSection({
             case 'sub':
                 setSubTab(value);
                 localStorage.setItem('aiSection_subTab', value);
-                break;
-            case 'viewEdit':
-                setViewEditSubTab(value);
-                localStorage.setItem('aiSection_viewEditSubTab', value);
                 break;
             case 'reports':
                 setReportsSubTab(value);
@@ -1363,27 +1356,14 @@ export function AiSection({
             </TabsList>
             <TabsContent value="budgets" className="mt-6">
                 <Tabs value={subTab} onValueChange={(v) => handleTabChange(v, 'sub')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="upload-for-prices">
-                        <Database className="mr-2" /> Subir para Precios
-                        </TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="upload-for-budgets">
                         <Server className="mr-2" /> Subir para Presupuestos IA
                         </TabsTrigger>
                         <TabsTrigger value="view-and-edit">
-                        <BrainCircuit className="mr-2" /> Consulta y Edición
+                        <BrainCircuit className="mr-2" /> Presupuestos IA
                         </TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="upload-for-prices" className="mt-6">
-                        <BudgetUploader 
-                            title="Subir para Base de Precios"
-                            description="Sube un PDF para añadir o actualizar partidas en tu base de datos de precios centralizada."
-                            onAnalysisComplete={handleSaveToPriceBase}
-                            saveButtonLabel="Añadir a Base de Precios"
-                            saveButtonIcon={<Database className="mr-2 h-4 w-4" />}
-                        />
-                    </TabsContent>
 
                     <TabsContent value="upload-for-budgets" className="mt-6">
                         <BudgetUploader 
@@ -1396,18 +1376,7 @@ export function AiSection({
                     </TabsContent>
 
                     <TabsContent value="view-and-edit" className="mt-6">
-                        <Tabs value={viewEditSubTab} onValueChange={(v) => handleTabChange(v, 'viewEdit')} className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="ai-budgets"><Server className="mr-2" />Presupuestos IA</TabsTrigger>
-                                <TabsTrigger value="price-database"><Database className="mr-2" />Base de Precios</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="ai-budgets" className="mt-6">
-                            <AiBudgetsSection companies={companies} onCreateBudgetFromAi={onCreateBudgetFromAi} />
-                            </TabsContent>
-                            <TabsContent value="price-database" className="mt-6">
-                                <PriceDatabaseSection />
-                            </TabsContent>
-                        </Tabs>
+                        <AiBudgetsSection companies={companies} onCreateBudgetFromAi={onCreateBudgetFromAi} />
                     </TabsContent>
                 </Tabs>
             </TabsContent>
@@ -1429,4 +1398,155 @@ export function AiSection({
     );
 }
 
+function AiReportGenerator({ forms, onReportGenerated }: { forms: any[], onReportGenerated: (report: FormsReport) => void }) {
+    const [isGenerating, setIsGenerating] = useState(false);
+    const { toast } = useToast();
+
+    const handleGenerateReport = async () => {
+        if (forms.length === 0) {
+            toast({ variant: 'destructive', title: 'No hay datos', description: 'Carga datos de formularios (CSV o Google Sheet) antes de generar un reporte.' });
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const formsJson = JSON.stringify(forms);
+            const report = await createFormsReport({ formsJson });
+            
+            // Guardar reporte en Firestore
+            const reportRef = doc(db, 'ia_reports', 'latest');
+            await setDoc(reportRef, { ...report, generatedAt: new Date() });
+
+            onReportGenerated(report);
+            toast({ title: 'Reporte Generado y Guardado', description: 'El reporte de prioridad ha sido creado y guardado en la base de datos.' });
+        } catch (error) {
+            console.error("Error generating forms report:", error);
+            toast({ variant: 'destructive', title: 'Error de IA', description: `No se pudo generar el reporte. ${(error as Error).message}` });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Generador de Reportes de Prioridad</CardTitle>
+                <CardDescription>
+                    Analiza todos los formularios cargados (desde CSV o Google Sheets) para crear un reporte priorizado por tipo de obra y ciudad.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="p-6 border-2 border-dashed rounded-lg text-center">
+                    <p className="font-semibold text-lg">Formularios Cargados: {forms.length}</p>
+                    <p className="text-muted-foreground text-sm">
+                        {forms.length > 0 ? "Listo para analizar." : "Sube un archivo CSV o conecta una Google Sheet en la pestaña de Formularios."}
+                    </p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleGenerateReport} disabled={isGenerating || forms.length === 0}>
+                    {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Generar Reporte con IA
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function AiReportViewer() {
+    const [report, setReport] = useState<FormsReport | null>(null);
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+        const reportRef = doc(db, 'ia_reports', 'latest');
+        const unsubscribe = onSnapshot(reportRef, (doc) => {
+            if (doc.exists()) {
+                setReport(doc.data() as FormsReport);
+            } else {
+                setReport(null);
+            }
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const renderContactTable = (title: string, contactsByCity: FormsReport['obraNueva'] | FormsReport['reformas']) => (
+        <AccordionItem value={title}>
+            <AccordionTrigger className="text-xl font-semibold">
+                {title} ({contactsByCity?.reduce((acc, city) => acc + city.contactos.length, 0) || 0} contactos)
+            </AccordionTrigger>
+            <AccordionContent>
+                {(contactsByCity || []).map(city => (
+                    <div key={city.ciudad} className="mb-6">
+                        <h4 className="text-lg font-bold text-primary mb-2 pl-2 border-l-4 border-primary">{city.ciudad}</h4>
+                         <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Prioridad</TableHead>
+                                        <TableHead>Nombre</TableHead>
+                                        <TableHead>Teléfono</TableHead>
+                                        <TableHead>Email</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {city.contactos.map((contact, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>
+                                                <Badge variant={contact.prioridad === "Alta" ? "destructive" : contact.prioridad === "Media" ? "default" : "secondary"}>
+                                                    {contact.prioridad}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{contact.nombre}</TableCell>
+                                            <TableCell>{contact.telefono}</TableCell>
+                                            <TableCell>{contact.email}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                         </div>
+                    </div>
+                ))}
+            </AccordionContent>
+        </AccordionItem>
+    );
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-10">
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                <span>Cargando último reporte...</span>
+            </div>
+        );
+    }
+    
+    if (!report) {
+         return (
+             <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
+                <BrainCircuit className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No hay reportes generados</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Ve a la pestaña "Generador de Reportes" para crear uno.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Visor de Reporte de Prioridad</CardTitle>
+                <CardDescription>
+                    Este es el último reporte generado por la IA.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="multiple" className="w-full space-y-4">
+                    {renderContactTable("Obra Nueva", report.obraNueva)}
+                    {renderContactTable("Reformas", report.reformas)}
+                </Accordion>
+            </CardContent>
+        </Card>
+    );
+}
     
