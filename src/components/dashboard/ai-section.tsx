@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users, FolderPlus } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users, FolderPlus, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -84,6 +84,17 @@ const addToBudgetSchema = z.object({
   category: z.enum(["obra_nueva", "reformas"], {
     required_error: "Debes seleccionar una categoría.",
   }),
+});
+
+const addChapterSchema = z.object({
+    chapterName: z.string().min(1, "El nombre del capítulo es requerido."),
+});
+
+const addLineItemSchema = z.object({
+    description: z.string().min(1, "La descripción es requerida."),
+    medicion: z.string().optional(),
+    unidad: z.string().optional(),
+    total: z.coerce.number().min(0, "El total debe ser un número positivo.").optional(),
 });
 
 
@@ -515,6 +526,92 @@ function AddToBudgetDialog({
     );
 }
 
+function AddChapterDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (chapterName: string) => void }) {
+    const form = useForm<z.infer<typeof addChapterSchema>>({
+        resolver: zodResolver(addChapterSchema),
+        defaultValues: { chapterName: "" },
+    });
+
+    const handleSubmit = (values: z.infer<typeof addChapterSchema>) => {
+        onSave(values.chapterName);
+        form.reset();
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader><DialogTitle>Añadir Nuevo Capítulo</DialogTitle></DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="chapterName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre del Capítulo</FormLabel>
+                                    <FormControl><Input {...field} autoFocus /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">Añadir Capítulo</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AddLineItemDialog({ open, onOpenChange, onSave, chapterName }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (values: z.infer<typeof addLineItemSchema>) => void, chapterName: string }) {
+    const form = useForm<z.infer<typeof addLineItemSchema>>({
+        resolver: zodResolver(addLineItemSchema),
+        defaultValues: { description: "", medicion: "1", unidad: "ud", total: 0 },
+    });
+
+    const handleSubmit = (values: z.infer<typeof addLineItemSchema>) => {
+        onSave(values);
+        form.reset();
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Añadir Partida a "{chapterName}"</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="description" render={({ field }) => (
+                            <FormItem><FormLabel>Descripción</FormLabel><FormControl><Textarea {...field} autoFocus /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <div className="grid grid-cols-3 gap-4">
+                            <FormField control={form.control} name="medicion" render={({ field }) => (
+                                <FormItem><FormLabel>Medición</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="unidad" render={({ field }) => (
+                                <FormItem><FormLabel>Unidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="total" render={({ field }) => (
+                                <FormItem><FormLabel>Total (€)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">Añadir Partida</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
 
 // --- Componente para una tarjeta de presupuesto de IA ---
 function AiBudgetCard({ 
@@ -525,7 +622,9 @@ function AiBudgetCard({
     onPrint,
     onMergeClick,
     onAddToBudgetClick,
-    onChapterNameChange
+    onChapterNameChange,
+    onAddChapter,
+    onAddLineItem,
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
@@ -535,9 +634,13 @@ function AiBudgetCard({
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
     onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
+    onAddChapter: (budgetId: string, chapterName: string) => void,
+    onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
+    const [isAddChapterOpen, setAddChapterOpen] = useState(false);
+    const [addingLineItemTo, setAddingLineItemTo] = useState<string | null>(null);
 
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
@@ -576,6 +679,21 @@ function AiBudgetCard({
                     open={isDetailsDialogOpen}
                     onOpenChange={setDetailsDialogOpen}
                     onSave={onDetailsChange}
+                />
+            )}
+             {isAddChapterOpen && (
+                <AddChapterDialog
+                    open={isAddChapterOpen}
+                    onOpenChange={setAddChapterOpen}
+                    onSave={(name) => onAddChapter(budget.id, name)}
+                />
+            )}
+            {addingLineItemTo && (
+                <AddLineItemDialog
+                    open={!!addingLineItemTo}
+                    onOpenChange={() => setAddingLineItemTo(null)}
+                    chapterName={addingLineItemTo}
+                    onSave={(values) => onAddLineItem(budget.id, addingLineItemTo, values)}
                 />
             )}
             <Card key={budget.id} className="flex flex-col">
@@ -710,11 +828,24 @@ function AiBudgetCard({
                                                 </TableRow>
                                             </UiTableFooter>
                                         </Table>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-4"
+                                            onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                        >
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                        </Button>
                                     </AccordionContent>
                                 </AccordionItem>
                             ))}
                         </Accordion>
-                        <Accordion type="single" collapsible className="w-full">
+
+                        <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
+                        </Button>
+
+                        <Accordion type="single" collapsible className="w-full mt-6">
                             <AccordionItem value="summary">
                                 <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
                                 <AccordionContent>
@@ -920,6 +1051,64 @@ function AiBudgetsSection({
         }
     };
 
+    const handleAddChapter = async (budgetId: string, chapterName: string) => {
+        const budget = aiBudgets.find(b => b.id === budgetId);
+        if (!budget) return;
+        
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        if(newBreakdown.capitulos.some((c:any) => c.nombre === chapterName)) {
+            toast({ variant: "destructive", title: "Capítulo duplicado", description: "Ya existe un capítulo con ese nombre." });
+            return;
+        }
+
+        newBreakdown.capitulos.push({ nombre: chapterName, partidas: [] });
+        try {
+            const budgetRef = doc(db, 'ia_budgets', budgetId);
+            await updateDoc(budgetRef, { breakdown: newBreakdown });
+            toast({ title: "Capítulo añadido", description: `Se ha añadido "${chapterName}" al presupuesto.`});
+        } catch (error) {
+            console.error("Error adding chapter:", error);
+            toast({ variant: "destructive", title: "Error al añadir capítulo", description: "No se pudo guardar el nuevo capítulo."});
+        }
+    };
+
+    const handleAddLineItem = async (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => {
+        const budget = aiBudgets.find(b => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter) return;
+        
+        chapter.partidas.push({
+            descripcion: values.description,
+            medicion: values.medicion || "",
+            unidad: values.unidad || "",
+            precioUnitario: "", // Not used for user-added items
+        });
+
+        const newTotal = values.total || 0;
+        const updatedTotals = {
+            ...budget.userLineTotals,
+            [chapterName]: {
+                ...(budget.userLineTotals?.[chapterName] || {}),
+                [values.description]: newTotal,
+            }
+        };
+
+        try {
+            const budgetRef = doc(db, 'ia_budgets', budgetId);
+            await updateDoc(budgetRef, { 
+                breakdown: newBreakdown,
+                userLineTotals: updatedTotals,
+            });
+            toast({ title: "Partida añadida", description: `Se ha añadido la partida al capítulo "${chapterName}".`});
+        } catch (error) {
+            console.error("Error adding line item:", error);
+            toast({ variant: "destructive", title: "Error al añadir partida", description: "No se pudo guardar la nueva partida."});
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-10">
@@ -967,6 +1156,8 @@ function AiBudgetsSection({
                         onMergeClick={setMergingBudget}
                         onAddToBudgetClick={setAddingToBudget}
                         onChapterNameChange={handleChapterNameChange}
+                        onAddChapter={handleAddChapter}
+                        onAddLineItem={handleAddLineItem}
                     />
                 ))}
             </Accordion>
@@ -1881,3 +2072,5 @@ export function AiSection({
         </Tabs>
     );
 }
+
+    
