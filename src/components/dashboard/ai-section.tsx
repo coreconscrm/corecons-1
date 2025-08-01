@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users, FolderPlus, PlusCircle } from "lucide-react";
+import { BrainCircuit, UploadCloud, FileText, CheckCircle, AlertCircle, X, ArrowUpDown, Database, Loader2, Save, Trash2, Search, FileUp, History, Undo, FileInput, Server, Plus, Pencil, Printer, Merge, Building, Users, FolderPlus, PlusCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { storage, db } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -626,6 +626,7 @@ function AiBudgetCard({
     onAddChapter,
     onAddLineItem,
     onPartidaChange,
+    onCreateSummaryBudgetFromAi,
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
@@ -638,6 +639,7 @@ function AiBudgetCard({
     onAddChapter: (budgetId: string, chapterName: string) => void,
     onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
     onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'descripcion' | 'medicion' | 'unidad', value: string) => void,
+    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -889,6 +891,13 @@ function AiBudgetCard({
                                             </TableBody>
                                         </Table>
                                     </div>
+                                    <Button
+                                        variant="outline"
+                                        className="mt-4"
+                                        onClick={() => onCreateSummaryBudgetFromAi(budget)}
+                                    >
+                                        <Copy className="mr-2 h-4 w-4" /> Mover Resumen a Presupuestos
+                                    </Button>
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
@@ -909,9 +918,11 @@ function AiBudgetCard({
 function AiBudgetsSection({ 
     companies,
     onCreateBudgetFromAi,
+    onCreateSummaryBudgetFromAi,
 }: { 
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void;
+    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
 }) {
     const [aiBudgets, setAiBudgets] = useState<AiBudgetItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -1210,6 +1221,7 @@ function AiBudgetsSection({
                         onAddChapter={handleAddChapter}
                         onAddLineItem={handleAddLineItem}
                         onPartidaChange={handlePartidaChange}
+                        onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
                     />
                 ))}
             </Accordion>
@@ -1230,11 +1242,13 @@ function AiBudgetsSection({
 export function AiSection({
     companies,
     forms,
-    onCreateBudgetFromAi
+    onCreateBudgetFromAi,
+    onCreateSummaryBudgetFromAi,
 }: {
     companies: Company[],
     forms: any[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void;
+    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
 }) {
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
@@ -1376,7 +1390,11 @@ export function AiSection({
                     </TabsContent>
 
                     <TabsContent value="view-and-edit" className="mt-6">
-                        <AiBudgetsSection companies={companies} onCreateBudgetFromAi={onCreateBudgetFromAi} />
+                        <AiBudgetsSection 
+                            companies={companies} 
+                            onCreateBudgetFromAi={onCreateBudgetFromAi}
+                            onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                         />
                     </TabsContent>
                 </Tabs>
             </TabsContent>

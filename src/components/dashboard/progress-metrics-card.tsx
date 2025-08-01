@@ -48,6 +48,7 @@ export function DashboardTabs({
     daniPriorities, onAddDaniPriority, onUpdateDaniPriority, onDeleteDaniPriority,
     chatMessages, onAddChatMessage, onUpdateChatMessage, onDeleteChatMessage,
     onCreateBudgetFromAi,
+    onCreateSummaryBudgetFromAi,
     visibleTabs, onTabVisibilityChange,
     sheetUrl, onSaveSheetUrl
 }: {
@@ -77,6 +78,7 @@ export function DashboardTabs({
     daniPriorities: DaniPriority[], onAddDaniPriority: (p: any) => void, onUpdateDaniPriority: (p: any) => void, onDeleteDaniPriority: (id: string) => void,
     chatMessages: any[], onAddChatMessage: (msg: any) => void, onUpdateChatMessage: (msg: any) => void, onDeleteChatMessage: (id: string) => void,
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void,
+    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
     visibleTabs: any, onTabVisibilityChange: (tabs: any) => void,
     sheetUrl: string, onSaveSheetUrl: (url: string) => void
 }) {
@@ -220,7 +222,12 @@ export function DashboardTabs({
       </TabsContent>}
 
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
-        <AiSection companies={companies} forms={forms} onCreateBudgetFromAi={onCreateBudgetFromAi} />
+        <AiSection 
+            companies={companies} 
+            forms={forms} 
+            onCreateBudgetFromAi={onCreateBudgetFromAi}
+            onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+        />
       </TabsContent>}
 
       {(visibleTabs.companies || visibleTabs.team) && <TabsContent value="companies" className="mt-6">

@@ -450,6 +450,42 @@ export default function DashboardPage() {
     });
   };
 
+  const handleCreateSummaryBudgetFromAi = (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => {
+    const lineItems: LineItem[] = [];
+    let grandTotal = 0;
+    
+    aiBudget.breakdown.capitulos.forEach(capitulo => {
+        const chapterTotal = (capitulo.partidas || []).reduce((sum, partida) => {
+            return sum + (aiBudget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0);
+        }, 0);
+        
+        lineItems.push({
+            description: capitulo.nombre,
+            isChapter: false, // Treat as a regular line item
+            quantity: 1,
+            unit: 'total',
+            unitPrice: chapterTotal,
+        });
+        grandTotal += chapterTotal;
+    });
+
+    const newBudget = {
+        name: `Resumen de ${aiBudget.title}`,
+        clientId: null,
+        status: 'Pendiente',
+        total: grandTotal,
+        lineItems: lineItems,
+        category: category,
+        documents: [],
+    };
+    
+    handleCreate('budgets', newBudget, 'Presupuesto');
+    toast({
+      title: 'Presupuesto Resumido Añadido',
+      description: `Se ha creado un presupuesto resumido en "${category === 'obra_nueva' ? 'Obra Nueva' : 'Reformas'}".`,
+    });
+  };
+
 
   const handleLoadForms = (data: any[]) => {
     const dataWithIdsAndStatus = data.map((item, index) => ({
@@ -731,6 +767,35 @@ export default function DashboardPage() {
               onDeleteChatMessage={(id) => handleDelete('chat_messages', id, 'Mensaje de Chat')}
               
               onCreateBudgetFromAi={handleCreateBudgetFromAi}
+              onCreateSummaryBudgetFromAi={(aiBudget) => {
+                const dialog = document.createElement('div');
+                dialog.innerHTML = `
+                    <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 2rem; border-radius: 0.5rem; color: black;">
+                            <h3 style="font-size: 1.25rem; font-weight: 600;">Añadir a...</h3>
+                            <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                                <button id="summary-obra-nueva" style="padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 0.25rem;">Obra Nueva</button>
+                                <button id="summary-reformas" style="padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 0.25rem;">Reformas</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(dialog);
+                
+                const closeDialog = () => document.body.removeChild(dialog);
+
+                document.getElementById('summary-obra-nueva')?.addEventListener('click', () => {
+                    handleCreateSummaryBudgetFromAi(aiBudget, 'obra_nueva');
+                    closeDialog();
+                });
+                 document.getElementById('summary-reformas')?.addEventListener('click', () => {
+                    handleCreateSummaryBudgetFromAi(aiBudget, 'reformas');
+                    closeDialog();
+                });
+                dialog.addEventListener('click', (e) => {
+                    if (e.target === dialog) closeDialog();
+                })
+              }}
               
               visibleTabs={visibleTabs}
               onTabVisibilityChange={handleTabVisibilityChange}
