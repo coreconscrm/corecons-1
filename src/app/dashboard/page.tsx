@@ -284,7 +284,7 @@ export default function DashboardPage() {
        if (collectionName === 'jordan_checklists' || collectionName === 'juanfran_notes' || collectionName === 'sandra_notes') {
             newItem = {
                 ...newItem,
-                completed: false,
+                completed: item.completed ?? false,
                 date: new Date(),
             }
         }
@@ -507,9 +507,20 @@ export default function DashboardPage() {
   const buscarTerreno = seguimientos.filter(s => s.estado?.toLowerCase().trim() === 'buscar terreno').length;
 
   // Metrics for Oficina Overview
-  const juanfranPending = juanfranNotes.filter(n => !n.completed).length;
+  const countPending = (items: any[]) => {
+    return items.filter(item => {
+        if (item.type === 'checklist') {
+            // A checklist is pending if not all its sub-items are completed
+            return !(item.items || []).every((subItem: any) => subItem.completed);
+        }
+        // A note is pending if its top-level 'completed' is false
+        return !item.completed;
+    }).length;
+  };
+  
+  const juanfranPending = countPending(juanfranNotes);
   const sandraPending = sandraNotes.filter(n => !n.completed).length;
-  const jordanPending = jordanChecklists.filter(c => !c.completed).length;
+  const jordanPending = countPending(jordanChecklists);
   const daniPending = daniPriorities.filter(p => !p.completed).length;
   const unreadChats = chatMessages.filter(m => !m.read).length;
 
