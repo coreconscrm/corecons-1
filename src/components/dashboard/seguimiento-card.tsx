@@ -422,13 +422,13 @@ export function SeguimientoListCard({
                     <TableHeader>
                         <TableRow>
                             <TableHead>Acciones</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead>Por Hacer</TableHead>
                             <TableHead>Nombre</TableHead>
                             <TableHead>Teléfono</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Localización</TableHead>
                             <TableHead>Información</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Por Hacer</TableHead>
                             <TableHead>Próxima Llamada</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -472,6 +472,8 @@ export function SeguimientoListCard({
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </TableCell>
+                                    <TableCell className="capitalize">{s.estado}</TableCell>
+                                    <TableCell className="capitalize">{s.porHacer}</TableCell>
                                     <TableCell className="font-medium">{s.name}</TableCell>
                                     <TableCell>{s.phone}</TableCell>
                                     <TableCell>{s.email}</TableCell>
@@ -486,8 +488,6 @@ export function SeguimientoListCard({
                                             </p>
                                         )}
                                     </TableCell>
-                                    <TableCell className="capitalize">{s.estado}</TableCell>
-                                    <TableCell className="capitalize">{s.porHacer}</TableCell>
                                     <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
                                 </TableRow>
                             )) : (
