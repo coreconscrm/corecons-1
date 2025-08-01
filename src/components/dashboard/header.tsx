@@ -9,7 +9,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/logo.png';
 
-export function Header({ onSettingsClick }: { onSettingsClick: () => void }) {
+export function Header() {
   const { toast } = useToast();
 
   return (
@@ -25,7 +25,7 @@ export function Header({ onSettingsClick }: { onSettingsClick: () => void }) {
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={onSettingsClick}>
+        <Button variant="ghost" size="icon">
           <Settings className="h-5 w-5" />
           <span className="sr-only">Configuración</span>
         </Button>

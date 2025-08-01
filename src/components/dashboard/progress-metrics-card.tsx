@@ -39,7 +39,7 @@ export function DashboardTabs({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
-    estadoOptions, porHacerOptions, onSeguimientoOptionsChange,
+    estadoOptions, porHacerOptions, seguimientoCategories, onSeguimientoOptionsChange,
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
     sandraNotes, onAddSandraNote, onUpdateSandraNote, onDeleteSandraNote,
     jordanChecklists, onAddJordanChecklist, onUpdateJordanChecklist, onDeleteJordanChecklist,
@@ -67,7 +67,7 @@ export function DashboardTabs({
     companies: any[], onAddCompany: (company: any) => Promise<void>, onUpdateCompany: (company: any) => Promise<void>, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
-    estadoOptions: string[], porHacerOptions: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
+    estadoOptions: string[], porHacerOptions: string[], seguimientoCategories: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
     sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
     jordanChecklists: JordanItem[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
@@ -128,6 +128,7 @@ export function DashboardTabs({
             onDeleteSeguimiento={onDeleteSeguimiento}
             estadoOptions={estadoOptions}
             porHacerOptions={porHacerOptions}
+            categories={seguimientoCategories}
             onSeguimientoOptionsChange={onSeguimientoOptionsChange}
           />
         </div>

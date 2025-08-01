@@ -22,6 +22,7 @@ import type { AiBudgetItem } from '@/components/dashboard/ai-section';
 const initialFormSubmissions: any[] = [];
 const defaultEstadoOptions = ["primer contacto", "llamado", "falta arquitecto", "buscar terreno"];
 const defaultPorHacerOptions = ["llamar", "buscar arquitecto", "licencia"];
+const defaultSeguimientoCategories = ["General"];
 const defaultVisibleTabs = {
     projects: true,
     clients: true,
@@ -69,6 +70,7 @@ export default function DashboardPage() {
 
   const [estadoOptions, setEstadoOptions] = useState<string[]>(defaultEstadoOptions);
   const [porHacerOptions, setPorHacerOptions] = useState<string[]>(defaultPorHacerOptions);
+  const [seguimientoCategories, setSeguimientoCategories] = useState<string[]>(defaultSeguimientoCategories);
 
 
   const [isLoading, setIsLoading] = useState(true);
@@ -93,15 +95,18 @@ export default function DashboardPage() {
     localStorage.setItem('mainTab', tab);
   };
   
-  const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer', newOptions: string[]) => {
+  const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer' | 'categories', newOptions: string[]) => {
     try {
         const optionsDocRef = doc(db, 'config', 'seguimientoOptions');
         if (type === 'estado') {
             setEstadoOptions(newOptions);
             await setDoc(optionsDocRef, { estadoOptions: newOptions }, { merge: true });
-        } else {
+        } else if (type === 'porHacer') {
             setPorHacerOptions(newOptions);
             await setDoc(optionsDocRef, { porHacerOptions: newOptions }, { merge: true });
+        } else if (type === 'categories') {
+            setSeguimientoCategories(newOptions);
+            await setDoc(optionsDocRef, { categories: newOptions }, { merge: true });
         }
         toast({ title: 'Opciones guardadas', description: 'Tus cambios en las opciones de seguimiento han sido guardados en la base de datos.' });
     } catch (error) {
@@ -177,6 +182,7 @@ export default function DashboardPage() {
             const optionsData = seguimientoOptionsSnap.data();
             if(optionsData.estadoOptions) setEstadoOptions(optionsData.estadoOptions);
             if(optionsData.porHacerOptions) setPorHacerOptions(optionsData.porHacerOptions);
+            if(optionsData.categories) setSeguimientoCategories(optionsData.categories);
         }
 
         // Fetch dashboard settings (tab visibility, etc.)
@@ -259,6 +265,13 @@ export default function DashboardPage() {
         }
       }
       
+      if (collectionName === 'seguimientos') {
+        newItem = {
+            ...newItem,
+            category: item.category || "General",
+        }
+      }
+
       if (collectionName === 'dani_priorities') {
           newItem = {
               ...newItem,
@@ -364,7 +377,8 @@ export default function DashboardPage() {
         informacion: `Cliente existente - ${client.name}`,
         estado: 'primer contacto',
         porHacer: 'llamar',
-        siguienteLlamada: null
+        siguienteLlamada: null,
+        category: 'General',
     };
     handleCreate('seguimientos', newSeguimiento, 'Seguimiento');
     toast({
@@ -487,7 +501,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onSettingsClick={() => handleTabChange("settings")} />
+      <Header />
       <NotepadSheet open={isNotepadOpen} onOpenChange={setNotepadOpen} content={notepadContent} onContentChange={setNotepadContent} />
       
       <Button
@@ -637,6 +651,7 @@ export default function DashboardPage() {
               onDeleteSeguimiento={(id) => handleDelete('seguimientos', id, 'Seguimiento')}
               estadoOptions={estadoOptions}
               porHacerOptions={porHacerOptions}
+              seguimientoCategories={seguimientoCategories}
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
               
               juanfranNotes={juanfranNotes}

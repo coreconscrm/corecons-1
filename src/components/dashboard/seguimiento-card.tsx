@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,7 +20,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, parse, isValid } from "date-fns";
 import { es } from "date-fns/locale";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen, FolderOpen, Move } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const seguimientoSchema = z.object({
   name: z.string().optional(),
@@ -31,6 +32,7 @@ const seguimientoSchema = z.object({
   estado: z.string().optional(),
   porHacer: z.string().optional(),
   siguienteLlamada: z.date().optional().nullable(),
+  category: z.string().optional(),
 });
 
 export type Seguimiento = { 
@@ -42,7 +44,8 @@ export type Seguimiento = {
     informacion?: string,
     estado?: string,
     porHacer?: string,
-    siguienteLlamada: string | null 
+    siguienteLlamada: string | null,
+    category?: string,
 };
 
 function OptionsSettingsDialog({ 
@@ -155,7 +158,7 @@ function OptionsSettingsDialog({
 }
 
 
-function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[] }) {
+function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions, categories }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[], categories: string[] }) {
     const form = useForm<z.infer<typeof seguimientoSchema>>({
         resolver: zodResolver(seguimientoSchema),
     });
@@ -176,9 +179,10 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                     estado: seguimiento.estado || "",
                     porHacer: seguimiento.porHacer || "",
                     siguienteLlamada: callDate && isValid(callDate) ? callDate : null,
+                    category: seguimiento.category || "General",
                 };
             } else {
-                defaultValues = { name: "", phone: "", email: "", localizacion: "", informacion: "", estado: "", porHacer: "", siguienteLlamada: null };
+                defaultValues = { name: "", phone: "", email: "", localizacion: "", informacion: "", estado: "", porHacer: "", siguienteLlamada: null, category: "General" };
             }
             form.reset(defaultValues);
         }
@@ -241,23 +245,35 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                 </FormItem>
                             )} />
                         </div>
-                        <FormField control={form.control} name="siguienteLlamada" render={({ field }) => (
-                            <FormItem className="flex flex-col"><FormLabel>Siguiente Llamada</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                {field.value ? (format(field.value, "PPP", { locale: es })) : (<span>Selecciona una fecha</span>)}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
-                                    </PopoverContent>
-                                </Popover><FormMessage />
-                            </FormItem>
-                        )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="siguienteLlamada" render={({ field }) => (
+                                <FormItem className="flex flex-col"><FormLabel>Siguiente Llamada</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    {field.value ? (format(field.value, "PPP", { locale: es })) : (<span>Selecciona una fecha</span>)}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
+                                        </PopoverContent>
+                                    </Popover><FormMessage />
+                                </FormItem>
+                            )} />
+                             <FormField control={form.control} name="category" render={({ field }) => (
+                                <FormItem><FormLabel>Subsección</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value ?? 'General'}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una subsección" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {categories.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">{seguimiento ? "Guardar Cambios" : "Guardar Seguimiento"}</Button>
@@ -276,6 +292,7 @@ export function SeguimientoListCard({
     onDeleteSeguimiento,
     estadoOptions,
     porHacerOptions,
+    categories,
     onSeguimientoOptionsChange
 }: { 
     seguimientos: Seguimiento[], 
@@ -284,12 +301,33 @@ export function SeguimientoListCard({
     onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[],
     porHacerOptions: string[],
-    onSeguimientoOptionsChange: (type: 'estado' | 'porHacer', options: string[]) => void,
+    categories: string[],
+    onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
 }) {
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeSeguimiento, setActiveSeguimiento] = useState<Seguimiento | undefined>(undefined);
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+    const [newCategory, setNewCategory] = useState("");
+    const { toast } = useToast();
+
+    const groupedSeguimientos = useMemo(() => {
+        const groups: Record<string, Seguimiento[]> = {};
+        
+        categories.forEach(cat => {
+            groups[cat] = [];
+        });
+
+        seguimientos.forEach(s => {
+            const category = s.category || 'General';
+            if (!groups[category]) {
+                groups[category] = [];
+            }
+            groups[category].push(s);
+        });
+        
+        return groups;
+    }, [seguimientos, categories]);
 
     const handleEdit = (seguimiento: Seguimiento) => {
         setActiveSeguimiento(seguimiento);
@@ -306,6 +344,14 @@ export function SeguimientoListCard({
             onUpdateSeguimiento(values);
         } else {
             onAddSeguimiento(values);
+        }
+    };
+    
+    const handleAddCategory = () => {
+        if (newCategory && !categories.includes(newCategory)) {
+            onSeguimientoOptionsChange('categories', [...categories, newCategory]);
+            setNewCategory("");
+            toast({ title: `Subsección "${newCategory}" creada` });
         }
     };
     
@@ -344,18 +390,30 @@ export function SeguimientoListCard({
               }}
               estadoOptions={estadoOptions}
               porHacerOptions={porHacerOptions}
+              categories={categories}
             />
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <CardTitle>Seguimiento de Clientes</CardTitle>
                     <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setIsOptionsOpen(true)}>
-                        <Settings className="h-4 w-4" />
-                        <span className="sr-only">Configurar Opciones</span>
-                    </Button>
-                    <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            placeholder="Nueva subsección..." 
+                            value={newCategory} 
+                            onChange={(e) => setNewCategory(e.target.value)} 
+                            className="h-9"
+                        />
+                        <Button size="sm" onClick={handleAddCategory}><Plus className="h-4 w-4 mr-1" /> Añadir</Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => setIsOptionsOpen(true)}>
+                            <Settings className="h-4 w-4" />
+                            <span className="sr-only">Configurar Opciones</span>
+                        </Button>
+                        <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -374,54 +432,73 @@ export function SeguimientoListCard({
                             <TableHead>Próxima Llamada</TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
-                        {seguimientos.map(s => (
-                            <TableRow key={s.id}>
-                                <TableCell>
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => handleEdit(s)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el seguimiento.</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteSeguimiento(s.id)}>Eliminar</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
-                                <TableCell className="font-medium">{s.name}</TableCell>
-                                <TableCell>{s.phone}</TableCell>
-                                <TableCell>{s.email}</TableCell>
-                                <TableCell>{s.localizacion}</TableCell>
-                                <TableCell>
-                                    {s.informacion && (
-                                        <p 
-                                          className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
-                                          onClick={() => setViewingInfo(s.informacion || null)}
-                                        >
-                                          {s.informacion}
-                                        </p>
-                                    )}
-                                </TableCell>
-                                <TableCell className="capitalize">{s.estado}</TableCell>
-                                <TableCell className="capitalize">{s.porHacer}</TableCell>
-                                <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
-                            </TableRow>
-                        ))}
-                         {seguimientos.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={9} className="h-24 text-center">
-                                    No hay seguimientos añadidos.
+                    {Object.entries(groupedSeguimientos).map(([category, seguimientosInCategory]) => (
+                        <tbody key={category}>
+                            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                                <TableCell colSpan={9} className="font-semibold text-lg">
+                                    <div className="flex items-center gap-2">
+                                        <FolderOpen className="h-5 w-5" />
+                                        {category} ({seguimientosInCategory.length})
+                                    </div>
                                 </TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
+                            {seguimientosInCategory.length > 0 ? seguimientosInCategory.map((s) => (
+                                <TableRow key={s.id}>
+                                    <TableCell>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => handleEdit(s)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                          {categories.map(cat => (
+                                                            <DropdownMenuItem key={cat} onSelect={() => onUpdateSeguimiento({ ...s, category: cat })}>
+                                                                {cat}
+                                                            </DropdownMenuItem>
+                                                          ))}
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el seguimiento.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteSeguimiento(s.id)}>Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                    <TableCell className="font-medium">{s.name}</TableCell>
+                                    <TableCell>{s.phone}</TableCell>
+                                    <TableCell>{s.email}</TableCell>
+                                    <TableCell>{s.localizacion}</TableCell>
+                                    <TableCell>
+                                        {s.informacion && (
+                                            <p 
+                                              className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
+                                              onClick={() => setViewingInfo(s.informacion || null)}
+                                            >
+                                              {s.informacion}
+                                            </p>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="capitalize">{s.estado}</TableCell>
+                                    <TableCell className="capitalize">{s.porHacer}</TableCell>
+                                    <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="h-16 text-center text-muted-foreground">
+                                        No hay seguimientos en esta subsección.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </tbody>
+                    ))}
                 </Table>
               </div>
             </CardContent>
