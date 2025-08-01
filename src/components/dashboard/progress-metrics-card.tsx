@@ -17,6 +17,7 @@ import type { JuanFranNote } from "./juanfran-notes-card";
 import type { SandraNote } from './sandra-notes-card';
 import type { JordanItem } from './jordan-checklist-card';
 import type { DaniPriority } from './dani-priorities-card';
+import type { JulianNote } from './julian-notes-card';
 
 const ProjectListCard = dynamic(() => import('@/components/dashboard/performance-chart').then(mod => mod.ProjectListCard), { ssr: false });
 
@@ -41,6 +42,7 @@ export function DashboardTabs({
     seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
     estadoOptions, porHacerOptions, seguimientoCategories, onSeguimientoOptionsChange,
     juanfranNotes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote,
+    julianNotes, onAddJulianNote, onUpdateJulianNote, onDeleteJulianNote,
     sandraNotes, onAddSandraNote, onUpdateSandraNote, onDeleteSandraNote,
     jordanChecklists, onAddJordanChecklist, onUpdateJordanChecklist, onDeleteJordanChecklist,
     daniPriorities, onAddDaniPriority, onUpdateDaniPriority, onDeleteDaniPriority,
@@ -69,6 +71,7 @@ export function DashboardTabs({
     seguimientos: any[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[], porHacerOptions: string[], seguimientoCategories: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
     juanfranNotes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void,
+    julianNotes: JulianNote[], onAddJulianNote: (note: any) => void, onUpdateJulianNote: (note: any) => void, onDeleteJulianNote: (id: string) => void,
     sandraNotes: SandraNote[], onAddSandraNote: (note: any) => void, onUpdateSandraNote: (note: any) => void, onDeleteSandraNote: (id: string) => void,
     jordanChecklists: JordanItem[], onAddJordanChecklist: (c: any) => void, onUpdateJordanChecklist: (c: any) => void, onDeleteJordanChecklist: (id: string) => void,
     daniPriorities: DaniPriority[], onAddDaniPriority: (p: any) => void, onUpdateDaniPriority: (p: any) => void, onDeleteDaniPriority: (id: string) => void,
@@ -99,6 +102,10 @@ export function DashboardTabs({
             onAddJuanfranNote={onAddJuanfranNote}
             onUpdateJuanfranNote={onUpdateJuanfranNote}
             onDeleteJuanfranNote={onDeleteJuanfranNote}
+            julianNotes={julianNotes}
+            onAddJulianNote={onAddJulianNote}
+            onUpdateJulianNote={onUpdateJulianNote}
+            onDeleteJulianNote={onDeleteJulianNote}
             sandraNotes={sandraNotes}
             onAddSandraNote={onAddSandraNote}
             onUpdateSandraNote={onUpdateSandraNote}

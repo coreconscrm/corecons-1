@@ -31,9 +31,10 @@ function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, labe
   );
 }
 
-export function OficinaOverview({ juanfran, sandra, jordan, dani, chats }: { juanfran: number, sandra: number, jordan: number, dani: number, chats: number }) {
+export function OficinaOverview({ juanfran, sandra, jordan, dani, chats, julian }: { juanfran: number, sandra: number, jordan: number, dani: number, chats: number, julian: number }) {
     const metrics = [
-      { icon: NotebookText, label: "JuanFran", value: juanfran },
+      { icon: NotebookText, label: "Juanfran", value: juanfran },
+      { icon: NotebookText, label: "Julian", value: julian },
       { icon: NotebookText, label: "Sandra", value: sandra },
       { icon: NotebookText, label: "Jordan", value: jordan },
       { icon: NotebookText, label: "Dani", value: dani },

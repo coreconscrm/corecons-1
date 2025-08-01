@@ -40,7 +40,7 @@ const noteSchema = z.object({
 
 // --- Types ---
 export type ChecklistItem = z.infer<typeof checklistItemSchema>;
-export type JuanFranNote = {
+export type JulianNote = {
   id: string;
   type: 'note' | 'checklist';
   title: string;
@@ -52,7 +52,7 @@ export type JuanFranNote = {
 
 
 // --- Forms ---
-function ChecklistForm({ checklist, onSubmit, open, onOpenChange }: { checklist?: JuanFranNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function ChecklistForm({ checklist, onSubmit, open, onOpenChange }: { checklist?: JulianNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof checklistSchema>>({
         resolver: zodResolver(checklistSchema),
         defaultValues: { title: "", items: [{ text: "", completed: false }] },
@@ -130,7 +130,7 @@ function ChecklistForm({ checklist, onSubmit, open, onOpenChange }: { checklist?
     );
 }
 
-function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JulianNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof noteSchema>>({
         resolver: zodResolver(noteSchema),
         defaultValues: { title: "", content: "" },
@@ -198,13 +198,13 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: JuanFranNote,
 }
 
 // --- Main Component ---
-export function JuanfranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNote, onDeleteJuanfranNote }: { notes: JuanFranNote[], onAddJuanfranNote: (note: any) => void, onUpdateJuanfranNote: (note: any) => void, onDeleteJuanfranNote: (id: string) => void }) {
+export function JulianNotesCard({ notes, onAddJulianNote, onUpdateJulianNote, onDeleteJulianNote }: { notes: JulianNote[], onAddJulianNote: (note: any) => void, onUpdateJulianNote: (note: any) => void, onDeleteJulianNote: (id: string) => void }) {
     const [activeForm, setActiveForm] = useState<'note' | 'checklist' | null>(null);
-    const [editingItem, setEditingItem] = useState<JuanFranNote | undefined>(undefined);
-    const [viewingNote, setViewingNote] = useState<JuanFranNote | null>(null);
+    const [editingItem, setEditingItem] = useState<JulianNote | undefined>(undefined);
+    const [viewingNote, setViewingNote] = useState<JulianNote | null>(null);
 
 
-    const handleEdit = (item: JuanFranNote) => {
+    const handleEdit = (item: JulianNote) => {
         setEditingItem(item);
         setActiveForm(item.type);
     };
@@ -221,21 +221,21 @@ export function JuanfranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNo
 
     const handleSubmit = (values: any) => {
         if (editingItem) {
-            onUpdateJuanfranNote(values);
+            onUpdateJulianNote(values);
         } else {
-            onAddJuanfranNote(values);
+            onAddJulianNote(values);
         }
     };
     
-    const handleToggleItem = (checklist: JuanFranNote, itemIndex: number) => {
+    const handleToggleItem = (checklist: JulianNote, itemIndex: number) => {
         if (!checklist.items) return;
         const newItems = [...checklist.items];
         newItems[itemIndex] = { ...newItems[itemIndex], completed: !newItems[itemIndex].completed };
-        onUpdateJuanfranNote({ ...checklist, items: newItems });
+        onUpdateJulianNote({ ...checklist, items: newItems });
     };
     
-    const handleToggleCompleted = (note: JuanFranNote) => {
-        onUpdateJuanfranNote({ ...note, completed: !note.completed });
+    const handleToggleCompleted = (note: JulianNote) => {
+        onUpdateJulianNote({ ...note, completed: !note.completed });
     };
 
     const calculateProgress = (items: ChecklistItem[] = []) => {
@@ -280,7 +280,7 @@ export function JuanfranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNo
 
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <CardTitle className="flex items-center gap-2"><ListChecks /> Apuntes de Juanfran</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><ListChecks /> Apuntes de Julian</CardTitle>
                     <CardDescription>Gestiona checklists y apuntes rápidos.</CardDescription>
                 </div>
                 <DropdownMenu>
@@ -321,7 +321,7 @@ export function JuanfranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNo
                                                 <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el apunte permanentemente.</AlertDialogDescription></AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteJuanfranNote(note.id)}>Eliminar</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => onDeleteJulianNote(note.id)}>Eliminar</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
@@ -392,7 +392,7 @@ export function JuanfranNotesCard({ notes, onAddJuanfranNote, onUpdateJuanfranNo
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => onDeleteJuanfranNote(checklist.id)}>Eliminar</AlertDialogAction>
+                                                        <AlertDialogAction onClick={() => onDeleteJulianNote(checklist.id)}>Eliminar</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>

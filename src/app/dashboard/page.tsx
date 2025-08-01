@@ -62,6 +62,7 @@ export default function DashboardPage() {
   const [priorityCalls, setPriorityCalls] = useState<any[]>([]);
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [juanfranNotes, setJuanfranNotes] = useState<any[]>([]);
+  const [julianNotes, setJulianNotes] = useState<any[]>([]);
   const [sandraNotes, setSandraNotes] = useState<any[]>([]);
   const [jordanChecklists, setJordanChecklists] = useState<any[]>([]);
   const [daniPriorities, setDaniPriorities] = useState<any[]>([]);
@@ -146,7 +147,7 @@ export default function DashboardPage() {
 
     try {
         console.log("Attempting to fetch data from Firestore...");
-        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes', 'sandra_notes', 'jordan_checklists', 'dani_priorities'];
+        const collections = ['clients', 'projects', 'providers', 'team', 'budgets', 'companies', 'contacts', 'reformas', 'documents', 'collaborators', 'priority_calls', 'interioristas', 'constructoras', 'reformistas', 'inmobiliarias', 'seguimientos', 'juanfran_notes', 'sandra_notes', 'jordan_checklists', 'dani_priorities', 'julian_notes'];
         const snapshots = await Promise.all(collections.map(c => getDocs(collection(db, c))));
         const chatQuery = query(collection(db, 'chat_messages'), orderBy('createdAt', 'desc'));
         const chatSnapshot = await getDocs(chatQuery);
@@ -173,6 +174,7 @@ export default function DashboardPage() {
         setSandraNotes(mapSnapToState(snapshots[17]));
         setJordanChecklists(mapSnapToState(snapshots[18]));
         setDaniPriorities(mapSnapToState(snapshots[19]));
+        setJulianNotes(mapSnapToState(snapshots[20]));
         setChatMessages(mapSnapToState(chatSnapshot));
 
         // Fetch config options
@@ -281,7 +283,7 @@ export default function DashboardPage() {
           }
       }
 
-       if (collectionName === 'jordan_checklists' || collectionName === 'juanfran_notes' || collectionName === 'sandra_notes') {
+       if (collectionName === 'jordan_checklists' || collectionName === 'juanfran_notes' || collectionName === 'sandra_notes' || collectionName === 'julian_notes') {
             newItem = {
                 ...newItem,
                 completed: item.completed ?? false,
@@ -528,6 +530,7 @@ export default function DashboardPage() {
   };
   
   const juanfranPending = countPending(juanfranNotes);
+  const julianPending = countPending(julianNotes);
   const sandraPending = sandraNotes.filter(n => !n.completed).length;
   const jordanPending = countPending(jordanChecklists);
   const daniPending = daniPriorities.filter(p => !p.completed).length;
@@ -573,6 +576,7 @@ export default function DashboardPage() {
                     jordan={jordanPending}
                     dani={daniPending}
                     chats={unreadChats}
+                    julian={julianPending}
                 />
                 <SeguimientoOverview
                     llamarEstaSemana={llamarEstaSemana}
@@ -697,9 +701,14 @@ export default function DashboardPage() {
               onSeguimientoOptionsChange={handleSeguimientoOptionsChange}
               
               juanfranNotes={juanfranNotes}
-              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Apunte de JuanFran')}
-              onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Apunte de JuanFran')}
-              onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Apunte de JuanFran')}
+              onAddJuanfranNote={(note) => handleCreate('juanfran_notes', note, 'Apunte de Juanfran')}
+              onUpdateJuanfranNote={(note) => handleUpdate('juanfran_notes', note, 'Apunte de Juanfran')}
+              onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Apunte de Juanfran')}
+              
+              julianNotes={julianNotes}
+              onAddJulianNote={(note) => handleCreate('julian_notes', note, 'Apunte de Julian')}
+              onUpdateJulianNote={(note) => handleUpdate('julian_notes', note, 'Apunte de Julian')}
+              onDeleteJulianNote={(id) => handleDelete('julian_notes', id, 'Apunte de Julian')}
 
               sandraNotes={sandraNotes}
               onAddSandraNote={(note) => handleCreate('sandra_notes', note, 'Nota de Sandra')}

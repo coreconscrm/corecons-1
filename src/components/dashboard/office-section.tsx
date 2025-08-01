@@ -5,11 +5,12 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookUser, MessageSquare, ListChecks } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JuanFranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
+import { JuanfranNotesCard, type JuanFranNote } from "./juanfran-notes-card";
 import { SandraNotesCard, type SandraNote } from "./sandra-notes-card";
 import { JordanSectionCard, type JordanItem } from "./jordan-checklist-card";
 import { DaniPrioritiesCard, type DaniPriority } from "./dani-priorities-card";
 import { ChatSection } from "./chat-section";
+import { JulianNotesCard, type JulianNote } from "./julian-notes-card";
 
 export function OfficeSection({
     juanfranNotes,
@@ -33,6 +34,10 @@ export function OfficeSection({
     onAddChatMessage,
     onUpdateChatMessage,
     onDeleteChatMessage,
+    julianNotes,
+    onAddJulianNote,
+    onUpdateJulianNote,
+    onDeleteJulianNote,
 }: {
     juanfranNotes: JuanFranNote[];
     onAddJuanfranNote: (note: any) => void;
@@ -55,6 +60,10 @@ export function OfficeSection({
     onAddChatMessage: (message: any) => void;
     onUpdateChatMessage: (message: any) => void;
     onDeleteChatMessage: (id: string) => void;
+    julianNotes: JulianNote[];
+    onAddJulianNote: (note: any) => void;
+    onUpdateJulianNote: (note: any) => void;
+    onDeleteJulianNote: (id: string) => void;
 }) {
     const [activeTab, setActiveTab] = useState('juanfran');
     
@@ -73,10 +82,14 @@ export function OfficeSection({
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="flex justify-center">
-                <TabsList className="h-auto flex-col md:flex-row">
+                <TabsList className="h-auto flex-col md:flex-row items-center">
                     <TabsTrigger value="juanfran">
                         <ListChecks className="mr-2" />
-                        Apuntes de JuanFran
+                        Apuntes de Juanfran
+                    </TabsTrigger>
+                     <TabsTrigger value="julian">
+                        <ListChecks className="mr-2" />
+                        Apuntes de Julian
                     </TabsTrigger>
                     <TabsTrigger value="sandra">
                         <BookUser className="mr-2" />
@@ -97,11 +110,19 @@ export function OfficeSection({
                 </TabsList>
             </div>
             <TabsContent value="juanfran" className="mt-6">
-                 <JuanFranNotesCard
+                 <JuanfranNotesCard
                     notes={juanfranNotes}
                     onAddJuanfranNote={onAddJuanfranNote}
                     onUpdateJuanfranNote={onUpdateJuanfranNote}
                     onDeleteJuanfranNote={onDeleteJuanfranNote}
+                />
+            </TabsContent>
+            <TabsContent value="julian" className="mt-6">
+                 <JulianNotesCard
+                    notes={julianNotes}
+                    onAddJulianNote={onAddJulianNote}
+                    onUpdateJulianNote={onUpdateJulianNote}
+                    onDeleteJulianNote={onDeleteJulianNote}
                 />
             </TabsContent>
              <TabsContent value="sandra" className="mt-6">
