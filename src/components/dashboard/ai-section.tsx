@@ -91,6 +91,7 @@ const addChapterSchema = z.object({
 });
 
 const addLineItemSchema = z.object({
+    numero: z.string().optional(),
     description: z.string().min(1, "La descripción es requerida."),
     medicion: z.string().optional(),
     unidad: z.string().optional(),
@@ -296,6 +297,7 @@ function BudgetUploader({
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead>Nº</TableHead>
                             <TableHead>Partida</TableHead>
                             <TableHead className="text-right">Medición</TableHead>
                             <TableHead className="text-center">Unidad</TableHead>
@@ -305,6 +307,7 @@ function BudgetUploader({
                         <TableBody>
                           {capitulo.partidas.map((partida, pIndex) => (
                             <TableRow key={pIndex}>
+                              <TableCell className="w-[80px]">{partida.numero}</TableCell>
                               <TableCell>{partida.descripcion}</TableCell>
                               <TableCell className="text-right">{partida.medicion}</TableCell>
                               <TableCell className="text-center">{partida.unidad}</TableCell>
@@ -617,7 +620,7 @@ function AddChapterDialog({ open, onOpenChange, onSave }: { open: boolean, onOpe
 function AddLineItemDialog({ open, onOpenChange, onSave, chapterName }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (values: z.infer<typeof addLineItemSchema>) => void, chapterName: string }) {
     const form = useForm<z.infer<typeof addLineItemSchema>>({
         resolver: zodResolver(addLineItemSchema),
-        defaultValues: { description: "", medicion: "1", unidad: "ud", total: 0 },
+        defaultValues: { numero: "", description: "", medicion: "1", unidad: "ud", total: 0 },
     });
 
     const handleSubmit = (values: z.infer<typeof addLineItemSchema>) => {
@@ -634,6 +637,9 @@ function AddLineItemDialog({ open, onOpenChange, onSave, chapterName }: { open: 
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                         <FormField control={form.control} name="numero" render={({ field }) => (
+                            <FormItem><FormLabel>Nº Partida</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                         <FormField control={form.control} name="description" render={({ field }) => (
                             <FormItem><FormLabel>Descripción</FormLabel><FormControl><Textarea {...field} autoFocus /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -686,7 +692,7 @@ function AiBudgetCard({
     onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
     onAddChapter: (budgetId: string, chapterName: string) => void,
     onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
-    onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'descripcion' | 'medicion' | 'unidad', value: string) => void,
+    onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -839,6 +845,7 @@ function AiBudgetCard({
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
+                                                    <TableHead className="w-[80px]">Nº Partida</TableHead>
                                                     <TableHead className="w-2/5">Partida</TableHead>
                                                     <TableHead className="text-right">Medición</TableHead>
                                                     <TableHead className="text-center">Unidad</TableHead>
@@ -853,6 +860,13 @@ function AiBudgetCard({
                                                     const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
                                                     return (
                                                     <TableRow key={pIndex}>
+                                                        <TableCell className="w-[80px]">
+                                                            <Input
+                                                                defaultValue={partida.numero || ''}
+                                                                className="text-left h-8"
+                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'numero', e.target.value)}
+                                                            />
+                                                        </TableCell>
                                                         <TableCell className="w-2/5">
                                                             <Textarea
                                                                 defaultValue={partida.descripcion}
@@ -891,7 +905,7 @@ function AiBudgetCard({
                                             </TableBody>
                                             <UiTableFooter>
                                                 <TableRow className="bg-secondary/50 hover:bg-secondary">
-                                                    <TableCell colSpan={4} className="text-right font-bold">Total Capítulo</TableCell>
+                                                    <TableCell colSpan={5} className="text-right font-bold">Total Capítulo</TableCell>
                                                     <TableCell className="text-right font-bold font-mono">
                                                         €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>
@@ -1160,7 +1174,8 @@ function AiBudgetsSection({
         if (!chapter) return;
         
         chapter.partidas.push({
-            descripcion: values.description,
+            numero: values.numero || "",
+            description: values.description,
             medicion: values.medicion || "",
             unidad: values.unidad || "",
             precioUnitario: "", // Not used for user-added items
@@ -1188,7 +1203,7 @@ function AiBudgetsSection({
         }
     };
     
-    const handlePartidaChange = async (budgetId: string, chapterName: string, partidaIndex: number, field: 'descripcion' | 'medicion' | 'unidad', value: string) => {
+    const handlePartidaChange = async (budgetId: string, chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => {
         const budget = aiBudgets.find(b => b.id === budgetId);
         if (!budget) return;
 
