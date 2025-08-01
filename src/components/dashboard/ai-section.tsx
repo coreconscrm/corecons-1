@@ -625,6 +625,7 @@ function AiBudgetCard({
     onChapterNameChange,
     onAddChapter,
     onAddLineItem,
+    onPartidaChange,
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
@@ -636,6 +637,7 @@ function AiBudgetCard({
     onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
     onAddChapter: (budgetId: string, chapterName: string) => void,
     onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
+    onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'medicion' | 'unidad', value: string) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -802,8 +804,20 @@ function AiBudgetCard({
                                                     return (
                                                     <TableRow key={pIndex}>
                                                         <TableCell>{partida.descripcion}</TableCell>
-                                                        <TableCell className="text-right">{partida.medicion}</TableCell>
-                                                        <TableCell className="text-center">{partida.unidad}</TableCell>
+                                                        <TableCell className="text-right w-[100px]">
+                                                            <Input
+                                                                defaultValue={partida.medicion || ''}
+                                                                className="text-right h-8"
+                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'medicion', e.target.value)}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="text-center w-[100px]">
+                                                            <Input
+                                                                defaultValue={partida.unidad || ''}
+                                                                className="text-center h-8"
+                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'unidad', e.target.value)}
+                                                            />
+                                                        </TableCell>
                                                         <TableCell className="text-right font-mono">
                                                           {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </TableCell>
@@ -1108,6 +1122,25 @@ function AiBudgetsSection({
             toast({ variant: "destructive", title: "Error al añadir partida", description: "No se pudo guardar la nueva partida."});
         }
     };
+    
+    const handlePartidaChange = async (budgetId: string, chapterName: string, partidaIndex: number, field: 'medicion' | 'unidad', value: string) => {
+        const budget = aiBudgets.find(b => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter || !chapter.partidas[partidaIndex]) return;
+
+        chapter.partidas[partidaIndex][field] = value;
+
+        try {
+            const budgetRef = doc(db, 'ia_budgets', budgetId);
+            await updateDoc(budgetRef, { breakdown: newBreakdown });
+        } catch (error) {
+            console.error(`Error updating partida ${field}:`, error);
+            toast({ variant: "destructive", title: `Error al actualizar ${field}`, description: "No se pudo guardar el cambio."});
+        }
+    };
 
     if (loading) {
         return (
@@ -1158,6 +1191,7 @@ function AiBudgetsSection({
                         onChapterNameChange={handleChapterNameChange}
                         onAddChapter={handleAddChapter}
                         onAddLineItem={handleAddLineItem}
+                        onPartidaChange={handlePartidaChange}
                     />
                 ))}
             </Accordion>
