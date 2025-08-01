@@ -295,6 +295,15 @@ export default function DashboardPage() {
               read: item.read || false,
           }
       }
+      
+      if (collectionName === 'sandra_notes') {
+         newItem = {
+            ...newItem,
+            category: item.category || "General",
+            completed: item.completed || false,
+            date: new Date(),
+         }
+      }
 
       if (newItem.id) {
         const { id, ...data } = newItem;
@@ -693,7 +702,7 @@ export default function DashboardPage() {
               onDeleteJuanfranNote={(id) => handleDelete('juanfran_notes', id, 'Apunte de JuanFran')}
 
               sandraNotes={sandraNotes}
-              onAddSandraNote={(note) => handleCreate('sandra_notes', {...note, completed: false}, 'Nota de Sandra')}
+              onAddSandraNote={(note) => handleCreate('sandra_notes', note, 'Nota de Sandra')}
               onUpdateSandraNote={(note) => handleUpdate('sandra_notes', note, 'Nota de Sandra')}
               onDeleteSandraNote={(id) => handleDelete('sandra_notes', id, 'Nota de Sandra')}
 
