@@ -56,9 +56,8 @@ const projectBreakdownPrompt = ai.definePrompt({
     
     {{#if chapterName}}
     Instrucciones Específicas para este análisis:
-    -   El documento puede contener partidas iniciales sin un título de capítulo claro. Agrupa todas estas partidas iniciales bajo un capítulo con el siguiente nombre: "{{chapterName}}".
-    -   Después de haber agrupado estas partidas iniciales, continúa analizando el resto del documento.
-    -   Si encuentras más títulos de capítulos en el PDF (ej: Demoliciones, Albañilería, etc.), identifícalos y crea capítulos separados para ellos con sus respectivas partidas.
+    -   El documento puede contener partidas iniciales sin un título de capítulo claro. Agrupa todas las partidas iniciales bajo el capítulo "{{chapterName}}". Debes continuar añadiendo partidas a este capítulo hasta que encuentres el próximo título de capítulo explícito en el documento.
+    -   Una vez que encuentres un nuevo título de capítulo, crea un nuevo capítulo separado para él y continúa analizando el resto del documento de forma normal, creando más capítulos a medida que los encuentres.
     -   El resultado final debe ser un objeto JSON que contenga el capítulo "{{chapterName}}" primero, seguido de cualquier otro capítulo que hayas identificado en el resto del documento.
     {{else}}
     Instrucciones Específicas para este análisis:
