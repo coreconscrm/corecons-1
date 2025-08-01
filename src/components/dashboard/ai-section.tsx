@@ -97,26 +97,29 @@ const addLineItemSchema = z.object({
     total: z.coerce.number().min(0, "El total debe ser un número positivo.").optional(),
 });
 
+const manualChapterSchema = z.object({
+    chapterName: z.string().min(1, "El nombre del capítulo es requerido."),
+});
+
 
 // --- Componente para Generador de Desglose ---
 function BudgetUploader({ 
-    title,
-    description,
     onAnalysisComplete,
-    saveButtonLabel,
-    saveButtonIcon
 }: { 
-    title: string;
-    description: string;
     onAnalysisComplete: (breakdown: ProjectBreakdown, fileName: string) => Promise<void>;
-    saveButtonLabel: string;
-    saveButtonIcon: React.ReactNode;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isManualChapterDialogOpen, setManualChapterDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const manualChapterForm = useForm<z.infer<typeof manualChapterSchema>>({
+    resolver: zodResolver(manualChapterSchema),
+    defaultValues: { chapterName: "" },
+  });
+
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -130,9 +133,9 @@ function BudgetUploader({
     accept: { 'application/pdf': ['.pdf'] },
     multiple: false,
   });
-
-  const handleGenerate = async () => {
-    if (!file) {
+  
+  const processFileAndAnalyze = async (chapterName?: string) => {
+     if (!file) {
       toast({ variant: "destructive", title: "Error", description: "Por favor, selecciona un archivo PDF." });
       return;
     }
@@ -146,7 +149,7 @@ function BudgetUploader({
       reader.onload = async () => {
         const dataUri = reader.result as string;
         try {
-          const result = await createProjectBreakdown({ pdfDataUri: dataUri });
+          const result = await createProjectBreakdown({ pdfDataUri: dataUri, chapterName });
           setBreakdown(result);
           toast({ title: "Desglose generado", description: "El proyecto ha sido desglosado exitosamente. Ahora puedes guardarlo." });
         } catch (error) {
@@ -166,6 +169,16 @@ function BudgetUploader({
       toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado.` });
       setIsLoading(false);
     }
+  }
+
+  const handleGenerate = () => {
+    processFileAndAnalyze();
+  };
+  
+  const handleManualChapterSubmit = (values: z.infer<typeof manualChapterSchema>) => {
+    setManualChapterDialogOpen(false);
+    processFileAndAnalyze(values.chapterName);
+    manualChapterForm.reset();
   };
 
   const handleSaveClick = async () => {
@@ -187,108 +200,143 @@ function BudgetUploader({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div
-            {...getRootProps()}
-            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-              isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-            }`}
-          >
-            <input {...getInputProps()} />
-            <UploadCloud className="w-12 h-12 text-muted-foreground" />
-            <p className="mt-4 text-sm text-center">
-              {isDragActive
-                ? "Suelta el archivo aquí..."
-                : "Arrastra y suelta un PDF aquí, o haz clic para seleccionar"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF</p>
-          </div>
-          {file && (
-            <div className="p-3 border rounded-lg text-sm flex items-center justify-between">
-              <p className="truncate font-medium flex items-center gap-2">
-                <FileText size={16} /> {file.name}
+    <>
+      <Dialog open={isManualChapterDialogOpen} onOpenChange={setManualChapterDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Añadir a Capítulo Manualmente</DialogTitle>
+                <DialogDescription>Introduce el nombre del capítulo al que pertenecerán las partidas de este PDF.</DialogDescription>
+            </DialogHeader>
+            <Form {...manualChapterForm}>
+                <form onSubmit={manualChapterForm.handleSubmit(handleManualChapterSubmit)} className="space-y-4">
+                    <FormField
+                        control={manualChapterForm.control}
+                        name="chapterName"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nombre del Capítulo</FormLabel>
+                                <FormControl>
+                                    <Input {...field} autoFocus />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                        <Button type="submit">Analizar y Añadir</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+      </Dialog>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Subir para Presupuestos IA</CardTitle>
+            <CardDescription>Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div
+              {...getRootProps()}
+              className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+              }`}
+            >
+              <input {...getInputProps()} />
+              <UploadCloud className="w-12 h-12 text-muted-foreground" />
+              <p className="mt-4 text-sm text-center">
+                {isDragActive
+                  ? "Suelta el archivo aquí..."
+                  : "Arrastra y suelta un PDF aquí, o haz clic para seleccionar"}
               </p>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFile(null); setBreakdown(null); }}>
-                <X size={16} />
-              </Button>
+              <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF</p>
             </div>
-          )}
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleGenerate} disabled={!file || isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Analizando..." : "Analizar con IA"}
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Resultado del Análisis</CardTitle>
-          <CardDescription>Aquí aparecerán los capítulos y partidas generados por la IA.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center h-60">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Analizando documento y generando desglose...</p>
-            </div>
-          )}
-          {breakdown && breakdown.capitulos.length > 0 ? (
-            <Accordion type="multiple" className="w-full">
-              {breakdown.capitulos.map((capitulo, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
-                  <AccordionContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Partida</TableHead>
-                          <TableHead className="text-right">Medición</TableHead>
-                          <TableHead className="text-center">Unidad</TableHead>
-                          <TableHead className="text-right">Precio/Ud.</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {capitulo.partidas.map((partida, pIndex) => (
-                          <TableRow key={pIndex}>
-                            <TableCell>{partida.descripcion}</TableCell>
-                            <TableCell className="text-right">{partida.medicion}</TableCell>
-                            <TableCell className="text-center">{partida.unidad}</TableCell>
-                            <TableCell className="text-right">{partida.precioUnitario}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            !isLoading && (
-              <div className="flex flex-col items-center justify-center h-60 text-center text-muted-foreground">
-                <p>El resultado aparecerá aquí después del análisis.</p>
+            {file && (
+              <div className="p-3 border rounded-lg text-sm flex items-center justify-between">
+                <p className="truncate font-medium flex items-center gap-2">
+                  <FileText size={16} /> {file.name}
+                </p>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFile(null); setBreakdown(null); }}>
+                  <X size={16} />
+                </Button>
               </div>
-            )
-          )}
-        </CardContent>
-        {breakdown && breakdown.capitulos.length > 0 && (
-          <CardFooter className="flex-col sm:flex-row gap-2">
-            <Button onClick={handleSaveClick} disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {saveButtonIcon}
-              {saveButtonLabel}
+            )}
+          </CardContent>
+          <CardFooter className="flex-wrap gap-2">
+            <Button onClick={handleGenerate} disabled={!file || isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Analizando..." : "Analizar con IA"}
+            </Button>
+            <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={!file || isLoading}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir con IA
             </Button>
           </CardFooter>
-        )}
-      </Card>
-    </div>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultado del Análisis</CardTitle>
+            <CardDescription>Aquí aparecerán los capítulos y partidas generados por la IA.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center h-60">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <p className="mt-4 text-muted-foreground">Analizando documento y generando desglose...</p>
+              </div>
+            )}
+            {breakdown && breakdown.capitulos.length > 0 ? (
+              <Accordion type="multiple" className="w-full">
+                {breakdown.capitulos.map((capitulo, index) => (
+                  <AccordionItem value={`item-${index}`} key={index}>
+                    <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
+                    <AccordionContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Partida</TableHead>
+                            <TableHead className="text-right">Medición</TableHead>
+                            <TableHead className="text-center">Unidad</TableHead>
+                            <TableHead className="text-right">Precio/Ud.</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {capitulo.partidas.map((partida, pIndex) => (
+                            <TableRow key={pIndex}>
+                              <TableCell>{partida.descripcion}</TableCell>
+                              <TableCell className="text-right">{partida.medicion}</TableCell>
+                              <TableCell className="text-center">{partida.unidad}</TableCell>
+                              <TableCell className="text-right">{partida.precioUnitario}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              !isLoading && (
+                <div className="flex flex-col items-center justify-center h-60 text-center text-muted-foreground">
+                  <p>El resultado aparecerá aquí después del análisis.</p>
+                </div>
+              )
+            )}
+          </CardContent>
+          {breakdown && breakdown.capitulos.length > 0 && (
+            <CardFooter>
+              <Button onClick={handleSaveClick} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                Guardar Presupuesto
+              </Button>
+            </CardFooter>
+          )}
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -1253,7 +1301,7 @@ export function AiSection({
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
     const [activeTab, setActiveTab] = useState('budgets');
-    const [subTab, setSubTab] = useState('upload-for-budgets');
+    const [subTab, setSubTab] = useState('upload');
     const [reportsSubTab, setReportsSubTab] = useState('generator');
     
     useEffect(() => {
@@ -1283,66 +1331,6 @@ export function AiSection({
         }
     };
 
-
-    const handleSaveToPriceBase = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
-      const pricesRef = collection(db, "preciosMaestros");
-      const batch = writeBatch(db);
-      const now = new Date();
-
-      for (const capitulo of breakdown.capitulos) {
-        for (const partida of capitulo.partidas) {
-          if (!partida.precioUnitario || isNaN(parseFloat(partida.precioUnitario.replace(',', '.')))) continue;
-          
-          const q = query(pricesRef, where("descripcion", "==", partida.descripcion));
-          const querySnapshot = await getDocs(q);
-          
-          const precio = parseFloat(partida.precioUnitario.replace(',', '.'));
-          const newHistoryEntry = { precio, fecha: now, archivoOrigen: fileName };
-          
-          // Improved keyword generation
-          const keywords = partida.descripcion
-            .toLowerCase()
-            .replace(/[.,;:]/g, ' ') // Replace punctuation with spaces
-            .split(/\s+/) // Split by any whitespace
-            .filter(Boolean); // Remove empty strings
-
-          if (querySnapshot.empty) {
-            const newDocRef = doc(pricesRef);
-            batch.set(newDocRef, {
-                capitulo: capitulo.nombre,
-                descripcion: partida.descripcion,
-                unidad: partida.unidad,
-                precioActual: precio,
-                fechaUltimaActualizacion: now,
-                historialPrecios: [newHistoryEntry],
-                status: 'new',
-                keywords: keywords
-            });
-          } else {
-            const docId = querySnapshot.docs[0].id;
-            const docRef = doc(pricesRef, docId);
-            const existingData = querySnapshot.docs[0].data();
-            const newHistory = [...(existingData.historialPrecios || []), newHistoryEntry];
-            batch.update(docRef, {
-               precioActual: precio,
-               fechaUltimaActualizacion: now,
-               historialPrecios: newHistory,
-               status: 'updated',
-               keywords: keywords
-            });
-          }
-        }
-      }
-      
-      try {
-        await batch.commit();
-        toast({ title: "Base de Precios Actualizada", description: "Los precios del desglose se han añadido/actualizado."});
-      } catch (error) {
-         toast({ variant: "destructive", title: "Error al actualizar precios", description: `No se pudo guardar en la base de precios. ${(error as Error).message}` });
-         throw error; // Propagate error for the caller to handle state
-      }
-    }, [toast]);
-
     const handleSaveToAiBudgets = useCallback(async (breakdown: ProjectBreakdown, fileName: string) => {
         try {
             await addDoc(collection(db, "ia_budgets"), {
@@ -1371,21 +1359,17 @@ export function AiSection({
             <TabsContent value="budgets" className="mt-6">
                 <Tabs value={subTab} onValueChange={(v) => handleTabChange(v, 'sub')} className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="upload-for-budgets">
-                        <Server className="mr-2" /> Subir para Presupuestos IA
+                        <TabsTrigger value="upload">
+                         Subir para Presupuestos IA
                         </TabsTrigger>
                         <TabsTrigger value="view-and-edit">
-                        <BrainCircuit className="mr-2" /> Presupuestos IA
+                         Presupuestos IA
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="upload-for-budgets" className="mt-6">
+                    <TabsContent value="upload" className="mt-6">
                         <BudgetUploader 
-                            title="Subir para Presupuestos IA"
-                            description="Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'."
                             onAnalysisComplete={handleSaveToAiBudgets}
-                            saveButtonLabel="Guardar Presupuesto"
-                            saveButtonIcon={<Save className="mr-2 h-4 w-4" />}
                         />
                     </TabsContent>
 
