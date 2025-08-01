@@ -58,11 +58,6 @@ type PriceMasterItem = {
   historialPrecios: PriceHistoryEntry[];
   status: 'new' | 'updated';
 };
-type SortConfig = {
-  key: keyof PriceMasterItem;
-  direction: "ascending" | "descending";
-};
-
 export type AiBudgetItem = {
   id: string;
   fileName: string;
@@ -529,7 +524,8 @@ function AiBudgetCard({
     onDelete,
     onPrint,
     onMergeClick,
-    onAddToBudgetClick
+    onAddToBudgetClick,
+    onChapterNameChange
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
@@ -538,8 +534,11 @@ function AiBudgetCard({
     onPrint: (budget: AiBudgetItem) => void,
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
+    onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
+    const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
+
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
         const chapterTotals: Record<string, number> = {};
@@ -556,6 +555,18 @@ function AiBudgetCard({
         }
         return { grandTotal, chapterTotals };
     }, [budget.breakdown, budget.userLineTotals]);
+    
+    const handleChapterNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            if (editingChapter && editingChapter.newName.trim()) {
+                onChapterNameChange(budget.id, editingChapter.oldName, editingChapter.newName.trim());
+                setEditingChapter(null);
+            }
+        } else if (e.key === 'Escape') {
+            setEditingChapter(null);
+        }
+    };
+
 
     return (
         <AccordionItem value={budget.id} className="border-none">
@@ -626,7 +637,33 @@ function AiBudgetCard({
                         <Accordion type="multiple" className="w-full">
                             {budget.breakdown.capitulos.map((capitulo, index) => (
                                 <AccordionItem value={`item-${index}`} key={index}>
-                                    <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
+                                    <AccordionTrigger className="text-lg font-semibold flex items-center gap-2">
+                                        {editingChapter?.oldName === capitulo.nombre ? (
+                                            <Input 
+                                                value={editingChapter.newName}
+                                                onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
+                                                onKeyDown={handleChapterNameKeyDown}
+                                                onBlur={() => setEditingChapter(null)}
+                                                autoFocus
+                                                className="h-8"
+                                            />
+                                        ) : (
+                                            <>
+                                                <span>{capitulo.nombre}</span>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-6 w-6" 
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
+                                                    }}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                            </>
+                                        )}
+                                    </AccordionTrigger>
                                     <AccordionContent>
                                         <Table>
                                             <TableHeader>
@@ -853,6 +890,35 @@ function AiBudgetsSection({
         }
     };
     
+    const handleChapterNameChange = async (budgetId: string, oldName: string, newName: string) => {
+        const budget = aiBudgets.find(b => b.id === budgetId);
+        if (!budget || oldName === newName) return;
+    
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === oldName);
+        if (chapter) {
+            chapter.nombre = newName;
+        }
+    
+        const newUserLineTotals = { ...budget.userLineTotals };
+        if (newUserLineTotals[oldName]) {
+            newUserLineTotals[newName] = newUserLineTotals[oldName];
+            delete newUserLineTotals[oldName];
+        }
+    
+        try {
+            const budgetRef = doc(db, 'ia_budgets', budgetId);
+            await updateDoc(budgetRef, {
+                breakdown: newBreakdown,
+                userLineTotals: newUserLineTotals
+            });
+            toast({ title: "Capítulo renombrado", description: `"${oldName}" ahora es "${newName}".` });
+        } catch (error) {
+            console.error("Error renaming chapter:", error);
+            toast({ variant: 'destructive', title: 'Error al renombrar', description: 'No se pudo guardar el nuevo nombre del capítulo.' });
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-10">
@@ -899,6 +965,7 @@ function AiBudgetsSection({
                         onPrint={setPrintingBudget}
                         onMergeClick={setMergingBudget}
                         onAddToBudgetClick={setAddingToBudget}
+                        onChapterNameChange={handleChapterNameChange}
                     />
                 ))}
             </Accordion>
