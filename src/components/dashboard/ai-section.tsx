@@ -637,33 +637,34 @@ function AiBudgetCard({
                         <Accordion type="multiple" className="w-full">
                             {budget.breakdown.capitulos.map((capitulo, index) => (
                                 <AccordionItem value={`item-${index}`} key={index}>
-                                    <AccordionTrigger className="text-lg font-semibold flex items-center gap-2">
-                                        {editingChapter?.oldName === capitulo.nombre ? (
-                                            <Input 
-                                                value={editingChapter.newName}
-                                                onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
-                                                onKeyDown={handleChapterNameKeyDown}
-                                                onBlur={() => setEditingChapter(null)}
-                                                autoFocus
-                                                className="h-8"
-                                            />
-                                        ) : (
-                                            <>
+                                    <div className="flex items-center justify-between">
+                                        <AccordionTrigger className="text-lg font-semibold flex-1">
+                                            {editingChapter?.oldName === capitulo.nombre ? (
+                                                <Input 
+                                                    value={editingChapter.newName}
+                                                    onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
+                                                    onKeyDown={handleChapterNameKeyDown}
+                                                    onBlur={() => setEditingChapter(null)}
+                                                    autoFocus
+                                                    className="h-8"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
                                                 <span>{capitulo.nombre}</span>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-6 w-6" 
-                                                    onClick={(e) => { 
-                                                        e.stopPropagation(); 
-                                                        setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
-                                                    }}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            </>
-                                        )}
-                                    </AccordionTrigger>
+                                            )}
+                                        </AccordionTrigger>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-6 w-6 shrink-0" 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
+                                            }}
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                     <AccordionContent>
                                         <Table>
                                             <TableHeader>
