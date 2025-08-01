@@ -48,9 +48,9 @@ export function OfficeSection({
     onUpdateSandraNote: (note: any) => void;
     onDeleteSandraNote: (id: string) => void;
     jordanChecklists: JordanItem[];
-    onAddJordanChecklist: (c: any) => void;
-    onUpdateJordanChecklist: (c: any) => void;
-    onDeleteJordanChecklist: (id: string) => void;
+    onAddItem: (c: any) => void;
+    onUpdateItem: (c: any) => void;
+    onDeleteItem: (id: string) => void;
     daniPriorities: DaniPriority[];
     onAddDaniPriority: (p: any) => void;
     onUpdateDaniPriority: (p: any) => void;
@@ -83,27 +83,27 @@ export function OfficeSection({
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="flex justify-center">
                 <TabsList className="h-auto flex-col md:flex-row items-center">
-                    <TabsTrigger value="juanfran">
+                    <TabsTrigger value="juanfran" className="text-xs px-2 py-1">
                         <ListChecks className="mr-2" />
                         Apuntes de Juanfran
                     </TabsTrigger>
-                     <TabsTrigger value="julian">
+                     <TabsTrigger value="julian" className="text-xs px-2 py-1">
                         <ListChecks className="mr-2" />
                         Apuntes de Julian
                     </TabsTrigger>
-                    <TabsTrigger value="sandra">
+                    <TabsTrigger value="sandra" className="text-xs px-2 py-1">
                         <BookUser className="mr-2" />
                         Apuntes de Sandra
                     </TabsTrigger>
-                    <TabsTrigger value="jordan">
+                    <TabsTrigger value="jordan" className="text-xs px-2 py-1">
                         <ListChecks className="mr-2" />
                         CheckList de Jordan
                     </TabsTrigger>
-                    <TabsTrigger value="dani">
+                    <TabsTrigger value="dani" className="text-xs px-2 py-1">
                         <BookUser className="mr-2" />
                         Prioridades para Dani
                     </TabsTrigger>
-                    <TabsTrigger value="chat">
+                    <TabsTrigger value="chat" className="text-xs px-2 py-1">
                         <MessageSquare className="mr-2" />
                         Chat
                     </TabsTrigger>
