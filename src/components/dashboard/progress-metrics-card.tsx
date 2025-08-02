@@ -10,7 +10,7 @@ import { SettingsCard } from "@/components/dashboard/settings-card";
 import { CompanySection } from "./company-card";
 import { ClientsSection } from "./clients-section";
 import { ProviderListCard } from "./tasks-card";
-import { FormsSection } from "./recent-achievements-card";
+import { FormsSection } from "./forms/forms-section";
 import { BudgetSection } from "./budgets-card";
 import { AiSection } from "./ai-section";
 import { OfficeSection } from "./office-section";
