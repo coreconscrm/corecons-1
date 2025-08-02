@@ -115,7 +115,7 @@ export default function Page() {
 
     const unsubscribes = Object.entries(collections).map(([stateKey, collectionName]) => {
       let q;
-      if (['chat_messages', 'dani_priorities', 'sandra_notes'].includes(collectionName)) {
+      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy("date", "desc"));
       } else if (collectionName === 'seguimientos') {
          q = query(collection(db, collectionName)); // Sorting is handled client-side
