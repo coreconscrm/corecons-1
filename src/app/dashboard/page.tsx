@@ -397,7 +397,7 @@ export default function Page() {
           phone: contact['Teléfono'] || contact['Telefono'],
           email: contact['Email'] || contact['Correo electrónico'],
           localizacion: contact['Localidad'] || '',
-          informacion: `Contacto desde ${from === 'contacts' ? 'Contactos Manuales' : 'Llamada Prioritaria'}. Detalles: ${JSON.stringify(contact)}`,
+          informacion: `Contacto desde ${from === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento'}. Detalles: ${JSON.stringify(contact)}`,
           estado: "Contactado",
           porHacer: "Llamar",
           siguienteLlamada: null,
@@ -431,7 +431,7 @@ export default function Page() {
 
         try {
             await batch.commit();
-            const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Llamada Prioritaria';
+            const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento';
             toast({ title: 'Contacto movido', description: `El contacto ha sido movido a ${destinationName}.` });
         } catch (error) {
             console.error(`Error moving contact from forms:`, error);

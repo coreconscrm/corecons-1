@@ -482,7 +482,7 @@ export function FormsSection({
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="forms">Formularios Web</TabsTrigger>
                 <TabsTrigger value="contacts">Contactos Manuales</TabsTrigger>
-                <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
+                <TabsTrigger value="priority">Añadidos a seguimiento</TabsTrigger>
             </TabsList>
             <TabsContent value="forms" className="mt-6">
                 <DynamicTableCard
@@ -504,7 +504,7 @@ export function FormsSection({
                                     <Users className="mr-2 h-4 w-4" /> Contactos Manuales
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'priority_calls')}>
-                                    <Phone className="mr-2 h-4 w-4" /> Llamada Prioritaria
+                                    <Phone className="mr-2 h-4 w-4" /> Añadidos a seguimiento
                                 </DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
@@ -533,7 +533,7 @@ export function FormsSection({
             </TabsContent>
             <TabsContent value="priority" className="mt-6">
                  <DynamicTableCard
-                    title="Llamada Prioritaria"
+                    title="Añadidos a seguimiento"
                     description="Contactos importantes que necesitan una llamada urgente."
                     items={priorityCalls}
                     columnConfig={priorityCols}
