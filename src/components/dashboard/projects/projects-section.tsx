@@ -37,7 +37,7 @@ const uploadSchema = z.object({ file: z.any().refine((files) => files?.length ==
 const ganttTaskSchema = z.object({ name: z.string().optional(), days: z.coerce.number().optional() });
 
 // Tipos
-type Project = {
+export type Project = {
     id: string;
     name: string;
     clientId: string;
@@ -446,7 +446,7 @@ export function ProjectListCard({ projects, clients, providers, onAddProject, on
             </Dialog>
 
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 mt-12 lg:mt-0">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h2 className="text-2xl font-bold">Proyectos</h2>
                 <Button onClick={() => setAddProjectOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Añadir Proyecto</Button>
             </div>
