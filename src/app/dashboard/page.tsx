@@ -37,6 +37,33 @@ const defaultVisibleTabs = {
     oficina: true,
 };
 
+const collectionStateMap: Record<string, string> = {
+    projects: 'projects',
+    clients: 'clients',
+    reformas: 'reformas',
+    providers: 'providers',
+    collaborators: 'collaborators',
+    interioristas: 'interioristas',
+    constructoras: 'constructoras',
+    reformistas: 'reformistas',
+    inmobiliarias: 'inmobiliarias',
+    team: 'team',
+    forms: 'forms',
+    contacts: 'contacts',
+    priority_calls: 'priorityCalls',
+    seguimientos: 'seguimientos',
+    budgets: 'budgets',
+    companies: 'companies',
+    documents: 'documents',
+    juanfran_notes: 'juanfranNotes',
+    sandra_notes: 'sandraNotes',
+    jordan_checklists: 'jordanChecklists',
+    dani_priorities: 'daniPriorities',
+    chat_messages: 'chatMessages',
+    julian_notes: 'julianNotes',
+    ia_budgets: 'aiBudgets',
+};
+
 // Main Page Component
 export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
@@ -86,34 +113,7 @@ export default function Page() {
 
   // Fetch all data from Firestore
   useEffect(() => {
-    const collections: { [key: string]: string } = {
-      projects: "projects",
-      clients: "clients",
-      reformas: "reformas",
-      providers: "providers",
-      collaborators: "collaborators",
-      interioristas: "interioristas",
-      constructoras: "constructoras",
-      reformistas: "reformistas",
-      inmobiliarias: "inmobiliarias",
-      team: "team",
-      forms: "forms",
-      contacts: "contacts",
-      priority_calls: "priority_calls",
-      seguimientos: "seguimientos",
-      budgets: "budgets",
-      companies: "companies",
-      documents: "documents",
-      juanfran_notes: "juanfran_notes",
-      sandra_notes: "sandra_notes",
-      jordan_checklists: "jordan_checklists",
-      dani_priorities: "dani_priorities",
-      chat_messages: "chat_messages",
-      julian_notes: "julian_notes",
-      ia_budgets: "ia_budgets",
-    };
-
-    const unsubscribes = Object.entries(collections).map(([stateKey, collectionName]) => {
+    const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
       let q;
       if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy("date", "desc"));
@@ -128,7 +128,7 @@ export default function Page() {
       
       return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setData(prevData => ({ ...prevData, [stateKey.replace('_', '')]: items }));
+        setData(prevData => ({ ...prevData, [stateKey]: items }));
       }, (error) => console.error(`Error fetching ${collectionName}:`, error));
     });
 
@@ -542,3 +542,5 @@ export default function Page() {
     </div>
   );
 }
+
+    
