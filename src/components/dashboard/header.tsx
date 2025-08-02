@@ -13,20 +13,20 @@ export function Header() {
   const { toast } = useToast();
 
   return (
-    <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-border bg-background/80 px-4 sm:px-6 lg:px-8 backdrop-blur-sm">
-      <Link href="/dashboard" className="flex items-center gap-4">
-        <Image src={logo} alt="WinnBuilders Logo" width={40} height={40} className="object-contain"/>
-        <h1 className="text-xl font-bold text-foreground hidden sm:block">
+    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-sm">
+      <Link href="/dashboard" className="flex items-center gap-2">
+        <Image src={logo} alt="WinnBuilders Logo" width={28} height={28} className="object-contain"/>
+        <h1 className="text-base font-bold text-foreground hidden sm:block">
           WinnBuilders CRM
         </h1>
       </Link>
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Bell className="h-4 w-4" />
           <span className="sr-only">Notificaciones</span>
         </Button>
-        <Button variant="ghost" size="icon">
-          <Settings className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Settings className="h-4 w-4" />
           <span className="sr-only">Configuración</span>
         </Button>
         <ThemeToggle />

@@ -602,31 +602,31 @@ export default function DashboardPage() {
       <Button
         variant="default"
         size="icon"
-        className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg z-50"
+        className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg z-50"
         onClick={() => setNotepadOpen(true)}
         aria-label="Abrir bloc de notas"
       >
-        <StickyNote className="h-6 w-6" />
+        <StickyNote className="h-5 w-5" />
       </Button>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 p-2 sm:p-4 lg:p-6">
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2">Conectando con tu base de datos...</span>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center gap-4">
-                <h1 className="text-3xl font-bold">Panel de Control</h1>
-                <Button variant="ghost" size="icon" onClick={() => setShowOverviewPanels(!showOverviewPanels)} className="text-muted-foreground hover:text-foreground">
-                    {showOverviewPanels ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
+                <h1 className="text-2xl font-bold">Panel de Control</h1>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowOverviewPanels(!showOverviewPanels)}>
+                    {showOverviewPanels ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     <span className="sr-only">Ocultar/Mostrar paneles de resumen</span>
                 </Button>
             </div>
             
             {showOverviewPanels && (
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <OficinaOverview
                     juanfran={juanfranPending}
                     sandra={sandraPending}

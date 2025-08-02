@@ -37,7 +37,7 @@
     --sidebar-accent-foreground: oklch(0.4244 0.1809 265.6377);
     --sidebar-border: oklch(0.9299 0.0334 272.7879);
     --sidebar-ring: oklch(0.6056 0.2189 292.7172);
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
     --glow: oklch(0.7 0.15 250);
   }
@@ -125,4 +125,3 @@
     margin: 1cm;
   }
 }
-
