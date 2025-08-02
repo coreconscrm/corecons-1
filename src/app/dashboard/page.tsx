@@ -121,6 +121,8 @@ export default function Page() {
          q = query(collection(db, collectionName)); // Sorting is handled client-side
       } else if (['contacts', 'priority_calls'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+      } else if (collectionName === 'forms') {
+        q = query(collection(db, collectionName), orderBy(doc(db, collectionName, "").id)); // Order by document ID for consistency
       }
       else {
         q = query(collection(db, collectionName));
