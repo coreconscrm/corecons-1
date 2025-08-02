@@ -410,10 +410,6 @@ export function FormsSection({
   onAddPriorityCall,
   onUpdatePriorityCall,
   onDeletePriorityCall,
-  seguimientos,
-  onAddSeguimiento,
-  onUpdateSeguimiento,
-  onDeleteSeguimiento,
   sheetUrl,
   onSaveSheetUrl,
   formCols,
@@ -422,10 +418,6 @@ export function FormsSection({
   onContactColsChange,
   priorityCols,
   onPriorityColsChange,
-  seguimientoEstadoOptions,
-  seguimientoPorHacerOptions,
-  seguimientoCategories,
-  onSeguimientoOptionsChange,
   onCreateSeguimientoFromContact,
 }: {
   forms: Item[],
@@ -440,10 +432,6 @@ export function FormsSection({
   onAddPriorityCall: (item: any) => void,
   onUpdatePriorityCall: (item: any) => void,
   onDeletePriorityCall: (id: string) => void,
-  seguimientos: Seguimiento[],
-  onAddSeguimiento: (item: any) => void,
-  onUpdateSeguimiento: (item: any) => void,
-  onDeleteSeguimiento: (id: string) => void,
   sheetUrl: string,
   onSaveSheetUrl: (url: string) => void,
   formCols: ColumnConfig[],
@@ -452,15 +440,12 @@ export function FormsSection({
   onContactColsChange: (cols: ColumnConfig[]) => void,
   priorityCols: ColumnConfig[],
   onPriorityColsChange: (cols: ColumnConfig[]) => void,
-  seguimientoEstadoOptions: string[],
-  seguimientoPorHacerOptions: string[],
-  seguimientoCategories: string[],
-  onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
   onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls') => void,
 }) {
     const [isSheetDialogOpen, setSheetDialogOpen] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [activeTab, setActiveTab] = useState("forms");
 
     const handleLoadForms = async (data: any[]) => {
         if (!data || data.length === 0) {
@@ -495,17 +480,28 @@ export function FormsSection({
             });
         }
     };
+    
+    useEffect(() => {
+        const savedTab = localStorage.getItem('formsSection_activeTab');
+        if (savedTab) {
+            setActiveTab(savedTab);
+        }
+    }, []);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        localStorage.setItem('formsSection_activeTab', value);
+    };
 
     return (
-        <Tabs defaultValue="forms" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <GoogleSheetDialog open={isSheetDialogOpen} onOpenChange={setSheetDialogOpen} currentUrl={sheetUrl} onSave={onSaveSheetUrl} />
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
 
-            <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="forms">Formularios</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="forms">Formularios Web</TabsTrigger>
                 <TabsTrigger value="contacts">Contactos Manuales</TabsTrigger>
                 <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
-                <TabsTrigger value="seguimiento">En Seguimiento</TabsTrigger>
             </TabsList>
             <TabsContent value="forms" className="mt-6">
                 <DynamicTableCard
@@ -555,18 +551,6 @@ export function FormsSection({
                             <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
                         </DropdownMenuItem>
                     )}
-                />
-            </TabsContent>
-            <TabsContent value="seguimiento" className="mt-6">
-                <SeguimientoListCard 
-                    seguimientos={seguimientos}
-                    onAddSeguimiento={onAddSeguimiento}
-                    onUpdateSeguimiento={onUpdateSeguimiento}
-                    onDeleteSeguimiento={onDeleteSeguimiento}
-                    estadoOptions={seguimientoEstadoOptions}
-                    porHacerOptions={seguimientoPorHacerOptions}
-                    categories={seguimientoCategories}
-                    onSeguimientoOptionsChange={onSeguimientoOptionsChange}
                 />
             </TabsContent>
         </Tabs>
