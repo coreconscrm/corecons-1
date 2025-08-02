@@ -210,9 +210,9 @@ export default function Page() {
       }
       
       const formsCollectionRef = collection(db, "forms");
-      const existingFormsSnapshot = await getDocs(formsCollectionRef);
       const batch = writeBatch(db);
-
+      
+      const existingFormsSnapshot = await getDocs(formsCollectionRef);
       // Clear existing forms
       existingFormsSnapshot.forEach(doc => {
           batch.delete(doc.ref);

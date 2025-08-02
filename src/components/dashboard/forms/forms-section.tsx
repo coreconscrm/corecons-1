@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import Papa from 'papaparse';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -22,7 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
-import { SeguimientoListCard, type Seguimiento } from '../seguimiento-card';
 
 
 const itemSchema = z.record(z.any());
