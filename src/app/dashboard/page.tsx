@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId, getDocs } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { Toaster } from '@/components/ui/toaster';
@@ -209,13 +209,13 @@ export default function Page() {
           return;
       }
       
-      const batch = writeBatch(db);
       const formsCollectionRef = collection(db, "forms");
-      
+      const existingFormsSnapshot = await getDocs(formsCollectionRef);
+      const batch = writeBatch(db);
+
       // Clear existing forms
-      data.forms.forEach((item: any) => {
-          const docRef = doc(formsCollectionRef, item.id);
-          batch.delete(docRef);
+      existingFormsSnapshot.forEach(doc => {
+          batch.delete(doc.ref);
       });
 
       // Add new forms
@@ -226,7 +226,7 @@ export default function Page() {
 
       await batch.commit();
       toast({ title: 'Datos actualizados', description: `Se han cargado ${formData.length} nuevos registros desde la hoja.` });
-  }, [data.forms, toast]);
+  }, [toast]);
 
   useEffect(() => {
     const fetchSheetData = () => {
@@ -611,3 +611,5 @@ export default function Page() {
     </div>
   );
 }
+
+    
