@@ -202,7 +202,7 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
     };
     
     const handleToggleCompleted = (priority: DaniPriority) => {
-        onUpdatePriority({ ...priority, completed: !priority.completed });
+        onUpdatePriority({ id: priority.id, completed: !priority.completed });
     };
 
     const sortedPriorities = [...priorities].sort((a, b) => {

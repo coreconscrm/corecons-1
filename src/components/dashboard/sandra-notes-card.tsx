@@ -177,7 +177,7 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
     };
     
     const handleToggleCompleted = (note: SandraNote) => {
-        onUpdateNote({ ...note, completed: !note.completed });
+        onUpdateNote({ id: note.id, completed: !note.completed });
     };
 
     return (
