@@ -183,6 +183,7 @@ export function DashboardTabs({
           onPriorityColsChange={(cols: any) => actions.handleColumnConfigChange('priority_calls', cols)}
           onCreateSeguimientoFromContact={actions.handleCreateSeguimientoFromContact}
           onLoadForms={actions.handleLoadForms}
+          onMoveFormContact={actions.handleMoveFormContact}
         />
       </TabsContent>}
 
@@ -222,5 +223,3 @@ export function DashboardTabs({
     </Tabs>
   );
 }
-
-    

@@ -412,6 +412,33 @@ export default function Page() {
       toast({ title: 'Movido a Seguimiento', description: `${newSeguimiento.name} ahora está en la lista de seguimiento.` });
   }, [toast]);
   
+    const handleMoveFormContact = useCallback(async (formItem: any, destination: 'contacts' | 'priority_calls') => {
+        const { id, ...data } = formItem;
+        if (!id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'El elemento del formulario no tiene ID.' });
+            return;
+        }
+
+        const batch = writeBatch(db);
+
+        // Add to new collection
+        const newDocRef = doc(collection(db, destination));
+        batch.set(newDocRef, { ...data, createdAt: Timestamp.now() });
+
+        // Delete from old collection
+        const oldDocRef = doc(db, 'forms', id);
+        batch.delete(oldDocRef);
+
+        try {
+            await batch.commit();
+            const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Llamada Prioritaria';
+            toast({ title: 'Contacto movido', description: `El contacto ha sido movido a ${destinationName}.` });
+        } catch (error) {
+            console.error(`Error moving contact from forms:`, error);
+            toast({ variant: 'destructive', title: "Error al mover", description: (error as Error).message });
+        }
+    }, [toast]);
+    
   const handleCreateBudgetFromAi = useCallback(async (aiBudget: AiBudgetItem, category: BudgetCategory) => {
         const lineItems = aiBudget.breakdown.capitulos.flatMap(capitulo => ([
             { description: capitulo.nombre, isChapter: true },
@@ -601,7 +628,8 @@ export default function Page() {
                 handleSeguimientoOptionsChange,
                 handleCreateBudgetFromAi,
                 handleCreateSummaryBudgetFromAi,
-                handleLoadForms
+                handleLoadForms,
+                handleMoveFormContact
               }}
             />
           </div>
@@ -611,7 +639,3 @@ export default function Page() {
     </div>
   );
 }
-
-    
-
-    

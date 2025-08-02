@@ -12,14 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit, Forward } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit, Forward, Users, Phone } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
 
@@ -417,6 +417,7 @@ export function FormsSection({
   onPriorityColsChange,
   onCreateSeguimientoFromContact,
   onLoadForms,
+  onMoveFormContact
 }: {
   forms: Item[],
   onDeleteForm: (id: string) => void,
@@ -438,6 +439,7 @@ export function FormsSection({
   onPriorityColsChange: (cols: ColumnConfig[]) => void,
   onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls') => void,
   onLoadForms: (data: any[]) => void,
+  onMoveFormContact: (formItem: any, destination: 'contacts' | 'priority_calls') => void,
 }) {
     const [isSheetDialogOpen, setSheetDialogOpen] = useState(false);
     const { toast } = useToast();
@@ -492,7 +494,21 @@ export function FormsSection({
                     onAddItem={() => {}} // No se pueden añadir manualmente
                     onUpdateItem={() => {}} // No se pueden editar
                     onDeleteItem={onDeleteForm}
-                    itemActions={() => <></>}
+                    itemActions={(item) => (
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <Forward className="mr-2 h-4 w-4" /> Mover a...
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                                <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'contacts')}>
+                                    <Users className="mr-2 h-4 w-4" /> Contactos Manuales
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'priority_calls')}>
+                                    <Phone className="mr-2 h-4 w-4" /> Llamada Prioritaria
+                                </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                    )}
                 >
                      <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Subir CSV</Button>
                      <Button variant="outline" onClick={() => setSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4" />Conectar Sheet</Button>
@@ -535,5 +551,3 @@ export function FormsSection({
         </Tabs>
     );
 }
-
-    
