@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MessageSquare, Send, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MessageSquare, Send, MoreHorizontal, Pencil, Trash2, CornerUpLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Checkbox } from "../ui/checkbox";
@@ -49,12 +49,14 @@ function MessageForm({
   onSubmit,
   open,
   onOpenChange,
+  initialData,
 }: {
   message?: ChatMessage;
   team: TeamMember[];
   onSubmit: (values: any) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: Partial<z.infer<typeof messageSchema>>;
 }) {
   const form = useForm<z.infer<typeof messageSchema>>({
     resolver: zodResolver(messageSchema),
@@ -71,14 +73,14 @@ function MessageForm({
         });
       } else {
         form.reset({
-          content: "",
-          senderId: "",
-          recipientId: "",
+          content: initialData?.content || "",
+          senderId: initialData?.senderId || "",
+          recipientId: initialData?.recipientId || "",
           read: false,
         });
       }
     }
-  }, [message, open, form]);
+  }, [message, open, form, initialData]);
 
   const handleSubmit = (values: z.infer<typeof messageSchema>) => {
     onSubmit({ ...message, ...values, createdAt: new Date() });
@@ -162,15 +164,30 @@ export function ChatSection({
 }) {
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeMessage, setActiveMessage] = useState<ChatMessage | undefined>(undefined);
+  const [initialData, setInitialData] = useState<Partial<z.infer<typeof messageSchema>> | undefined>(undefined);
 
   const handleEdit = (message: ChatMessage) => {
     setActiveMessage(message);
+    setInitialData(undefined);
     setFormOpen(true);
   };
 
   const handleAdd = () => {
     setActiveMessage(undefined);
+    setInitialData(undefined);
     setFormOpen(true);
+  };
+  
+  const handleReply = (message: ChatMessage) => {
+      const sender = getTeamMember(message.senderId);
+      const quotedText = `\n\n> En respuesta a ${sender?.name || 'un mensaje anterior'}:\n> "${message.content.substring(0, 80)}${message.content.length > 80 ? '...' : ''}"\n\n`;
+      
+      setActiveMessage(undefined);
+      setInitialData({
+          recipientId: message.senderId,
+          content: quotedText,
+      });
+      setFormOpen(true);
   };
 
   const handleSubmit = (values: any) => {
@@ -197,9 +214,13 @@ export function ChatSection({
         onSubmit={handleSubmit}
         open={isFormOpen}
         onOpenChange={(isOpen) => {
-            if (!isOpen) setActiveMessage(undefined);
+            if (!isOpen) {
+              setActiveMessage(undefined);
+              setInitialData(undefined);
+            }
             setFormOpen(isOpen);
         }}
+        initialData={initialData}
       />
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
@@ -222,10 +243,9 @@ export function ChatSection({
                 return (
                     <div 
                         key={message.id} 
-                        className={cn("flex items-start gap-4 p-4 rounded-lg cursor-pointer",
+                        className={cn("flex items-start gap-4 p-4 rounded-lg",
                             message.read ? "bg-secondary/50 hover:bg-secondary/70" : "bg-primary/10 hover:bg-primary/20 border border-primary/50"
                         )}
-                        onClick={() => handleEdit(message)}
                     >
                         <Avatar>
                             <AvatarImage src={sender?.avatar} />
@@ -246,6 +266,7 @@ export function ChatSection({
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handleReply(message)}><CornerUpLeft className="mr-2"/>Responder</DropdownMenuItem>
                                                 <DropdownMenuItem onSelect={() => handleEdit(message)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                             </DropdownMenuContent>
