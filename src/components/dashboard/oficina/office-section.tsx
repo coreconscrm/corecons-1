@@ -161,5 +161,3 @@ export function OfficeSection({
         </Tabs>
     );
 }
-
-    
