@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId } from "firebase/firestore";
 import { Header } from "@/components/dashboard/header";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { Toaster } from '@/components/ui/toaster';
@@ -122,7 +122,7 @@ export default function Page() {
       } else if (['contacts', 'priority_calls'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
       } else if (collectionName === 'forms') {
-        q = query(collection(db, collectionName), orderBy(doc(db, collectionName, "").id)); // Order by document ID for consistency
+        q = query(collection(db, collectionName), orderBy(documentId())); // Order by document ID for consistency
       }
       else {
         q = query(collection(db, collectionName));
@@ -548,3 +548,4 @@ export default function Page() {
     
 
     
+
