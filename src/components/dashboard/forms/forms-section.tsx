@@ -205,7 +205,7 @@ function DynamicTableCard({
   const [editingItem, setEditingItem] = useState<any | undefined>(undefined);
   const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
+  
   const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
   const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible), [columnConfig]);
 
@@ -399,8 +399,6 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 
 export function FormsSection({
   forms,
-  onAddForm,
-  onUpdateForm,
   onDeleteForm,
   contacts,
   onAddContact,
@@ -419,10 +417,9 @@ export function FormsSection({
   priorityCols,
   onPriorityColsChange,
   onCreateSeguimientoFromContact,
+  onLoadForms,
 }: {
   forms: Item[],
-  onAddForm: (item: any) => void,
-  onUpdateForm: (item: any) => void,
   onDeleteForm: (id: string) => void,
   contacts: Item[],
   onAddContact: (item: any) => void,
@@ -441,29 +438,12 @@ export function FormsSection({
   priorityCols: ColumnConfig[],
   onPriorityColsChange: (cols: ColumnConfig[]) => void,
   onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls') => void,
+  onLoadForms: (data: any[]) => void,
 }) {
     const [isSheetDialogOpen, setSheetDialogOpen] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeTab, setActiveTab] = useState("forms");
-
-    const handleLoadForms = async (data: any[]) => {
-        if (!data || data.length === 0) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se encontraron datos para cargar.' });
-            return;
-        }
-
-        // This is a destructive operation, consider warning the user.
-        for (const item of forms) {
-            await onDeleteForm(item.id);
-        }
-
-        for (const newItem of data) {
-            await onAddForm(newItem);
-        }
-
-        toast({ title: 'Datos actualizados', description: `Se han cargado ${data.length} nuevos registros.` });
-    };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -472,7 +452,7 @@ export function FormsSection({
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    handleLoadForms(results.data);
+                    onLoadForms(results.data);
                 },
                 error: (err) => {
                     toast({ variant: "destructive", title: "Error al leer CSV", description: (err as Error).message });
@@ -510,8 +490,8 @@ export function FormsSection({
                     items={forms}
                     columnConfig={formCols}
                     onColumnConfigChange={onFormColsChange}
-                    onAddItem={onAddForm}
-                    onUpdateItem={onUpdateForm}
+                    onAddItem={() => {}} // No se pueden añadir manualmente
+                    onUpdateItem={() => {}} // No se pueden editar
                     onDeleteItem={onDeleteForm}
                     itemActions={() => <></>}
                 >

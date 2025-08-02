@@ -164,8 +164,6 @@ export function DashboardTabs({
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
         <FormsSection 
           forms={data.forms}
-          onAddForm={(form: any) => actions.createItem('forms', form)}
-          onUpdateForm={(form: any) => actions.updateItem('forms', form)}
           onDeleteForm={(id: string) => actions.deleteItem('forms', id)}
           contacts={data.contacts}
           onAddContact={(contact: any) => actions.createItem('contacts', {...contact, createdAt: Timestamp.now()})}
@@ -184,6 +182,7 @@ export function DashboardTabs({
           priorityCols={data.priorityCols}
           onPriorityColsChange={(cols: any) => actions.handleColumnConfigChange('priority_calls', cols)}
           onCreateSeguimientoFromContact={actions.handleCreateSeguimientoFromContact}
+          onLoadForms={actions.handleLoadForms}
         />
       </TabsContent>}
 

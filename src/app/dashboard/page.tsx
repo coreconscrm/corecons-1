@@ -17,6 +17,7 @@ import { es } from 'date-fns/locale';
 import type { Budget, BudgetCategory } from '@/components/dashboard/budgets/budgets-section';
 import type { AiBudgetItem } from '@/components/dashboard/ai/ai-section';
 import { getDisplayName } from '@/components/dashboard/forms/forms-section';
+import Papa from 'papaparse';
 
 
 const defaultVisibleTabs = {
@@ -72,7 +73,7 @@ export default function Page() {
   const { toast } = useToast();
   
   // States for data collections
-  const [data, setData] = useState({
+  const [data, setData] = useState<any>({
     projects: [],
     clients: [],
     reformas: [],
@@ -132,7 +133,7 @@ export default function Page() {
       
       return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setData(prevData => ({ ...prevData, [stateKey]: items }));
+        setData((prevData:any) => ({ ...prevData, [stateKey]: items }));
       }, (error) => console.error(`Error fetching ${collectionName}:`, error));
     });
 
@@ -164,7 +165,7 @@ export default function Page() {
     // Fetch Google Sheet URL
     const sheetConfigDocRef = doc(db, 'config', 'googleSheet');
     const unsubSheetUrl = onSnapshot(sheetConfigDocRef, (doc) => {
-      setData(prev => ({ ...prev, sheetUrl: doc.exists() ? doc.data().url : '' }));
+      setData((prev: any) => ({ ...prev, sheetUrl: doc.exists() ? doc.data().url : '' }));
     });
     
     // Fetch Column Configurations
@@ -201,6 +202,50 @@ export default function Page() {
       unsubSheetUrl();
     };
   }, []);
+
+  const handleLoadForms = useCallback(async (formData: any[]) => {
+      if (!formData || formData.length === 0) {
+          toast({ variant: 'destructive', title: 'Error', description: 'No se encontraron datos para cargar.' });
+          return;
+      }
+      
+      const batch = writeBatch(db);
+      const formsCollectionRef = collection(db, "forms");
+      
+      // Clear existing forms
+      data.forms.forEach((item: any) => {
+          const docRef = doc(formsCollectionRef, item.id);
+          batch.delete(docRef);
+      });
+
+      // Add new forms
+      formData.forEach(newItem => {
+          const docRef = doc(formsCollectionRef);
+          batch.set(docRef, newItem);
+      });
+
+      await batch.commit();
+      toast({ title: 'Datos actualizados', description: `Se han cargado ${formData.length} nuevos registros desde la hoja.` });
+  }, [data.forms, toast]);
+
+  useEffect(() => {
+    const fetchSheetData = () => {
+      if (data.sheetUrl) {
+        Papa.parse(data.sheetUrl, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                handleLoadForms(results.data);
+            },
+            error: (err) => {
+                toast({ variant: "destructive", title: "Error al leer Google Sheet", description: `No se pudo acceder a la URL. Verifica que esté publicada correctamente. Error: ${(err as Error).message}` });
+            },
+        });
+      }
+    };
+    fetchSheetData();
+  }, [data.sheetUrl, handleLoadForms, toast]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -250,11 +295,15 @@ export default function Page() {
   };
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
-    // Ensure 'date' field exists for collections that need it for sorting
     const dataToSave = { ...itemData };
     if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
         if (!dataToSave.date) {
             dataToSave.date = Timestamp.now();
+        }
+    }
+    if (['contacts', 'priority_calls'].includes(collectionName)) {
+        if (!dataToSave.createdAt) {
+            dataToSave.createdAt = Timestamp.now();
         }
     }
 
@@ -522,7 +571,7 @@ export default function Page() {
                   <BudgetOverview
                       pending={budgetsPending}
                       accepted={budgetsAccepted}
-                      rejected={rejected}
+                      rejected={budgetsRejected}
                       done={budgetsDone}
                       sent={budgetsSent}
                   />
@@ -552,6 +601,7 @@ export default function Page() {
                 handleSeguimientoOptionsChange,
                 handleCreateBudgetFromAi,
                 handleCreateSummaryBudgetFromAi,
+                handleLoadForms
               }}
             />
           </div>
