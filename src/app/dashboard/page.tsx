@@ -231,14 +231,23 @@ export default function Page() {
   };
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
-    try {
-      await addDoc(collection(db, collectionName), itemData);
-      toast({ title: "Elemento añadido", description: "El nuevo elemento se ha guardado correctamente." });
-    } catch (error) {
-      console.error(`Error adding item to ${collectionName}:`, error);
-      toast({ variant: 'destructive', title: "Error al añadir", description: (error as Error).message });
+    // Ensure 'date' field exists for collections that need it for sorting
+    const dataToSave = { ...itemData };
+    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
+        if (!dataToSave.date) {
+            dataToSave.date = Timestamp.now();
+        }
     }
-  }, [toast]);
+
+    try {
+        await addDoc(collection(db, collectionName), dataToSave);
+        toast({ title: "Elemento añadido", description: "El nuevo elemento se ha guardado correctamente." });
+    } catch (error) {
+        console.error(`Error adding item to ${collectionName}:`, error);
+        toast({ variant: 'destructive', title: "Error al añadir", description: (error as Error).message });
+    }
+}, [toast]);
+
 
   const updateItem = useCallback(async (collectionName: string, itemData: any) => {
     const { id, ...data } = itemData;
