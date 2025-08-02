@@ -16,6 +16,8 @@ import { isWithinInterval, parse, startOfWeek, endOfWeek, isValid } from 'date-f
 import { es } from 'date-fns/locale';
 import type { Budget, BudgetCategory } from '@/components/dashboard/budgets/budgets-section';
 import type { AiBudgetItem } from '@/components/dashboard/ai/ai-section';
+import { getDisplayName } from '@/components/dashboard/forms/forms-section';
+
 
 const defaultVisibleTabs = {
     projects: true,
@@ -169,13 +171,28 @@ export default function Page() {
     ['forms', 'contacts', 'priority_calls'].forEach(type => {
         const configDocRef = doc(db, 'config', `${type}Columns`);
         onSnapshot(configDocRef, (docSnap) => {
+            const key = type === 'forms' ? 'formCols' : (type === 'priority_calls' ? 'priorityCols' : 'contactCols');
+            const dataKey = type === 'priority_calls' ? 'priorityCalls' : type;
+
             if (docSnap.exists()) {
-                 const key = type === 'priority_calls' ? 'priorityCols' : `${type.slice(0, -1)}Cols`;
                  setData(prev => ({ ...prev, [key]: docSnap.data().columns }));
+            } else {
+                 setData(prev => {
+                    const currentItems = prev[dataKey as keyof typeof prev];
+                    if (Array.isArray(currentItems) && currentItems.length > 0) {
+                        const firstItemKeys = Object.keys(currentItems[0]).filter(k => k !== 'id');
+                        const newCols = firstItemKeys.map(k => ({
+                            key: k,
+                            visible: true,
+                            displayName: getDisplayName(k)
+                        }));
+                        return { ...prev, [key]: newCols };
+                    }
+                    return prev;
+                });
             }
         });
     });
-
 
     return () => {
       unsubscribes.forEach(unsub => unsub());
@@ -505,7 +522,7 @@ export default function Page() {
                   <BudgetOverview
                       pending={budgetsPending}
                       accepted={budgetsAccepted}
-                      rejected={budgetsRejected}
+                      rejected={rejected}
                       done={budgetsDone}
                       sent={budgetsSent}
                   />
@@ -544,11 +561,3 @@ export default function Page() {
     </div>
   );
 }
-
-    
-
-    
-
-
-
-    

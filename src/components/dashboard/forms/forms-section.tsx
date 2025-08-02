@@ -43,7 +43,7 @@ const columnDisplayNames: Record<string, string> = {
     'createdAt': 'Fecha de Creación',
 };
 
-function getDisplayName(key: string) {
+export function getDisplayName(key: string) {
     return columnDisplayNames[key] || key.replace(/_/g, ' ');
 }
 
@@ -206,24 +206,8 @@ function DynamicTableCard({
   const [viewingText, setViewingText] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const derivedColumnConfig = useMemo(() => {
-    if (columnConfig && columnConfig.length > 0) {
-      return columnConfig;
-    }
-    if (items.length > 0) {
-      const firstItemKeys = Object.keys(items[0]).filter(key => key !== 'id');
-      return firstItemKeys.map(key => ({
-        key,
-        visible: true,
-        displayName: getDisplayName(key)
-      }));
-    }
-    return [];
-  }, [columnConfig, items]);
-
-  const allHeaders = useMemo(() => derivedColumnConfig.map(c => c.key), [derivedColumnConfig]);
-  const visibleHeaders = useMemo(() => derivedColumnConfig.filter(c => c.visible), [derivedColumnConfig]);
-
+  const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
+  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible), [columnConfig]);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -240,7 +224,7 @@ function DynamicTableCard({
 
   return (
     <Card>
-      <ColumnSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} columns={derivedColumnConfig} onSave={onColumnConfigChange} />
+      <ColumnSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} columns={columnConfig} onSave={onColumnConfigChange} />
       <Dialog open={!!viewingText} onOpenChange={() => setViewingText(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Texto Completo</DialogTitle></DialogHeader>
@@ -572,7 +556,3 @@ export function FormsSection({
         </Tabs>
     );
 }
-
-    
-
-    
