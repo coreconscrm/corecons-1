@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
 import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { ProjectBreakdown, ProjectBreakdownChapter } from "@/ai/flows/create-project-breakdown";
+import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -51,7 +51,7 @@ const mergeBudgetSchema = z.object({
 });
 
 const addToBudgetSchema = z.object({
-  category: z.enum(["obra_nueva", "reformas"], {
+  category: z.enum(["obra_nueva", "reformas", "enviados", "subcontratas"], {
     required_error: "Debes seleccionar una categoría.",
   }),
 });
@@ -478,7 +478,7 @@ function AddToBudgetDialog({
     budget: AiBudgetItem;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onConfirm: (category: 'obra_nueva' | 'reformas') => void;
+    onConfirm: (category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
 }) {
     const form = useForm<z.infer<typeof addToBudgetSchema>>({
         resolver: zodResolver(addToBudgetSchema),
@@ -510,23 +510,31 @@ function AddToBudgetDialog({
                                     <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
+                                    className="grid grid-cols-2 gap-4"
                                     >
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
                                         <RadioGroupItem value="obra_nueva" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">
-                                        Obra Nueva
-                                        </FormLabel>
+                                        <FormLabel className="font-normal">Obra Nueva</FormLabel>
                                     </FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
                                         <RadioGroupItem value="reformas" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">
-                                        Reformas
-                                        </FormLabel>
+                                        <FormLabel className="font-normal">Reformas</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="enviados" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Enviados</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="subcontratas" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Subcontratas</FormLabel>
                                     </FormItem>
                                     </RadioGroup>
                                 </FormControl>
@@ -959,7 +967,7 @@ export function AiBudgetsSection({
     onUpdateAiBudget: (budget: any) => void,
     onDeleteAiBudget: (id: string) => void,
     companies: Company[],
-    onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => void;
+    onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
 }) {
     const { toast } = useToast();
@@ -1005,7 +1013,7 @@ export function AiBudgetsSection({
             return;
         }
 
-        const mergedBreakdown: ProjectBreakdownChapter[] = [...targetBudget.breakdown.capitulos];
+        const mergedBreakdown = [...targetBudget.breakdown.capitulos];
         const mergedTotals = { ...targetBudget.userLineTotals };
 
         for (const sourceChapter of sourceBudget.breakdown.capitulos) {

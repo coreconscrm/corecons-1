@@ -12,6 +12,7 @@ import { AiSection } from "./ai/ai-section";
 import { OfficeSection } from "./oficina/office-section";
 import { SeguimientoSection } from './seguimiento/seguimiento-section';
 import { ProjectListCard } from './projects/projects-section';
+import { Timestamp } from "firebase/firestore";
 
 export function DashboardTabs({
     activeTab, 
