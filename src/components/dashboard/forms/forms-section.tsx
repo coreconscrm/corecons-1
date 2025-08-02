@@ -15,14 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit, Forward } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
-import { SeguimientoListCard, type Seguimiento } from '../seguimiento/seguimiento-section';
+import { SeguimientoListCard, type Seguimiento } from '../seguimiento-card';
 
 
 const itemSchema = z.record(z.any());
@@ -397,108 +397,84 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
     );
 }
 
-export function FormsSection() {
-    const [forms, setForms] = useState<Item[]>([]);
-    const [contacts, setContacts] = useState<Item[]>([]);
-    const [priorityCalls, setPriorityCalls] = useState<Item[]>([]);
-    const [seguimientos, setSeguimientos] = useState<Seguimiento[]>([]);
-
-    const [formCols, setFormCols] = useState<ColumnConfig[]>([]);
-    const [contactCols, setContactCols] = useState<ColumnConfig[]>([]);
-    const [priorityCols, setPriorityCols] = useState<ColumnConfig[]>([]);
-
-    const [sheetUrl, setSheetUrl] = useState('');
+export function FormsSection({
+  forms,
+  onAddForm,
+  onUpdateForm,
+  onDeleteForm,
+  contacts,
+  onAddContact,
+  onUpdateContact,
+  onDeleteContact,
+  priorityCalls,
+  onAddPriorityCall,
+  onUpdatePriorityCall,
+  onDeletePriorityCall,
+  seguimientos,
+  onAddSeguimiento,
+  onUpdateSeguimiento,
+  onDeleteSeguimiento,
+  sheetUrl,
+  onSaveSheetUrl,
+  formCols,
+  onFormColsChange,
+  contactCols,
+  onContactColsChange,
+  priorityCols,
+  onPriorityColsChange,
+  seguimientoEstadoOptions,
+  seguimientoPorHacerOptions,
+  seguimientoCategories,
+  onSeguimientoOptionsChange,
+  onCreateSeguimientoFromContact,
+}: {
+  forms: Item[],
+  onAddForm: (item: any) => void,
+  onUpdateForm: (item: any) => void,
+  onDeleteForm: (id: string) => void,
+  contacts: Item[],
+  onAddContact: (item: any) => void,
+  onUpdateContact: (item: any) => void,
+  onDeleteContact: (id: string) => void,
+  priorityCalls: Item[],
+  onAddPriorityCall: (item: any) => void,
+  onUpdatePriorityCall: (item: any) => void,
+  onDeletePriorityCall: (id: string) => void,
+  seguimientos: Seguimiento[],
+  onAddSeguimiento: (item: any) => void,
+  onUpdateSeguimiento: (item: any) => void,
+  onDeleteSeguimiento: (id: string) => void,
+  sheetUrl: string,
+  onSaveSheetUrl: (url: string) => void,
+  formCols: ColumnConfig[],
+  onFormColsChange: (cols: ColumnConfig[]) => void,
+  contactCols: ColumnConfig[],
+  onContactColsChange: (cols: ColumnConfig[]) => void,
+  priorityCols: ColumnConfig[],
+  onPriorityColsChange: (cols: ColumnConfig[]) => void,
+  seguimientoEstadoOptions: string[],
+  seguimientoPorHacerOptions: string[],
+  seguimientoCategories: string[],
+  onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
+  onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls') => void,
+}) {
     const [isSheetDialogOpen, setSheetDialogOpen] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Initial data and settings load
-    useEffect(() => {
-        const unsubForms = onSnapshot(collection(db, "forms"), (snapshot) => {
-            setForms(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        });
-
-        const qContacts = query(collection(db, "contacts"), orderBy("createdAt", "desc"));
-        const unsubContacts = onSnapshot(qContacts, (snapshot) => {
-            setContacts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        });
-
-        const qPriority = query(collection(db, "priority_calls"), orderBy("createdAt", "desc"));
-        const unsubPriority = onSnapshot(qPriority, (snapshot) => {
-            setPriorityCalls(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        });
-        
-        const qSeguimientos = query(collection(db, "seguimientos"));
-        const unsubSeguimientos = onSnapshot(qSeguimientos, (snapshot) => {
-            setSeguimientos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Seguimiento[]);
-        });
-
-        const fetchSettings = async () => {
-            const settingsDocRef = doc(db, 'config', 'formsSettings');
-            const settingsDocSnap = await getDoc(settingsDocRef);
-            if (settingsDocSnap.exists()) {
-                const settingsData = settingsDocSnap.data();
-                setSheetUrl(settingsData.sheetUrl || '');
-                if (settingsData.formCols) setFormCols(settingsData.formCols);
-                if (settingsData.contactCols) setContactCols(settingsData.contactCols);
-                if (settingsData.priorityCols) setPriorityCols(settingsData.priorityCols);
-            }
-        };
-        fetchSettings();
-
-        return () => {
-            unsubForms();
-            unsubContacts();
-            unsubPriority();
-            unsubSeguimientos();
-        };
-    }, []);
-
-    // Column initialization effect
-    useEffect(() => {
-        if (forms.length > 0 && formCols.length === 0) {
-            const headers = Object.keys(forms[0]).filter(k => k !== 'id');
-            setFormCols(headers.map(key => ({ key, visible: true, displayName: getDisplayName(key) })));
-        }
-    }, [forms, formCols.length]);
-
-    useEffect(() => {
-        if (contacts.length > 0 && contactCols.length === 0) {
-            const headers = Object.keys(contacts[0]).filter(k => k !== 'id');
-            setContactCols(headers.map(key => ({ key, visible: true, displayName: getDisplayName(key) })));
-        }
-    }, [contacts, contactCols.length]);
-
-    useEffect(() => {
-        if (priorityCalls.length > 0 && priorityCols.length === 0) {
-            const headers = Object.keys(priorityCalls[0]).filter(k => k !== 'id');
-            setPriorityCols(headers.map(key => ({ key, visible: true, displayName: getDisplayName(key) })));
-        }
-    }, [priorityCalls, priorityCols.length]);
-
-    const handleSaveColumnConfig = async (type: 'form' | 'contact' | 'priority', cols: ColumnConfig[]) => {
-        const key = `${type}Cols`;
-        await setDoc(doc(db, 'config', 'formsSettings'), { [key]: cols }, { merge: true });
-        
-        if (type === 'form') setFormCols(cols);
-        else if (type === 'contact') setContactCols(cols);
-        else if (type === 'priority') setPriorityCols(cols);
-
-        toast({ title: "Configuración guardada", description: "La visibilidad y orden de las columnas se ha actualizado." });
-    };
-    
     const handleLoadForms = async (data: any[]) => {
         if (!data || data.length === 0) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se encontraron datos para cargar.' });
             return;
         }
 
+        // This is a destructive operation, consider warning the user.
         for (const item of forms) {
-            await deleteDoc(doc(db, 'forms', item.id));
+            await onDeleteForm(item.id);
         }
 
         for (const newItem of data) {
-            await addDoc(collection(db, 'forms'), newItem);
+            await onAddForm(newItem);
         }
 
         toast({ title: 'Datos actualizados', description: `Se han cargado ${data.length} nuevos registros.` });
@@ -520,52 +496,9 @@ export function FormsSection() {
         }
     };
 
-    const handleSaveSheetUrl = async (url: string) => {
-        setSheetUrl(url);
-        await setDoc(doc(db, 'config', 'formsSettings'), { sheetUrl: url }, { merge: true });
-        toast({ title: url ? "Conexión guardada" : "Conexión eliminada", description: "La URL de Google Sheets se ha actualizado." });
-    };
-
-    const handleCreate = async (collectionName: string, item: any) => {
-        await addDoc(collection(db, collectionName), { ...item, createdAt: Timestamp.now() });
-        toast({ title: "Elemento añadido", description: "El nuevo elemento ha sido guardado." });
-    };
-
-    const handleUpdate = async (collectionName: string, item: any) => {
-        const { id, ...data } = item;
-        await updateDoc(doc(db, collectionName, id), data);
-        toast({ title: "Elemento actualizado", description: "Los cambios han sido guardados." });
-    };
-
-    const handleDelete = async (collectionName: string, id: string) => {
-        await deleteDoc(doc(db, collectionName, id));
-        toast({ title: "Elemento eliminado", description: "El elemento ha sido borrado de la base de datos." });
-    };
-
-    const handleCreateSeguimientoFromContact = async (contact: Item, sourceCollection: 'contacts' | 'priority_calls') => {
-        try {
-            const newSeguimiento = {
-                name: contact['Nombre y Apellidos'] || contact['Nombre'] || 'N/A',
-                phone: contact['Teléfono'] || 'N/A',
-                email: contact['Email'] || '',
-                localizacion: contact['Localidad'] || '',
-                informacion: `Movido desde ${sourceCollection === 'contacts' ? 'Contactos Manuales' : 'Llamada Prioritaria'}. Formulario original: ${JSON.stringify(contact)}`,
-                estado: 'Por contactar',
-                porHacer: 'Llamar',
-                siguienteLlamada: null,
-                category: "General",
-            };
-            await addDoc(collection(db, 'seguimientos'), newSeguimiento);
-            await deleteDoc(doc(db, sourceCollection, contact.id));
-            toast({ title: "Movido a Seguimiento", description: `${newSeguimiento.name} ha sido añadido a la lista de seguimiento y eliminado de la lista original.` });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error al mover", description: (error as Error).message });
-        }
-    };
-
     return (
         <Tabs defaultValue="forms" className="w-full">
-            <GoogleSheetDialog open={isSheetDialogOpen} onOpenChange={setSheetDialogOpen} currentUrl={sheetUrl} onSave={handleSaveSheetUrl} />
+            <GoogleSheetDialog open={isSheetDialogOpen} onOpenChange={setSheetDialogOpen} currentUrl={sheetUrl} onSave={onSaveSheetUrl} />
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
 
             <TabsList className="grid w-full grid-cols-4">
@@ -580,10 +513,10 @@ export function FormsSection() {
                     description="Datos cargados desde CSV o Google Sheets."
                     items={forms}
                     columnConfig={formCols}
-                    onColumnConfigChange={(cols) => handleSaveColumnConfig('form', cols)}
-                    onAddItem={(item) => handleCreate('forms', item)}
-                    onUpdateItem={(item) => handleUpdate('forms', item)}
-                    onDeleteItem={(id) => handleDelete('forms', id)}
+                    onColumnConfigChange={onFormColsChange}
+                    onAddItem={onAddForm}
+                    onUpdateItem={onUpdateForm}
+                    onDeleteItem={onDeleteForm}
                     itemActions={() => <></>}
                 >
                      <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Subir CSV</Button>
@@ -596,12 +529,12 @@ export function FormsSection() {
                     description="Contactos añadidos manualmente que requieren seguimiento."
                     items={contacts}
                     columnConfig={contactCols}
-                    onColumnConfigChange={(cols) => handleSaveColumnConfig('contact', cols)}
-                    onAddItem={(item) => handleCreate('contacts', item)}
-                    onUpdateItem={(item) => handleUpdate('contacts', item)}
-                    onDeleteItem={(id) => handleDelete('contacts', id)}
+                    onColumnConfigChange={onContactColsChange}
+                    onAddItem={onAddContact}
+                    onUpdateItem={onUpdateContact}
+                    onDeleteItem={onDeleteContact}
                     itemActions={(item) => (
-                        <DropdownMenuItem onSelect={() => handleCreateSeguimientoFromContact(item, 'contacts')}>
+                        <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'contacts')}>
                             <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
                         </DropdownMenuItem>
                     )}
@@ -613,12 +546,12 @@ export function FormsSection() {
                     description="Contactos importantes que necesitan una llamada urgente."
                     items={priorityCalls}
                     columnConfig={priorityCols}
-                    onColumnConfigChange={(cols) => handleSaveColumnConfig('priority', cols)}
-                    onAddItem={(item) => handleCreate('priority_calls', item)}
-                    onUpdateItem={(item) => handleUpdate('priority_calls', item)}
-                    onDeleteItem={(id) => handleDelete('priority_calls', id)}
+                    onColumnConfigChange={onPriorityColsChange}
+                    onAddItem={onAddPriorityCall}
+                    onUpdateItem={onUpdatePriorityCall}
+                    onDeleteItem={onDeletePriorityCall}
                     itemActions={(item) => (
-                        <DropdownMenuItem onSelect={() => handleCreateSeguimientoFromContact(item, 'priority_calls')}>
+                        <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'priority_calls')}>
                             <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
                         </DropdownMenuItem>
                     )}
@@ -627,16 +560,17 @@ export function FormsSection() {
             <TabsContent value="seguimiento" className="mt-6">
                 <SeguimientoListCard 
                     seguimientos={seguimientos}
-                    onAddSeguimiento={() => {}}
-                    onUpdateSeguimiento={() => {}}
-                    onDeleteSeguimiento={() => {}}
-                    estadoOptions={[]}
-                    porHacerOptions={[]}
-                    categories={[]}
-                    onSeguimientoOptionsChange={() => {}}
+                    onAddSeguimiento={onAddSeguimiento}
+                    onUpdateSeguimiento={onUpdateSeguimiento}
+                    onDeleteSeguimiento={onDeleteSeguimiento}
+                    estadoOptions={seguimientoEstadoOptions}
+                    porHacerOptions={seguimientoPorHacerOptions}
+                    categories={seguimientoCategories}
+                    onSeguimientoOptionsChange={onSeguimientoOptionsChange}
                 />
             </TabsContent>
         </Tabs>
     );
 }
 
+    
