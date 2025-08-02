@@ -62,7 +62,7 @@ export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrec
   return (
     <Card className="overview-card">
       <CardHeader className="p-3">
-        <CardTitle className="text-sm">Resumen de Seguimiento</CardTitle>
+        <CardTitle className="text-sm">Llamadas de Seguimiento</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
         <div className="flex flex-wrap justify-center gap-1 text-center">
