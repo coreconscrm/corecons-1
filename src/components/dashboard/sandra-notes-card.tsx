@@ -25,9 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 
 const noteSchema = z.object({
-  title: z.string().min(1, "El título es requerido.").optional(),
-  content: z.string().min(1, "El contenido no puede estar vacío.").optional(),
-  provincia: z.string().min(1, "La provincia es requerida.").optional(),
+  title: z.string().optional(),
+  content: z.string().optional(),
+  provincia: z.string().optional(),
   category: z.enum(["General", "Terreno", "Arquitecto"]),
   date: z.date(),
   completed: z.boolean(),

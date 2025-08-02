@@ -705,7 +705,7 @@ export default function DashboardPage() {
 
               forms={forms}
               onLoadForms={handleLoadForms}
-              onUpdateForm={handleUpdateForm}
+              onUpdateForm={onUpdateForm}
               onDeleteForm={handleDeleteForm}
 
               priorityCalls={priorityCalls}
