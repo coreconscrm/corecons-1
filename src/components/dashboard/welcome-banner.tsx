@@ -19,12 +19,12 @@ import {
 
 function MetricBox({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: number }) {
   return (
-    <div className="p-2 rounded-lg bg-secondary/50 dark:bg-secondary space-y-1 transition-transform duration-200 hover:scale-105 flex-1 basis-24 border border-transparent metric-box">
-      <Icon className="h-6 w-6 text-primary mx-auto" />
-      <p className="text-2xl font-bold text-foreground">
+    <div className="p-1 rounded-lg bg-secondary/50 dark:bg-secondary space-y-0.5 transition-transform duration-200 hover:scale-105 flex-1 basis-20 border border-transparent metric-box">
+      <Icon className="h-5 w-5 text-primary mx-auto" />
+      <p className="text-xl font-bold text-foreground">
         {value}
       </p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -40,11 +40,11 @@ export function OficinaOverview({ juanfran, sandra, jordan, dani, chats, julian 
     ];
     return (
       <Card className="overview-card">
-        <CardHeader>
-          <CardTitle className="text-base">Resumen de Oficina</CardTitle>
+        <CardHeader className="p-3">
+          <CardTitle className="text-sm">Resumen de Oficina</CardTitle>
         </CardHeader>
         <CardContent className="p-2">
-          <div className="flex flex-wrap justify-center gap-2 text-center">
+          <div className="flex flex-wrap justify-center gap-1 text-center">
             {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
           </div>
         </CardContent>
@@ -61,11 +61,11 @@ export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrec
   ];
   return (
     <Card className="overview-card">
-      <CardHeader>
-        <CardTitle className="text-base">Resumen de Seguimiento</CardTitle>
+      <CardHeader className="p-3">
+        <CardTitle className="text-sm">Resumen de Seguimiento</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
-        <div className="flex flex-wrap justify-center gap-2 text-center">
+        <div className="flex flex-wrap justify-center gap-1 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>
@@ -84,11 +84,11 @@ export function BudgetOverview({ pending, accepted, rejected, done, sent }: { pe
   ];
   return (
     <Card className="overview-card">
-      <CardHeader>
-        <CardTitle className="text-base">Resumen de Presupuestos</CardTitle>
+      <CardHeader className="p-3">
+        <CardTitle className="text-sm">Resumen de Presupuestos</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
-        <div className="flex flex-wrap justify-center gap-2 text-center">
+        <div className="flex flex-wrap justify-center gap-1 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>
@@ -104,11 +104,11 @@ export function FormOverview({ total, called, pending }: { total: number, called
   ];
   return (
     <Card className="overview-card">
-      <CardHeader>
-        <CardTitle className="text-base">Resumen de Formularios</CardTitle>
+      <CardHeader className="p-3">
+        <CardTitle className="text-sm">Resumen de Formularios</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
-        <div className="flex flex-wrap justify-center gap-2 text-center">
+        <div className="flex flex-wrap justify-center gap-1 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>

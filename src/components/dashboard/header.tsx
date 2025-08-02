@@ -16,11 +16,11 @@ export function Header() {
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-sm">
       <Link href="/dashboard" className="flex items-center gap-2">
         <Image src={logo} alt="WinnBuilders Logo" width={28} height={28} className="object-contain"/>
-        <h1 className="text-base font-bold text-foreground hidden sm:block">
+        <h1 className="text-lg font-bold text-foreground hidden sm:block">
           WinnBuilders CRM
         </h1>
       </Link>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Bell className="h-4 w-4" />
           <span className="sr-only">Notificaciones</span>

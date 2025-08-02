@@ -618,7 +618,7 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold">Panel de Control</h1>
+                <h1 className="text-xl font-bold">Panel de Control</h1>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowOverviewPanels(!showOverviewPanels)}>
                     {showOverviewPanels ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     <span className="sr-only">Ocultar/Mostrar paneles de resumen</span>
