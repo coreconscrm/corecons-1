@@ -404,6 +404,27 @@ export default function DashboardPage() {
       description: `${client.name} ha sido añadido a la lista de seguimiento.`,
     });
   };
+  
+  const handleCreateSeguimientoFromContact = async (contact: any, sourceCollection: 'contacts' | 'priority_calls') => {
+    const newSeguimiento = {
+        name: contact.Nombre || contact.name || 'Sin nombre',
+        phone: contact.Teléfono || contact.phone || '',
+        email: contact.Email || contact.email || '',
+        localizacion: contact.localizacion || '',
+        informacion: `Lead de formulario. Datos originales: ${JSON.stringify(contact)}`,
+        estado: 'primer contacto',
+        porHacer: 'llamar',
+        siguienteLlamada: null,
+        category: 'General',
+    };
+    await addDoc(collection(db, 'seguimientos'), newSeguimiento);
+    await deleteDoc(doc(db, sourceCollection, contact.id));
+    toast({
+      title: 'Movido a Seguimiento',
+      description: `${newSeguimiento.name} ha sido movido a la lista de seguimiento y eliminado de su lista original.`,
+    });
+    await fetchData();
+  };
 
   const handleCreateBudgetFromAi = (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas') => {
     const lineItems: LineItem[] = [];
@@ -712,6 +733,7 @@ export default function DashboardPage() {
               onAddPriorityCall={(call) => handleCreate('priority_calls', {...call, called: call.called ?? false, status: call.status ?? 'Pendiente'}, 'Llamada Prioritaria')}
               onUpdatePriorityCall={(call) => handleUpdate('priority_calls', call, 'Llamada Prioritaria')}
               onDeletePriorityCall={(id) => handleDelete('priority_calls', id, 'Llamada Prioritaria')}
+              onMoveToSeguimiento={handleCreateSeguimientoFromContact}
 
               budgets={budgets}
               onAddBudget={(budget) => handleCreate('budgets', {...budget, m2: budget.m2 || 0, documents: budget.documents || [] }, 'Presupuesto')}

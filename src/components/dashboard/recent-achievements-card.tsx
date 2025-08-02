@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Plus, MoreHorizontal, Link, Unlink, UserPlus, Star, Pencil, Settings, ArrowUp, ArrowDown, BrainCircuit, Forward } from "lucide-react";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { SeguimientoListCard, type Seguimiento } from './seguimiento-card';
 
 
 const itemSchema = z.record(z.any());
@@ -398,13 +399,17 @@ export function FormsSection({
   onAddClient, onAddReforma,
   forms, onLoadForms, onUpdateForm, onDeleteForm,
   sheetUrl, onSaveSheetUrl,
-  priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall
+  priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall, onMoveToSeguimiento,
+  seguimientos, onAddSeguimiento, onUpdateSeguimiento, onDeleteSeguimiento,
+  estadoOptions, porHacerOptions, seguimientoCategories, onSeguimientoOptionsChange,
 }: {
   contacts: any[], onAddContact: (c: any) => void, onUpdateContact: (c: any) => void, onDeleteContact: (id: string) => void,
   onAddClient: (client: any) => void, onAddReforma: (reforma: any) => void,
   forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
   sheetUrl: string, onSaveSheetUrl: (url: string) => void,
-  priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void
+  priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void, onMoveToSeguimiento: (contact: any, source: 'contacts' | 'priority_calls') => void,
+  seguimientos: Seguimiento[], onAddSeguimiento: (s: any) => void, onUpdateSeguimiento: (s: any) => void, onDeleteSeguimiento: (id: string) => void,
+  estadoOptions: string[], porHacerOptions: string[], seguimientoCategories: string[], onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formUrl = 'https://forms.gle/22PyvAxk8hAxGDTVA';
@@ -594,9 +599,10 @@ export function FormsSection({
         onSave={onSaveSheetUrl}
       />
 
-      <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="main">Formularios y Contactos</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="main">Contactos y Leads</TabsTrigger>
           <TabsTrigger value="priority">Llamada Prioritaria</TabsTrigger>
+          <TabsTrigger value="seguimiento">En Seguimiento</TabsTrigger>
       </TabsList>
       <TabsContent value="main" className="mt-6">
         <div className="space-y-6">
@@ -610,7 +616,10 @@ export function FormsSection({
                 onUpdateItem={onUpdateContact}
                 onDeleteItem={onDeleteContact}
                 itemActions={(item) => (
-                    <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                    <>
+                        <DropdownMenuItem onSelect={() => onMoveToSeguimiento(item, 'contacts')}><Forward className="mr-2"/>Mover a Seguimiento</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                    </>
                 )}
             />
             <DynamicTableCard
@@ -647,10 +656,25 @@ export function FormsSection({
               onUpdateItem={onUpdatePriorityCall}
               onDeleteItem={onDeletePriorityCall}
               itemActions={(item) => (
-                 <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onSelect={() => onMoveToSeguimiento(item, 'priority_calls')}><Forward className="mr-2"/>Mover a Seguimiento</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setPromotingItem(item)}><UserPlus className="mr-2"/>Promover a Proyecto</DropdownMenuItem>
+                 </>
               )}
           />
       </TabsContent>
+       <TabsContent value="seguimiento" className="mt-6">
+            <SeguimientoListCard 
+                seguimientos={seguimientos} 
+                onAddSeguimiento={onAddSeguimiento} 
+                onUpdateSeguimiento={onUpdateSeguimiento} 
+                onDeleteSeguimiento={onDeleteSeguimiento}
+                estadoOptions={estadoOptions}
+                porHacerOptions={porHacerOptions}
+                categories={seguimientoCategories}
+                onSeguimientoOptionsChange={onSeguimientoOptionsChange}
+            />
+       </TabsContent>
     </Tabs>
   );
 }

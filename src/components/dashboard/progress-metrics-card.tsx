@@ -35,7 +35,7 @@ export function DashboardTabs({
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     contacts, onAddContact, onUpdateContact, onDeleteContact,
     forms, onLoadForms, onUpdateForm, onDeleteForm,
-    priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall,
+    priorityCalls, onAddPriorityCall, onUpdatePriorityCall, onDeletePriorityCall, onMoveToSeguimiento,
     budgets, onAddBudget, onUpdateBudget, onDeleteBudget,
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
@@ -65,7 +65,7 @@ export function DashboardTabs({
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     contacts: any[], onAddContact: (contact: any) => void, onUpdateContact: (contact: any) => void, onDeleteContact: (id: any) => void,
     forms: any[], onLoadForms: (data: any[]) => void, onUpdateForm: (form: any) => void, onDeleteForm: (id: any) => void,
-    priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void,
+    priorityCalls: any[], onAddPriorityCall: (call: any) => void, onUpdatePriorityCall: (call: any) => void, onDeletePriorityCall: (id: string) => void, onMoveToSeguimiento: (contact: any, source: 'contacts' | 'priority_calls') => void,
     budgets: any[], onAddBudget: (budget: any) => void, onUpdateBudget: (budget: any) => void, onDeleteBudget: (id: any) => void,
     companies: any[], onAddCompany: (company: any) => Promise<void>, onUpdateCompany: (company: any) => Promise<void>, onDeleteCompany: (id: any) => void,
     documents: any[], onAddDocument: (doc: any) => void, onDeleteDocument: (id: string) => void,
@@ -218,6 +218,15 @@ export function DashboardTabs({
           onAddPriorityCall={onAddPriorityCall}
           onUpdatePriorityCall={onUpdatePriorityCall}
           onDeletePriorityCall={onDeletePriorityCall}
+          onMoveToSeguimiento={onMoveToSeguimiento}
+          seguimientos={seguimientos}
+          onAddSeguimiento={onAddSeguimiento}
+          onUpdateSeguimiento={onUpdateSeguimiento}
+          onDeleteSeguimiento={onDeleteSeguimiento}
+          estadoOptions={estadoOptions}
+          porHacerOptions={porHacerOptions}
+          seguimientoCategories={seguimientoCategories}
+          onSeguimientoOptionsChange={onSeguimientoOptionsChange}
         />
       </TabsContent>}
 
