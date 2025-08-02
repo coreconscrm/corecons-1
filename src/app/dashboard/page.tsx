@@ -180,7 +180,7 @@ export default function Page() {
             } else {
                  setData(prev => {
                     const currentItems = prev[dataKey as keyof typeof prev];
-                    if (Array.isArray(currentItems) && currentItems.length > 0) {
+                    if (Array.isArray(currentItems) && currentItems.length > 0 && prev[key].length === 0) {
                         const firstItemKeys = Object.keys(currentItems[0]).filter(k => k !== 'id');
                         const newCols = firstItemKeys.map(k => ({
                             key: k,
@@ -611,5 +611,7 @@ export default function Page() {
     </div>
   );
 }
+
+    
 
     
