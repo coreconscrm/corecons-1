@@ -16,7 +16,7 @@ function PrintLayoutHeader({ company }: { company: Company | null }) {
   });
 
   return (
-    <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200">
+    <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200 print:!color-adjust-exact">
       <div className="flex items-center gap-6">
         {company?.logo ? (
           <img src={company.logo} alt={`${company.name} logo`} style={{ width: '120px', height: 'auto', maxHeight: '50px', objectFit: 'contain' }} data-ai-hint="logo" />
@@ -105,7 +105,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
 
       <section>
         <table className="w-full text-left table-fixed">
-          <thead className="bg-gray-100 text-gray-600">
+          <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
             <tr>
               <th className={`p-3 font-semibold uppercase text-sm ${hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
               <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
@@ -119,7 +119,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
               if (item.isChapter) {
                 return (
                   <tr key={index} className={index !== 0 ? 'page-break-before' : ''}>
-                    <td colSpan={hideUnitPrice ? 4 : 5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700">{item.description}</td>
+                    <td colSpan={hideUnitPrice ? 4 : 5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{item.description}</td>
                   </tr>
                 );
               }
@@ -146,7 +146,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
         <section className="mt-8">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
           <table className="w-full max-w-md ml-auto text-left text-sm">
-              <thead className="bg-gray-100 text-gray-600">
+              <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
                   <tr>
                       <th className="p-3 font-semibold uppercase text-sm">Capítulo</th>
                       <th className="p-3 font-semibold uppercase text-sm text-right">Total</th>
@@ -174,7 +174,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
                 <p>{company?.paymentMethods}</p>
             </div>
             <div className="w-full max-w-sm">
-                <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
+                <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg print:!color-adjust-exact">
                     <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                     <span className="text-xl font-bold font-mono text-gray-900 whitespace-nowrap">
                         {`€${grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -239,7 +239,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
             
             <section>
                 <table className="w-full text-left table-fixed">
-                    <thead className="bg-gray-100 text-gray-600">
+                    <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
                         <tr>
                             <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
                             <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
@@ -251,7 +251,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                     {budget.breakdown.capitulos.map((capitulo, index) => (
                         <React.Fragment key={index}>
                             <tr className={index !== 0 ? 'page-break-before' : ''}>
-                                <td colSpan={4} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700">{capitulo.nombre}</td>
+                                <td colSpan={4} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{capitulo.nombre}</td>
                             </tr>
                             {capitulo.partidas.map((partida, pIndex) => {
                                 const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
@@ -276,7 +276,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                 <section className="mt-8">
                     <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
                     <table className="w-full max-w-md ml-auto text-left text-sm">
-                        <thead className="bg-gray-100 text-gray-600">
+                        <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
                             <tr>
                                 <th className="p-3 font-semibold uppercase text-sm">Capítulo</th>
                                 <th className="p-3 font-semibold uppercase text-sm text-right">Total</th>
@@ -304,7 +304,7 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                         <p>{company?.paymentMethods}</p>
                     </div>
                     <div className="w-full max-w-sm">
-                        <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg">
+                        <div className="flex justify-between items-center bg-gray-200 p-4 rounded-t-lg print:!color-adjust-exact">
                             <span className="text-xl font-bold text-gray-800">TOTAL PRESUPUESTO</span>
                             <span className="text-xl font-bold font-mono text-gray-900 whitespace-nowrap">
                                 {`€${grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
