@@ -13,7 +13,8 @@ import {
     CalendarCheck,
     ListTodo,
     NotebookText,
-    MessageSquareWarning
+    MessageSquareWarning,
+    Folder
 } from "lucide-react";
 
 
@@ -52,13 +53,16 @@ export function OficinaOverview({ juanfran, sandra, jordan, dani, chats, julian 
     );
   }
 
-export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrecerArquitecto, buscarTerreno }: { llamarEstaSemana: number, totalSeguimientos: number, ofrecerArquitecto: number, buscarTerreno: number }) {
+export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, customMetrics }: { llamarEstaSemana: number, totalSeguimientos: number, customMetrics: Record<string, number> }) {
   const metrics = [
     { icon: CalendarCheck, label: "Llamar s.", value: llamarEstaSemana },
     { icon: ListTodo, label: "Total", value: totalSeguimientos },
-    { icon: Building, label: "Arquitecto", value: ofrecerArquitecto },
-    { icon: Map, label: "Terreno", value: buscarTerreno },
   ];
+  
+  const customMetricItems = Object.entries(customMetrics)
+    .filter(([key, value]) => key !== 'General' || (key === 'General' && value > 0))
+    .map(([key, value]) => ({ icon: Folder, label: key, value: value }));
+
   return (
     <Card className="overview-card">
       <CardHeader className="p-3">
@@ -67,6 +71,7 @@ export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, ofrec
       <CardContent className="p-2">
         <div className="flex flex-wrap justify-center gap-1 text-center">
           {metrics.map((metric, index) => <MetricBox key={index} {...metric} />)}
+          {customMetricItems.map((metric, index) => <MetricBox key={index} {...metric} />)}
         </div>
       </CardContent>
     </Card>

@@ -29,6 +29,7 @@ export function OfficeSection({
     onAddDaniPriority,
     onUpdateDaniPriority,
     onDeleteDaniPriority,
+    onAddPresentar,
     chatMessages,
     team,
     onAddChatMessage,
@@ -55,6 +56,7 @@ export function OfficeSection({
     onAddDaniPriority: (p: any) => void;
     onUpdateDaniPriority: (p: any) => void;
     onDeleteDaniPriority: (id: string) => void;
+    onAddPresentar: (p: any) => void;
     chatMessages: any[];
     team: any[];
     onAddChatMessage: (message: any) => void;
@@ -147,6 +149,7 @@ export function OfficeSection({
                     onAddPriority={onAddDaniPriority}
                     onUpdatePriority={onUpdateDaniPriority}
                     onDeletePriority={onDeleteDaniPriority}
+                    onAddPresentar={onAddPresentar}
                 />
             </TabsContent>
             <TabsContent value="chat" className="mt-6">

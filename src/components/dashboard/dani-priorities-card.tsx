@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye, FileText, Loader2 } from "lucide-react";
+import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye, FileText, Loader2, Presentation } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -33,6 +33,17 @@ const prioritySchema = z.object({
   documentName: z.string().optional(),
 });
 
+const presentarSchema = z.object({
+  title: z.string().min(1, "El título es requerido."),
+  nombre: z.string().optional(),
+  telefono: z.string().optional(),
+  poblacion: z.string().optional(),
+  descripcion: z.string().min(1, "La descripción es requerida."),
+  documentUrl: z.string().url().optional().or(z.literal('')),
+  documentName: z.string().optional(),
+});
+
+
 export type DaniPriority = {
   id: string;
   title: string;
@@ -42,6 +53,105 @@ export type DaniPriority = {
   documentUrl?: string;
   documentName?: string;
 };
+
+function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (values: any) => void }) {
+    const { toast } = useToast();
+    const [isUploading, setIsUploading] = useState(false);
+    const [documentFile, setDocumentFile] = useState<File | null>(null);
+
+    const form = useForm<z.infer<typeof presentarSchema>>({
+        resolver: zodResolver(presentarSchema),
+        defaultValues: {
+            title: "",
+            nombre: "",
+            telefono: "",
+            poblacion: "",
+            descripcion: "",
+            documentUrl: "",
+            documentName: ""
+        },
+    });
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setDocumentFile(file);
+            form.setValue("documentName", file.name);
+        }
+    };
+    
+    const handleSubmit = async (values: z.infer<typeof presentarSchema>) => {
+        setIsUploading(true);
+        const presentacionId = `presentar-${Date.now()}`;
+        let submissionData = { ...values, date: new Date() };
+
+        try {
+            if (documentFile) {
+                const storageRef = ref(storage, `a_presentar/${presentacionId}/${documentFile.name}`);
+                const snapshot = await uploadBytesResumable(storageRef, documentFile);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                submissionData.documentUrl = downloadURL;
+                submissionData.documentName = documentFile.name;
+            }
+
+            onSubmit(submissionData);
+            form.reset();
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Error processing form:", error);
+            toast({ variant: 'destructive', title: "Error al guardar", description: (error as Error).message });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Añadir a Presentar</DialogTitle>
+                    <DialogDescription>
+                        Crea una nueva entrada para presentar a un cliente, arquitecto, etc.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="title" render={({ field }) => (
+                            <FormItem><FormLabel>Título</FormLabel><FormControl><Input placeholder="Ej: Presentación para Cliente X" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="nombre" render={({ field }) => (
+                                <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Nombre del contacto" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="telefono" render={({ field }) => (
+                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Teléfono de contacto" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>
+                            )} />
+                         </div>
+                        <FormField control={form.control} name="poblacion" render={({ field }) => (
+                            <FormItem><FormLabel>Población</FormLabel><FormControl><Input placeholder="Población" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="descripcion" render={({ field }) => (
+                            <FormItem><FormLabel>Descripción</FormLabel><FormControl><Textarea placeholder="Detalles de la presentación..." {...field} rows={5} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormItem>
+                            <FormLabel>Adjuntar Archivo (Opcional)</FormLabel>
+                            <FormControl>
+                                <Input type="file" onChange={handleFileChange} disabled={isUploading} />
+                            </FormControl>
+                         </FormItem>
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Guardar
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: DaniPriority, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const { toast } = useToast();
@@ -178,8 +288,9 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
     );
 }
 
-export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority, onDeletePriority }: { priorities: DaniPriority[], onAddPriority: (priority: any) => void, onUpdatePriority: (priority: any) => void, onDeletePriority: (id: string) => void }) {
+export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority, onDeletePriority, onAddPresentar }: { priorities: DaniPriority[], onAddPriority: (priority: any) => void, onUpdatePriority: (priority: any) => void, onDeletePriority: (id: string) => void, onAddPresentar: (p: any) => void }) {
     const [isFormOpen, setFormOpen] = useState(false);
+    const [isPresentarFormOpen, setPresentarFormOpen] = useState(false);
     const [activePriority, setActivePriority] = useState<DaniPriority | undefined>(undefined);
     const [viewingPriority, setViewingPriority] = useState<DaniPriority | null>(null);
 
@@ -219,6 +330,11 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                 open={isFormOpen}
                 onOpenChange={setFormOpen}
             />
+            <PresentarForm
+                open={isPresentarFormOpen}
+                onOpenChange={setPresentarFormOpen}
+                onSubmit={onAddPresentar}
+            />
             <Dialog open={!!viewingPriority} onOpenChange={() => setViewingPriority(null)}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
@@ -241,7 +357,10 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
                     <CardTitle className="flex items-center gap-2"><BookUser /> Prioridades para Dani</CardTitle>
                     <CardDescription>Un espacio para guardar y consultar las prioridades de Dani.</CardDescription>
                 </div>
-                <Button onClick={handleAdd}><PlusCircle className="mr-2 h-4 w-4" />Añadir Prioridad</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setPresentarFormOpen(true)}><Presentation className="mr-2 h-4 w-4" />A Presentar</Button>
+                    <Button onClick={handleAdd}><PlusCircle className="mr-2 h-4 w-4" />Añadir Prioridad</Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="w-full overflow-x-auto rounded-md border">

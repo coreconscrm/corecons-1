@@ -38,9 +38,9 @@ export function DashboardTabs({
         {(visibleTabs.clients || visibleTabs.reformas) && <TabsTrigger value="clients">Clientes</TabsTrigger>}
         {visibleTabs.projects && <TabsTrigger value="projects">Proyectos</TabsTrigger>}
         {visibleTabs.budgets && <TabsTrigger value="budgets">Presupuestos</TabsTrigger>}
+        {visibleTabs.ia && <TabsTrigger value="ia">IA</TabsTrigger>}
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas || visibleTabs.prices) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-        {visibleTabs.ia && <TabsTrigger value="ia">IA</TabsTrigger>}
         {(visibleTabs.companies || visibleTabs.team) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
@@ -63,6 +63,7 @@ export function DashboardTabs({
           onAddDaniPriority={(p: any) => actions.createItem('dani_priorities', p)}
           onUpdateDaniPriority={(p: any) => actions.updateItem('dani_priorities', p)}
           onDeleteDaniPriority={(id: string) => actions.deleteItem('dani_priorities', id)}
+          onAddPresentar={(p: any) => actions.createItem('a_presentar', p)}
           chatMessages={data.chatMessages}
           team={data.team}
           onAddChatMessage={(message: any) => actions.createItem('chat_messages', message)}
@@ -130,6 +131,19 @@ export function DashboardTabs({
           onDeleteBudget={(id: string) => actions.deleteItem('budgets', id)}
         />
       </TabsContent>}
+      
+      {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
+        <AiSection 
+          companies={data.companies}
+          forms={[...data.forms, ...data.contacts, ...data.priorityCalls]}
+          aiBudgets={data.aiBudgets}
+          onAddAiBudget={(b: any) => actions.createItem('ia_budgets', b)}
+          onUpdateAiBudget={(b: any) => actions.updateItem('ia_budgets', b)}
+          onDeleteAiBudget={(id: string) => actions.deleteItem('ia_budgets', id)}
+          onCreateBudgetFromAi={actions.handleCreateBudgetFromAi}
+          onCreateSummaryBudgetFromAi={actions.handleCreateSummaryBudgetFromAi}
+        />
+      </TabsContent>}
 
       {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.prices) && <TabsContent value="providers" className="mt-6">
          <ProviderSection 
@@ -184,19 +198,6 @@ export function DashboardTabs({
           onCreateSeguimientoFromContact={actions.handleCreateSeguimientoFromContact}
           onLoadForms={actions.handleLoadForms}
           onMoveFormContact={actions.handleMoveFormContact}
-        />
-      </TabsContent>}
-
-      {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
-        <AiSection 
-          companies={data.companies}
-          forms={[...data.forms, ...data.contacts, ...data.priorityCalls]}
-          aiBudgets={data.aiBudgets}
-          onAddAiBudget={(b: any) => actions.createItem('ia_budgets', b)}
-          onUpdateAiBudget={(b: any) => actions.updateItem('ia_budgets', b)}
-          onDeleteAiBudget={(id: string) => actions.deleteItem('ia_budgets', id)}
-          onCreateBudgetFromAi={actions.handleCreateBudgetFromAi}
-          onCreateSummaryBudgetFromAi={actions.handleCreateSummaryBudgetFromAi}
         />
       </TabsContent>}
 

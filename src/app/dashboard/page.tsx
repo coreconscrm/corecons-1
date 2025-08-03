@@ -65,6 +65,7 @@ const collectionStateMap: Record<string, string> = {
     chat_messages: 'chatMessages',
     julian_notes: 'julianNotes',
     ia_budgets: 'aiBudgets',
+    a_presentar: 'aPresentar',
 };
 
 // Main Page Component
@@ -101,6 +102,7 @@ export default function Page() {
     chatMessages: [],
     julianNotes: [],
     aiBudgets: [],
+    aPresentar: [],
     sheetUrl: '',
     formCols: [],
     contactCols: [],
@@ -118,7 +120,7 @@ export default function Page() {
   useEffect(() => {
     const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
       let q;
-      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
+      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy("date", "desc"));
       } else if (collectionName === 'seguimientos') {
          q = query(collection(db, collectionName)); // Sorting is handled client-side
@@ -296,7 +298,7 @@ export default function Page() {
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
     const dataToSave = { ...itemData };
-    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists'].includes(collectionName)) {
+    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar'].includes(collectionName)) {
         if (!dataToSave.date) {
             dataToSave.date = Timestamp.now();
         }
@@ -528,8 +530,10 @@ export default function Page() {
     return isWithinInterval(nextCallDate, { start: startOfThisWeek, end: endOfThisWeek });
   }).length;
   
-  const ofrecerArquitecto = data.seguimientos.filter((s:any) => s.porHacer?.toLowerCase().trim() === 'buscar arquitecto').length;
-  const buscarTerreno = data.seguimientos.filter((s:any) => s.estado?.toLowerCase().trim() === 'buscar terreno').length;
+  const seguimientoMetrics = data.seguimientoCategories.reduce((acc: any, category: string) => {
+      acc[category] = data.seguimientos.filter((s: any) => s.category === category).length;
+      return acc;
+  }, {});
 
   // Metrics for Oficina Overview
   const countPending = (items: any[]) => {
@@ -592,8 +596,7 @@ export default function Page() {
                   <SeguimientoOverview
                       llamarEstaSemana={llamarEstaSemana}
                       totalSeguimientos={totalSeguimientos}
-                      ofrecerArquitecto={ofrecerArquitecto}
-                      buscarTerreno={buscarTerreno}
+                      customMetrics={seguimientoMetrics}
                   />
                   <BudgetOverview
                       pending={budgetsPending}
