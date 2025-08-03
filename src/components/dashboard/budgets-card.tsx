@@ -282,7 +282,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
         form.reset({
           name: "",
           clientId: "",
-          companyId: "",
+          companyId: companies.length > 0 ? companies[0].id : "",
           status: "Pendiente",
           m2: 0,
           lineItems: [{ description: "", quantity: 0, unit: null, unitPrice: 0 }],
@@ -290,7 +290,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
         });
       }
     }
-  }, [budget, open, form, activeCategory]);
+  }, [budget, open, form, activeCategory, companies]);
 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => {
@@ -504,7 +504,7 @@ function BudgetAccordionItem({
     };
 
     const client = clients.find(c => c.id === budget.clientId);
-    const company = companies.find(c => c.id === budget.companyId) || null;
+    const company = companies.find(c => c.id === budget.companyId) || (companies.length > 0 ? companies[0] : null);
 
     return (
         <AccordionItem value={budget.id} key={budget.id} className="border-none">
