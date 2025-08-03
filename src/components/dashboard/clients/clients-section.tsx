@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardHeader } from "@/components/ui/card";
 
 export function ClientsSection({
     clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient, onCreateSeguimientoFromClient,
@@ -115,5 +116,4 @@ export function ClientsSection({
         </div>
     );
 }
-
     
