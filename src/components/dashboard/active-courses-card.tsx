@@ -427,3 +427,5 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     </Card>
   );
 }
+
+    
