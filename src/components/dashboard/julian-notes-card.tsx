@@ -235,7 +235,7 @@ export function JulianNotesCard({ notes, onAddJulianNote, onUpdateJulianNote, on
     };
     
     const handleToggleCompleted = (note: JulianNote) => {
-        onUpdateJulianNote({ id: note.id, completed: !note.completed });
+        onUpdateJulianNote({ ...note, completed: !note.completed });
     };
 
     const calculateProgress = (items: ChecklistItem[] = []) => {

@@ -2,7 +2,7 @@
 "use client";
 
 import { initializeApp, getApp, getApps, type FirebaseApp } from "firebase/app";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, type Firestore, initializeFirestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // PEGA AQUÍ TU OBJETO DE CONFIGURACIÓN DE FIREBASE
@@ -23,7 +23,9 @@ const firebaseConfig = {
 function initializeFirebase(): { app: FirebaseApp; db: Firestore; storage: FirebaseStorage; } {
   const apps = getApps();
   const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
-  const db = getFirestore(app, 'wb-data');
+  
+  const db = initializeFirestore(app, {}, 'wb-data');
+  
   // Forzar la conexión al bucket de almacenamiento correcto.
   const storage = getStorage(app, firebaseConfig.storageBucket);
   return { app, db, storage };
