@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -41,6 +40,7 @@ const presentarSchema = z.object({
   telefono: z.string().optional(),
   poblacion: z.string().optional(),
   descripcion: z.string().min(1, "La descripción es requerida."),
+  documentFile: z.any().optional(),
   documentUrl: z.string().url().optional().or(z.literal('')),
   documentName: z.string().optional(),
   presentationDate: z.date().optional().nullable(),
@@ -61,7 +61,6 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
     const { toast } = useToast();
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    const [documentFile, setDocumentFile] = useState<File | null>(null);
 
     const form = useForm<z.infer<typeof presentarSchema>>({
         resolver: zodResolver(presentarSchema),
@@ -76,29 +75,24 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
             presentationDate: null,
         },
     });
+
+    const documentFileRef = form.register("documentFile");
     
     useEffect(() => {
         if (!open) {
             form.reset();
-            setDocumentFile(null);
             setIsUploading(false);
             setUploadProgress(null);
         }
     }, [open, form]);
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setDocumentFile(file);
-            form.setValue("documentName", file.name);
-        }
-    };
     
     const handleSubmit = async (values: z.infer<typeof presentarSchema>) => {
         setIsUploading(true);
         setUploadProgress(0);
         const presentacionId = `presentar-${Date.now()}`;
-        let submissionData = { ...values, date: new Date() };
+        let submissionData: any = { ...values, date: new Date() };
+        
+        const documentFile = values.documentFile?.[0];
 
         try {
             if (documentFile) {
@@ -124,6 +118,8 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
                     );
                 });
             }
+            
+            delete submissionData.documentFile;
 
             await onSubmit(submissionData);
             toast({ title: "Guardado", description: "La entrada 'A Presentar' se ha guardado correctamente." });
@@ -168,7 +164,7 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
                          <FormItem>
                             <FormLabel>Adjuntar Archivo (Opcional)</FormLabel>
                             <FormControl>
-                                <Input type="file" onChange={handleFileChange} disabled={isUploading} />
+                                <Input type="file" {...documentFileRef} disabled={isUploading} />
                             </FormControl>
                          </FormItem>
                          <FormField
@@ -493,3 +489,4 @@ export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority
         </Card>
     );
 }
+
