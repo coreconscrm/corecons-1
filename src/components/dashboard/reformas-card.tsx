@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat, Star } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, FileText, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat, Star, FolderOpen, Move } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -33,24 +33,14 @@ const reformaSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["En Contacto", "Ayudando", "Presupuestando", "Firmado", "Construyendo", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
   priority: z.number().nullable().optional(),
+  category: z.string().optional(),
 });
 
 type Reforma = z.infer<typeof reformaSchema> & { id: string };
-
-const statusOrder: (z.infer<typeof reformaSchema>['estado'])[] = [
-    "En Contacto",
-    "Ayudando",
-    "Presupuestando",
-    "Firmado",
-    "Construyendo",
-    "Finalizado"
-];
-
 
 function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldName: 'memoria' | 'planos', reformaId: string | undefined, label: string }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -95,10 +85,10 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
     );
 }
 
-function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
+function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categories }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[], categories: string[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" },
   });
 
   useEffect(() => {
@@ -113,14 +103,14 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             arquitecto: reforma.arquitecto || "",
             providerId: reforma.providerId || "",
             obtenido: reforma.obtenido || "",
-            estado: reforma.estado || "En Contacto",
             infoAdicional: reforma.infoAdicional || "",
             memoria: reforma.memoria || "",
             planos: reforma.planos || "",
             priority: reforma.priority,
+            category: reforma.category || "General",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" });
       }
     }
   }, [reforma, open, form]);
@@ -172,17 +162,17 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                 )} />
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FormField control={form.control} name="estado" render={({ field }) => (
+                <FormField control={form.control} name="category" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Estado del Proyecto</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                        <FormLabel>Subsección</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? 'General'}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una subsección" /></SelectTrigger></FormControl>
                         <SelectContent>
-                             {statusOrder.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                         </SelectContent>
                         </Select><FormMessage />
                     </FormItem>
-                    )} />
+                )} />
                 <FormField control={form.control} name="obtenido" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Obtenido a través de</FormLabel>
@@ -219,7 +209,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
   );
 }
 
-export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void }) {
+export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient, categories }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void, categories: string[] }) {
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeReforma, setActiveReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -250,20 +240,25 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
 
   const groupedReformas = useMemo(() => {
     const filtered = priorityFilter !== null ? reformas.filter(c => c.priority === priorityFilter) : reformas;
-
+    
     const groups: { [key: string]: Reforma[] } = {};
-    statusOrder.forEach(status => {
-        groups[status!] = [];
+    categories.forEach(cat => {
+        groups[cat] = [];
     });
-    groups['Sin Estado Especificado'] = [];
+    if (!groups['General']) {
+      groups['General'] = [];
+    }
 
     filtered.forEach(reforma => {
-        const statusKey = reforma.estado && statusOrder.includes(reforma.estado) ? reforma.estado : 'Sin Estado Especificado';
-        groups[statusKey].push(reforma);
+        const categoryKey = reforma.category || 'General';
+        if (!groups[categoryKey]) {
+            groups[categoryKey] = [];
+        }
+        groups[categoryKey].push(reforma);
     });
 
     return groups;
-  }, [reformas, priorityFilter]);
+  }, [reformas, priorityFilter, categories]);
 
 
   const handleFilterClick = (priority: number) => {
@@ -279,7 +274,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
             <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
-      <ReformaForm reforma={activeReforma} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} />
+      <ReformaForm reforma={activeReforma} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} categories={categories} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -313,12 +308,15 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
 
       <CardContent className="pt-6">
         <Accordion type="multiple" className="w-full space-y-4">
-        {Object.entries(groupedReformas).map(([status, reformasInGroup]) => {
+        {Object.entries(groupedReformas).map(([category, reformasInGroup]) => {
             if (reformasInGroup.length === 0) return null;
             return (
-                <AccordionItem value={status} key={status} className="border-b-0">
+                <AccordionItem value={category} key={category} className="border-b-0">
                     <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
-                        {status} ({reformasInGroup.length})
+                        <div className="flex items-center gap-2">
+                            <FolderOpen className="h-5 w-5" />
+                            {category} ({reformasInGroup.length})
+                        </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4 space-y-4">
                       {reformasInGroup.map(reforma => {
@@ -339,6 +337,16 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                                         <DropdownMenuContent>
                                           <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                           <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(reforma)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
+                                            <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent>
+                                                    {categories.map(cat => (
+                                                        <DropdownMenuItem key={cat} onSelect={() => onUpdateReforma({ ...reforma, category: cat })}>
+                                                            {cat}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
                                           <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'reformas')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>

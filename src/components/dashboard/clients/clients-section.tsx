@@ -6,16 +6,21 @@ import { ClientListCard } from "../active-courses-card";
 import { ReformaListCard } from "../reformas-card";
 import type { BudgetCategory } from "../budgets/budgets-section";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export function ClientsSection({
     clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient, onCreateSeguimientoFromClient,
     reformas, onAddReforma, onUpdateReforma, onDeleteReforma,
-    visibleTabs
+    visibleTabs, clientCategories, onClientCategoriesChange
 }: {
     clients: any[], providers: any[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: any) => void, onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void,
     reformas: any[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: any) => void,
-    visibleTabs: any
+    visibleTabs: any, clientCategories: string[], onClientCategoriesChange: (categories: string[]) => void,
 }) {
+    const { toast } = useToast();
+    const [newCategory, setNewCategory] = useState("");
     const tabs = [
         { value: "obra-nueva", label: "Obra Nueva", visible: visibleTabs.clients },
         { value: "reformas", label: "Reformas", visible: visibleTabs.reformas },
@@ -38,9 +43,17 @@ export function ClientsSection({
         localStorage.setItem('clientsSection_activeTab', value);
     };
 
+    const handleAddCategory = () => {
+        if (newCategory && !clientCategories.includes(newCategory)) {
+            onClientCategoriesChange([...clientCategories, newCategory]);
+            setNewCategory("");
+            toast({ title: `Subsección "${newCategory}" creada` });
+        }
+    };
+
     return (
          <div className="w-full space-y-6">
-            <div className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
+            <div className="grid w-full gap-2" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
                 {tabs.map(tab => (
                     <Button
                         key={tab.value}
@@ -53,6 +66,26 @@ export function ClientsSection({
                 ))}
             </div>
 
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                         <div className="flex-grow">
+                            <h3 className="text-lg font-semibold">Subsecciones de Clientes</h3>
+                            <p className="text-sm text-muted-foreground">Crea y gestiona las categorías para organizar a tus clientes.</p>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <Input 
+                                placeholder="Nueva subsección..." 
+                                value={newCategory} 
+                                onChange={(e) => setNewCategory(e.target.value)} 
+                                className="h-9"
+                            />
+                            <Button size="sm" onClick={handleAddCategory}><Plus className="h-4 w-4 mr-1" /> Añadir</Button>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+
             <div className="mt-6">
                 {activeTab === 'obra-nueva' && visibleTabs.clients && (
                     <ClientListCard 
@@ -63,6 +96,7 @@ export function ClientsSection({
                         onDeleteClient={onDeleteClient} 
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
                         onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
+                        categories={clientCategories}
                     />
                 )}
                 {activeTab === 'reformas' && visibleTabs.reformas && (
@@ -74,9 +108,12 @@ export function ClientsSection({
                         onDeleteReforma={onDeleteReforma}
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
                         onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
+                        categories={clientCategories}
                     />
                 )}
             </div>
         </div>
     );
 }
+
+    

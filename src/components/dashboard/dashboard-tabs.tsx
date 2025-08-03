@@ -108,6 +108,8 @@ export function DashboardTabs({
             providers={data.providers}
             onCreateBudgetFromClient={actions.handleCreateBudgetFromClient}
             onCreateSeguimientoFromClient={actions.handleCreateSeguimientoFromClient}
+            clientCategories={data.clientCategories}
+            onClientCategoriesChange={actions.handleClientCategoriesChange}
         />
       </TabsContent>}
 
@@ -233,3 +235,5 @@ export function DashboardTabs({
     </Tabs>
   );
 }
+
+    

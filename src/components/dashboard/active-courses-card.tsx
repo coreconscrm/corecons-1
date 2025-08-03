@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat, Star } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, Loader2, Eye, FileText, Building, Phone, Mail, Info, MapPin, FilePlus2, Copy, Repeat, Star, FolderOpen, Move } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
@@ -33,24 +33,14 @@ const clientSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["En Contacto", "Ayudando", "Presupuestando", "Firmado", "Construyendo", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
   priority: z.number().nullable().optional(),
+  category: z.string().optional(),
 });
 
 type Client = z.infer<typeof clientSchema> & { id: string };
-
-const statusOrder: (z.infer<typeof clientSchema>['estado'])[] = [
-    "En Contacto",
-    "Ayudando",
-    "Presupuestando",
-    "Firmado",
-    "Construyendo",
-    "Finalizado"
-];
-
 
 function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldName: 'memoria' | 'planos', clientId: string | undefined, label: string }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -96,10 +86,10 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 }
 
 
-function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
+function ClientForm({ client, onSubmit, onOpenChange, open, providers, categories }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[], categories: string[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" },
   });
 
   useEffect(() => {
@@ -114,14 +104,14 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             arquitecto: client.arquitecto || "",
             providerId: client.providerId || "",
             obtenido: client.obtenido || "",
-            estado: client.estado || "En Contacto",
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
             priority: client.priority,
+            category: client.category || "General",
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" });
       }
     }
   }, [client, open, form]);
@@ -173,13 +163,13 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
                 )} />
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="estado" render={({ field }) => (
+                <FormField control={form.control} name="category" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Estado del Proyecto</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
+                        <FormLabel>Subsección</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? 'General'}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una subsección" /></SelectTrigger></FormControl>
                         <SelectContent>
-                            {statusOrder.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                         </SelectContent>
                         </Select><FormMessage />
                     </FormItem>
@@ -220,7 +210,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
   );
 }
 
-export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void }) {
+export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteClient, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient, categories }: { clients: Client[], onAddClient: (client: any) => void, onUpdateClient: (client: any) => void, onDeleteClient: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void, categories: string[] }) {
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeClient, setActiveClient] = useState<Client | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -253,18 +243,23 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     const filtered = priorityFilter !== null ? clients.filter(c => c.priority === priorityFilter) : clients;
 
     const groups: { [key: string]: Client[] } = {};
-    statusOrder.forEach(status => {
-        groups[status!] = [];
+    categories.forEach(cat => {
+        groups[cat] = [];
     });
-    groups['Sin Estado Especificado'] = [];
-
+    if (!groups['General']) {
+      groups['General'] = [];
+    }
+    
     filtered.forEach(client => {
-        const statusKey = client.estado && statusOrder.includes(client.estado) ? client.estado : 'Sin Estado Especificado';
-        groups[statusKey].push(client);
+        const categoryKey = client.category || 'General';
+        if (!groups[categoryKey]) {
+            groups[categoryKey] = [];
+        }
+        groups[categoryKey].push(client);
     });
 
     return groups;
-  }, [clients, priorityFilter]);
+  }, [clients, priorityFilter, categories]);
 
   const handleFilterClick = (priority: number) => {
     setPriorityFilter(prev => (prev === priority ? null : priority));
@@ -280,7 +275,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
             <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cerrar</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
-      <ClientForm client={activeClient} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} />
+      <ClientForm client={activeClient} onSubmit={handleSubmit} open={isFormOpen} onOpenChange={setFormOpen} providers={providers} categories={categories} />
       
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -314,12 +309,15 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
 
       <CardContent className="pt-6">
         <Accordion type="multiple" className="w-full space-y-4">
-          {Object.entries(groupedClients).map(([status, clientsInGroup]) => {
+          {Object.entries(groupedClients).map(([category, clientsInGroup]) => {
             if (clientsInGroup.length === 0) return null;
             return (
-                <AccordionItem value={status} key={status} className="border-b-0">
+                <AccordionItem value={category} key={category} className="border-b-0">
                     <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
-                        {status} ({clientsInGroup.length})
+                        <div className="flex items-center gap-2">
+                            <FolderOpen className="h-5 w-5" />
+                            {category} ({clientsInGroup.length})
+                        </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4 space-y-4">
                       {clientsInGroup.map(client => {
@@ -340,6 +338,16 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                                         <DropdownMenuContent>
                                           <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
                                           <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(client)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
+                                           <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent>
+                                                    {categories.map(cat => (
+                                                        <DropdownMenuItem key={cat} onSelect={() => onUpdateClient({ ...client, category: cat })}>
+                                                            {cat}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
                                           <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>

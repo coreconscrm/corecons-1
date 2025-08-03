@@ -56,9 +56,14 @@ const collectionStateMap: Record<string, string> = {
     contacts: 'contacts',
     priority_calls: 'priorityCalls',
     seguimientos: 'seguimientos',
+    seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
+    seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
+    seguimientoCategories: ['General'],
+    clientCategories: ['General'],
     budgets: 'budgets',
     companies: 'companies',
     documents: 'documents',
+    diskItems: 'diskItems',
     juanfran_notes: 'juanfranNotes',
     sandra_notes: 'sandraNotes',
     jordan_checklists: 'jordanChecklists',
@@ -93,6 +98,7 @@ export default function Page() {
     seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
     seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
     seguimientoCategories: ['General'],
+    clientCategories: ['General'],
     budgets: [],
     companies: [],
     documents: [],
@@ -203,6 +209,15 @@ export default function Page() {
             }));
         }
     });
+
+    // Fetch Client categories
+    const clientCategoriesDocRef = doc(db, 'config', 'clientCategories');
+    const unsubClientCategories = onSnapshot(clientCategoriesDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            setData(prev => ({...prev, clientCategories: data.categories || ['General']}));
+        }
+    });
     
     // Fetch Google Sheet URL
     const sheetConfigDocRef = doc(db, 'config', 'googleSheet');
@@ -241,6 +256,7 @@ export default function Page() {
       unsubscribes.forEach(unsub => unsub());
       unsubSettings();
       unsubSegOptions();
+      unsubClientCategories();
       unsubSheetUrl();
     };
   }, [fetchAllDiskItems]);
@@ -335,6 +351,17 @@ export default function Page() {
           toast({ variant: "destructive", title: "Error al guardar opciones", description: (error as Error).message });
       }
   };
+  
+  const handleClientCategoriesChange = async (categories: string[]) => {
+        try {
+            const docRef = doc(db, 'config', 'clientCategories');
+            await setDoc(docRef, { categories }, { merge: true });
+            toast({ title: "Subsecciones guardadas", description: "Las nuevas subsecciones se han guardado correctamente." });
+        } catch (error) {
+            console.error("Error saving client categories:", error);
+            toast({ variant: "destructive", title: "Error al guardar subsecciones", description: (error as Error).message });
+        }
+    };
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
     const dataToSave = { ...itemData };
@@ -756,6 +783,7 @@ export default function Page() {
                 handleCreateSeguimientoFromClient,
                 handleCreateSeguimientoFromContact,
                 handleSeguimientoOptionsChange,
+                handleClientCategoriesChange,
                 handleCreateBudgetFromAi,
                 handleCreateSummaryBudgetFromAi,
                 handleLoadForms,
@@ -774,3 +802,5 @@ export default function Page() {
     </div>
   );
 }
+
+    
