@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId, getDocs } from "firebase/firestore";
+import { ref, listAll, getDownloadURL, uploadBytes, deleteObject, getMetadata } from "firebase/storage";
 import { Header } from "@/components/dashboard/header";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { Toaster } from '@/components/ui/toaster';
@@ -95,6 +96,7 @@ export default function Page() {
     budgets: [],
     companies: [],
     documents: [],
+    diskItems: [],
     juanfranNotes: [],
     sandraNotes: [],
     jordanChecklists: [],
@@ -115,9 +117,40 @@ export default function Page() {
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
+  
+  const fetchDiskItems = useCallback(async () => {
+    try {
+        const diskRef = ref(storage, 'disco/');
+        const res = await listAll(diskRef);
+        
+        const folders = res.prefixes.map(folderRef => ({
+            name: folderRef.name,
+            type: 'folder' as const,
+            path: folderRef.fullPath
+        }));
+        
+        const files = await Promise.all(res.items.map(async itemRef => {
+            const metadata = await getMetadata(itemRef);
+            const url = await getDownloadURL(itemRef);
+            return {
+                name: itemRef.name,
+                type: 'file' as const,
+                path: itemRef.fullPath,
+                url: url,
+                fileType: metadata.contentType
+            };
+        }));
+
+        setData(prev => ({ ...prev, diskItems: [...folders, ...files] }));
+    } catch (error) {
+        console.error("Error fetching disk items:", error);
+    }
+  }, []);
 
   // Fetch all data from Firestore
   useEffect(() => {
+    fetchDiskItems();
+
     const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
       let q;
       if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar'].includes(collectionName)) {
@@ -203,7 +236,7 @@ export default function Page() {
       unsubSegOptions();
       unsubSheetUrl();
     };
-  }, []);
+  }, [fetchDiskItems]);
 
   const handleLoadForms = useCallback(async (formData: any[]) => {
       if (!formData || formData.length === 0) {
@@ -503,6 +536,36 @@ export default function Page() {
         await createItem('budgets', newBudget);
     }, [data.companies, createItem]);
 
+    const handleDiskUpload = useCallback(async (path: string, file: File) => {
+        const fullPath = `${path}${file.name}`;
+        const fileRef = ref(storage, fullPath);
+        await uploadBytes(fileRef, file);
+        await fetchDiskItems(); // Re-fetch to show new file
+        toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
+    }, [fetchDiskItems, toast]);
+
+    const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
+        const placeholderPath = `${path}${folderName}/.placeholder`;
+        const placeholderRef = ref(storage, placeholderPath);
+        await uploadBytes(placeholderRef, new Blob());
+        await fetchDiskItems(); // Re-fetch to show new folder
+        toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
+    }, [fetchDiskItems, toast]);
+
+    const handleDiskDeleteItem = useCallback(async (path: string, type: 'file' | 'folder') => {
+        if (type === 'file') {
+            const fileRef = ref(storage, path);
+            await deleteObject(fileRef);
+        } else { // folder
+            const folderRef = ref(storage, path);
+            const res = await listAll(folderRef);
+            // This is recursive and will delete all sub-items
+            await Promise.all(res.items.map(itemRef => deleteObject(itemRef)));
+            await Promise.all(res.prefixes.map(prefixRef => handleDiskDeleteItem(prefixRef.fullPath, 'folder')));
+        }
+        await fetchDiskItems();
+        toast({ title: 'Elemento Eliminado' });
+    }, [fetchDiskItems, toast]);
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -638,7 +701,10 @@ export default function Page() {
                 handleCreateBudgetFromAi,
                 handleCreateSummaryBudgetFromAi,
                 handleLoadForms,
-                handleMoveFormContact
+                handleMoveFormContact,
+                handleDiskUpload,
+                handleDiskCreateFolder,
+                handleDiskDeleteItem,
               }}
             />
           </div>

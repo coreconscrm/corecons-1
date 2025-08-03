@@ -6,20 +6,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentsCard, type Document } from "../documents-card";
 import { TeamListCard } from "../study-time-analysis-card";
 import { CompanyProfilesCard, type Company } from "../company-card";
+import { DiskSection } from "./disk-section";
 
 export function CompanySection({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
+    diskItems, onUploadFile, onCreateFolder, onDeleteItem,
     visibleTabs
 }: {
     companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
+    diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>,
     visibleTabs: any
 }) {
     const tabs = [
         { value: "profiles", label: "Perfiles de Empresa", visible: visibleTabs.companies },
+        { value: "disk", label: "Disco", visible: visibleTabs.companies },
         { value: "documents", label: "Documentos Generales", visible: visibleTabs.companies },
         { value: "team", label: "Equipo", visible: visibleTabs.team },
     ].filter(tab => tab.visible);
@@ -55,6 +59,16 @@ export function CompanySection({
                         onAddCompany={onAddCompany}
                         onUpdateCompany={onUpdateCompany}
                         onDeleteCompany={onDeleteCompany}
+                    />
+                </TabsContent>
+            )}
+             {visibleTabs.companies && (
+                <TabsContent value="disk" className="mt-6">
+                    <DiskSection
+                        items={diskItems}
+                        onUploadFile={onUploadFile}
+                        onCreateFolder={onCreateFolder}
+                        onDeleteItem={onDeleteItem}
                     />
                 </TabsContent>
             )}

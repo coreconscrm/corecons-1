@@ -215,6 +215,10 @@ export function DashboardTabs({
           onAddTeamMember={(m: any) => actions.createItem('team', m)}
           onUpdateTeamMember={(m: any) => actions.updateItem('team', m)}
           onDeleteTeamMember={(id: string) => actions.deleteItem('team', id)}
+          diskItems={data.diskItems}
+          onUploadFile={actions.handleDiskUpload}
+          onCreateFolder={actions.handleDiskCreateFolder}
+          onDeleteItem={actions.handleDiskDeleteItem}
         />
       </TabsContent>}
 
