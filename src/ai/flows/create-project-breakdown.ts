@@ -27,7 +27,7 @@ const ProjectBreakdownSchema = z.object({
   capitulos: z.array(z.object({
     nombre: z.string().describe("Nombre del capítulo, por ejemplo: 'Albañilería', 'Fontanería', 'Electricidad'."),
     partidas: z.array(z.object({
-      numero: z.string().optional().describe("El número o código de la partida, por ejemplo: '1.1', 'A.01'."),
+      numero: z.string().optional().describe("El número secuencial de la partida dentro del capítulo (ej: '1', '2', '3'). Debe ser solo el número."),
       descripcion: z.string().describe("Descripción detallada de la partida de obra."),
       medicion: z.string().optional().describe("La cantidad o medición de la partida, por ejemplo: '250', 'Según proyecto'."),
       unidad: z.string().optional().describe("La unidad de medida, por ejemplo: 'm²', 'ml', 'ud'."),
@@ -50,10 +50,11 @@ const projectBreakdownPrompt = ai.definePrompt({
 
     Instrucciones Generales:
     1.  Lee atentamente el documento PDF adjunto.
-    2.  Para cada partida de obra, extrae el número de partida (si existe), la 'descripcion', 'medicion' (cantidad) y 'unidad' de medida si se especifican. Es crucial que la 'descripcion' de cada partida sea lo más completa y detallada posible, extrayendo todo el texto descriptivo asociado a ella sin abreviar ni omitir detalles.
-    3.  **MUY IMPORTANTE**: Para el campo 'precioUnitario', extrae ÚNICAMENTE el valor numérico del precio (ej: '12.50', '12,50'). NO incluyas el símbolo del euro (€), texto como '/ud' o '/m2'. Si no se especifica un precio numérico claro, deja el campo 'precioUnitario' vacío o nulo.
-    4.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
-    5.  IMPORTANTE: Ignora cualquier partida que esté vacía o no contenga una descripción clara.
+    2.  Para cada partida de obra, extrae la 'descripcion', 'medicion' (cantidad) y 'unidad' de medida si se especifican. Es crucial que la 'descripcion' de cada partida sea lo más completa y detallada posible, extrayendo todo el texto descriptivo asociado a ella sin abreviar ni omitir detalles.
+    3.  **MUY IMPORTANTE para el número de partida**: Asigna un número secuencial simple a cada partida dentro de su capítulo (1, 2, 3, ...). Ignora los códigos o numeraciones complejas que pueda tener el documento original (como '1.1', 'A.01', etc.). El campo 'numero' debe contener solo el número de la secuencia.
+    4.  **MUY IMPORTANTE para el precio**: Para el campo 'precioUnitario', extrae ÚNICAMENTE el valor numérico del precio (ej: '12.50', '12,50'). NO incluyas el símbolo del euro (€), texto como '/ud' o '/m2'. Si no se especifica un precio numérico claro, deja el campo 'precioUnitario' vacío o nulo.
+    5.  Organiza toda la información en la estructura JSON solicitada. No inventes información que no esté en el documento. Sé preciso y cíñete al contenido del PDF.
+    6.  IMPORTANTE: Ignora cualquier partida que esté vacía o no contenga una descripción clara.
     
     {{#if chapterName}}
     Instrucciones Específicas para este análisis:

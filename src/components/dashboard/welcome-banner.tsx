@@ -14,7 +14,8 @@ import {
     ListTodo,
     NotebookText,
     MessageSquareWarning,
-    Folder
+    Folder,
+    SquarePen
 } from "lucide-react";
 
 
@@ -53,10 +54,11 @@ export function OficinaOverview({ juanfran, sandra, jordan, dani, chats, julian 
     );
   }
 
-export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, customMetrics }: { llamarEstaSemana: number, totalSeguimientos: number, customMetrics: Record<string, number> }) {
+export function SeguimientoOverview({ llamarEstaSemana, totalSeguimientos, customMetrics, aPresentarHoy }: { llamarEstaSemana: number, totalSeguimientos: number, customMetrics: Record<string, number>, aPresentarHoy: number }) {
   const metrics = [
     { icon: CalendarCheck, label: "Llamar s.", value: llamarEstaSemana },
     { icon: ListTodo, label: "Total", value: totalSeguimientos },
+    { icon: SquarePen, label: "A Presentar Hoy", value: aPresentarHoy },
   ];
   
   const customMetricItems = Object.entries(customMetrics)

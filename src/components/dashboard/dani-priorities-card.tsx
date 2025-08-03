@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye, FileText, Loader2, Presentation } from "lucide-react";
+import { BookUser, MoreHorizontal, Pencil, Trash2, PlusCircle, Eye, FileText, Loader2, Presentation, CalendarIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
 
 const prioritySchema = z.object({
   title: z.string().min(1, "El título es requerido."),
@@ -41,6 +43,7 @@ const presentarSchema = z.object({
   descripcion: z.string().min(1, "La descripción es requerida."),
   documentUrl: z.string().url().optional().or(z.literal('')),
   documentName: z.string().optional(),
+  presentationDate: z.date().optional().nullable(),
 });
 
 
@@ -68,7 +71,8 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
             poblacion: "",
             descripcion: "",
             documentUrl: "",
-            documentName: ""
+            documentName: "",
+            presentationDate: null,
         },
     });
 
@@ -139,6 +143,29 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
                                 <Input type="file" onChange={handleFileChange} disabled={isUploading} />
                             </FormControl>
                          </FormItem>
+                         <FormField
+                            control={form.control}
+                            name="presentationDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Fecha de Presentación</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    {field.value ? (format(field.value, "PPP", { locale: es })) : (<span>Selecciona una fecha</span>)}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} initialFocus weekStartsOn={1} locale={es} />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isUploading}>

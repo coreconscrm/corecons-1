@@ -8,11 +8,11 @@ import { Header } from "@/components/dashboard/header";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, StickyNote } from 'lucide-react';
+import { Loader2, Eye, EyeOff, StickyNote, SquarePen } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { Button } from "@/components/ui/button";
 import { SeguimientoOverview, BudgetOverview, FormOverview, OficinaOverview } from "@/components/dashboard/welcome-banner";
-import { isWithinInterval, parse, startOfWeek, endOfWeek, isValid } from 'date-fns';
+import { isWithinInterval, parse, startOfWeek, endOfWeek, isValid, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Budget, BudgetCategory } from '@/components/dashboard/budgets/budgets-section';
 import type { AiBudgetItem } from '@/components/dashboard/ai/ai-section';
@@ -530,6 +530,11 @@ export default function Page() {
     return isWithinInterval(nextCallDate, { start: startOfThisWeek, end: endOfThisWeek });
   }).length;
   
+  const aPresentarHoy = data.aPresentar.filter((p: any) => {
+    if (!p.presentationDate || !p.presentationDate.toDate) return false;
+    return isToday(p.presentationDate.toDate());
+  }).length;
+  
   const seguimientoMetrics = data.seguimientoCategories.reduce((acc: any, category: string) => {
       acc[category] = data.seguimientos.filter((s: any) => s.category === category).length;
       return acc;
@@ -597,6 +602,7 @@ export default function Page() {
                       llamarEstaSemana={llamarEstaSemana}
                       totalSeguimientos={totalSeguimientos}
                       customMetrics={seguimientoMetrics}
+                      aPresentarHoy={aPresentarHoy}
                   />
                   <BudgetOverview
                       pending={budgetsPending}
