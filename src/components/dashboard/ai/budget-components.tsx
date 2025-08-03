@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "../../ui/textarea";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "../../ui/dropdown-menu";
 import { AiBudgetPrintLayout } from "../budget-print-layout";
 import type { Company } from "../company/company-section";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
@@ -664,7 +664,7 @@ function AiBudgetCard({
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
     onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
     onDelete: (id: string) => void,
-    onPrint: (budget: AiBudgetItem) => void,
+    onPrint: (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => void,
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
     onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
@@ -758,9 +758,15 @@ function AiBudgetCard({
                                 <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
                                     <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => onPrint(budget)}>
-                                    <Printer className="mr-2 h-4 w-4" /> Imprimir
-                                </DropdownMenuItem>
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: false })}>Imprimir Completo</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: true })}>Imprimir Resumen</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
                                  <DropdownMenuItem onSelect={() => onMergeClick(budget)}>
                                     <Merge className="mr-2 h-4 w-4" /> Unir con...
                                 </DropdownMenuItem>
@@ -971,7 +977,7 @@ export function AiBudgetsSection({
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
 }) {
     const { toast } = useToast();
-    const [printingBudget, setPrintingBudget] = useState<AiBudgetItem | null>(null);
+    const [printingBudget, setPrintingBudget] = useState<{ budget: AiBudgetItem, printOptions: { summaryOnly: boolean } } | null>(null);
     const [mergingBudget, setMergingBudget] = useState<AiBudgetItem | null>(null);
     const [addingToBudget, setAddingToBudget] = useState<AiBudgetItem | null>(null);
 
@@ -1121,6 +1127,10 @@ export function AiBudgetsSection({
         chapter.partidas[partidaIndex][field] = value;
         onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown });
     };
+    
+    const handlePrint = (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => {
+        setPrintingBudget({ budget, printOptions });
+    };
 
     return (
       <div className="space-y-6">
@@ -1143,8 +1153,9 @@ export function AiBudgetsSection({
             )}
           <div className="printable-area">
                 <AiBudgetPrintLayout 
-                    budget={printingBudget}
+                    budget={printingBudget?.budget || null}
                     company={companies.length > 0 ? companies[0] : null}
+                    printOptions={printingBudget?.printOptions}
                 />
             </div>
           {aiBudgets.length > 0 ? (
@@ -1156,7 +1167,7 @@ export function AiBudgetsSection({
                         onLineTotalChange={handleLineTotalChange}
                         onDetailsChange={handleDetailsChange}
                         onDelete={onDeleteAiBudget}
-                        onPrint={setPrintingBudget}
+                        onPrint={handlePrint}
                         onMergeClick={setMergingBudget}
                         onAddToBudgetClick={setAddingToBudget}
                         onChapterNameChange={handleChapterNameChange}

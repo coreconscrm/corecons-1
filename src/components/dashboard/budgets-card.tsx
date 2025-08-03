@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -473,7 +473,7 @@ function BudgetAccordionItem({
     onDeleteBudget: (id: string) => void;
     setViewingBudget: (budget: Budget | undefined) => void;
     setMovingBudget: (budget: Budget | undefined) => void;
-    setPrintingBudget: (budget: Budget | null, company: Company | null, hideUnitPrice?: boolean) => void;
+    setPrintingBudget: (budget: Budget, company: Company | null, printOptions: { summaryOnly: boolean; hideUnitPrice?: boolean }) => void;
     handleEditBudget: (budget: Budget) => void;
 }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -525,7 +525,13 @@ function BudgetAccordionItem({
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => setViewingBudget(budget)}><Eye className="mr-2"/>Ver Detalle</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEditBudget(budget)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setPrintingBudget(budget, company, budget.category === 'obra_nueva')}><Printer className="mr-2"/>Imprimir</DropdownMenuItem>
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger><Printer className="mr-2"/>Imprimir</DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onSelect={() => setPrintingBudget(budget, company, { summaryOnly: false, hideUnitPrice: budget.category === 'obra_nueva' })}>Imprimir Completo</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => setPrintingBudget(budget, company, { summaryOnly: true, hideUnitPrice: budget.category === 'obra_nueva' })}>Imprimir Resumen</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
                                 <DropdownMenuItem onSelect={() => setMovingBudget(budget)}><Move className="mr-2"/>Mover a...</DropdownMenuItem>
                                 <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
                             </DropdownMenuContent>
@@ -593,7 +599,7 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [viewingBudget, setViewingBudget] = useState<Budget | undefined>(undefined);
   const [movingBudget, setMovingBudget] = useState<Budget | undefined>(undefined);
-  const [printingBudget, setPrintingBudget] = useState<{budget: Budget, company: Company | null, hideUnitPrice: boolean} | null>(null);
+  const [printingBudget, setPrintingBudget] = useState<{budget: Budget, company: Company | null, printOptions: { summaryOnly: boolean, hideUnitPrice?: boolean }} | null>(null);
 
   useEffect(() => {
     if (printingBudget) {
@@ -630,12 +636,8 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
     setAddBudgetOpen(false);
   }
 
-  const handleSetPrintingBudget = (budget: Budget | null, company: Company | null, hideUnitPrice: boolean = false) => {
-    if (budget) {
-        setPrintingBudget({ budget, company, hideUnitPrice });
-    } else {
-        setPrintingBudget(null);
-    }
+  const handleSetPrintingBudget = (budget: Budget, company: Company | null, printOptions: { summaryOnly: boolean, hideUnitPrice?: boolean }) => {
+    setPrintingBudget({ budget, company, printOptions });
   };
 
 
@@ -646,7 +648,7 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
           budget={printingBudget?.budget || null}
           client={printingBudget ? clients.find(c => c.id === printingBudget.budget.clientId) : null}
           company={printingBudget?.company || null}
-          hideUnitPrice={printingBudget?.hideUnitPrice}
+          printOptions={printingBudget?.printOptions}
         />
       </div>
 

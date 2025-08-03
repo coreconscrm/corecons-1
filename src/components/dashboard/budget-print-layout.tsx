@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Image from "next/image";
 import type { Budget } from './budgets-card';
 import type { Company } from './company-card';
 import { Building2, Globe, Mail, Phone } from "lucide-react";
@@ -58,7 +57,7 @@ function PrintLayoutFooter({ company }: { company: Company | null }) {
 }
 
 // --- Main Print Layout Component ---
-export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { budget: Budget | null, client: any, company: Company | null, hideUnitPrice?: boolean }) {
+export function BudgetPrintLayout({ budget, client, company, printOptions = { summaryOnly: false, hideUnitPrice: false } }: { budget: Budget | null, client: any, company: Company | null, printOptions?: { summaryOnly: boolean, hideUnitPrice?: boolean } }) {
   const { chapterTotals, grandTotal } = useMemo(() => {
     const totals: Record<string, number> = {};
     let currentChapter = "";
@@ -102,47 +101,49 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
             <p className="font-bold text-lg text-gray-800">{budget.name}</p>
         </div>
       </section>
-
-      <section>
-        <table className="w-full text-left table-fixed">
-          <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
-            <tr>
-              <th className={`p-3 font-semibold uppercase text-sm ${hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
-              <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
-              <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
-              {!hideUnitPrice && <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>}
-              <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(budget.lineItems || []).map((item, index) => {
-              if (item.isChapter) {
+      
+      {!printOptions.summaryOnly && (
+        <section>
+          <table className="w-full text-left table-fixed">
+            <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
+              <tr>
+                <th className={`p-3 font-semibold uppercase text-sm ${printOptions.hideUnitPrice ? 'w-[75%]' : 'w-[65%]'}`}>Descripción</th>
+                <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
+                <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
+                {!printOptions.hideUnitPrice && <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">€/U.</th>}
+                <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(budget.lineItems || []).map((item, index) => {
+                if (item.isChapter) {
+                  return (
+                    <tr key={index} className={index !== 0 ? 'page-break-before' : ''}>
+                      <td colSpan={printOptions.hideUnitPrice ? 4 : 5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{item.description}</td>
+                    </tr>
+                  );
+                }
+                
+                const lineTotal = item.unitPrice || 0;
+                const quantity = item.quantity || 0;
+                const unitPriceValue = quantity > 0 ? lineTotal / quantity : 0;
+                
                 return (
-                  <tr key={index} className={index !== 0 ? 'page-break-before' : ''}>
-                    <td colSpan={hideUnitPrice ? 4 : 5} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{item.description}</td>
+                  <tr key={index} className="border-b border-gray-100">
+                    <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
+                    <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{item.quantity}</td>
+                    <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
+                    {!printOptions.hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">{`${unitPriceValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}</td>}
+                    <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">{`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}</td>
                   </tr>
                 );
-              }
-              
-              const lineTotal = item.unitPrice || 0;
-              const quantity = item.quantity || 0;
-              const unitPriceValue = quantity > 0 ? lineTotal / quantity : 0;
-              
-              return (
-                <tr key={index} className="border-b border-gray-100">
-                  <td className="p-3 print:py-1 print:text-xs">{item.description}</td>
-                  <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{item.quantity}</td>
-                  <td className="p-3 print:py-1 text-center print:text-xs">{item.unit}</td>
-                  {!hideUnitPrice && <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">{`${unitPriceValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}</td>}
-                  <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">{`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
+              })}
+            </tbody>
+          </table>
+        </section>
+      )}
       
-      <div className="page-break-before">
+      <div className={printOptions.summaryOnly ? '' : 'page-break-before'}>
         <section className="mt-8">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
           <table className="w-full max-w-md ml-auto text-left text-sm">
@@ -192,7 +193,7 @@ export function BudgetPrintLayout({ budget, client, company, hideUnitPrice }: { 
   );
 }
 
-export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem | null, company: Company | null }) {
+export function AiBudgetPrintLayout({ budget, company, printOptions = { summaryOnly: false } }: { budget: AiBudgetItem | null, company: Company | null, printOptions?: { summaryOnly: boolean } }) {
     const { chapterTotals, grandTotal } = useMemo(() => {
         const totals: Record<string, number> = {};
         let grandTotal = 0;
@@ -237,42 +238,44 @@ export function AiBudgetPrintLayout({ budget, company }: { budget: AiBudgetItem 
                 </div>
             </section>
             
-            <section>
-                <table className="w-full text-left table-fixed">
-                    <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
-                        <tr>
-                            <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
-                            <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
-                            <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
-                            <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {budget.breakdown.capitulos.map((capitulo, index) => (
-                        <React.Fragment key={index}>
-                            <tr className={index !== 0 ? 'page-break-before' : ''}>
-                                <td colSpan={4} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{capitulo.nombre}</td>
+            {!printOptions.summaryOnly && (
+                <section>
+                    <table className="w-full text-left table-fixed">
+                        <thead className="bg-gray-100 text-gray-600 print:!color-adjust-exact">
+                            <tr>
+                                <th className="p-3 font-semibold uppercase text-sm w-[65%]">Descripción</th>
+                                <th className="p-3 text-right font-semibold uppercase text-sm w-[10%]">Nº</th>
+                                <th className="p-3 text-center font-semibold uppercase text-sm w-[10%]">Unidad</th>
+                                <th className="p-3 text-right font-semibold uppercase text-sm w-[15%]">Total</th>
                             </tr>
-                            {capitulo.partidas.map((partida, pIndex) => {
-                                const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                return (
-                                <tr key={pIndex} className="border-b border-gray-100">
-                                    <td className="p-3 print:py-1 print:text-xs">{partida.descripcion}</td>
-                                    <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{partida.medicion}</td>
-                                    <td className="p-3 print:py-1 text-center print:text-xs">{partida.unidad}</td>
-                                    <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">
-                                    {`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}
-                                    </td>
+                        </thead>
+                        <tbody>
+                        {budget.breakdown.capitulos.map((capitulo, index) => (
+                            <React.Fragment key={index}>
+                                <tr className={index !== 0 ? 'page-break-before' : ''}>
+                                    <td colSpan={4} className="p-3 print:py-1.5 bg-gray-50 font-bold text-gray-700 print:!color-adjust-exact">{capitulo.nombre}</td>
                                 </tr>
-                                );
-                            })}
-                        </React.Fragment>
-                    ))}
-                    </tbody>
-                </table>
-            </section>
+                                {capitulo.partidas.map((partida, pIndex) => {
+                                    const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                    return (
+                                    <tr key={pIndex} className="border-b border-gray-100">
+                                        <td className="p-3 print:py-1 print:text-xs">{partida.descripcion}</td>
+                                        <td className="p-3 print:py-1 print:pl-[30px] text-right print:text-xs">{partida.medicion}</td>
+                                        <td className="p-3 print:py-1 text-center print:text-xs">{partida.unidad}</td>
+                                        <td className="p-3 print:py-1 text-right font-mono print:text-xs whitespace-nowrap">
+                                        {`${lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`}
+                                        </td>
+                                    </tr>
+                                    );
+                                })}
+                            </React.Fragment>
+                        ))}
+                        </tbody>
+                    </table>
+                </section>
+            )}
             
-            <div className="page-break-before">
+             <div className={printOptions.summaryOnly ? '' : 'page-break-before'}>
                 <section className="mt-8">
                     <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Capítulos</h3>
                     <table className="w-full max-w-md ml-auto text-left text-sm">
