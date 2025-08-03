@@ -23,10 +23,9 @@ const firebaseConfig = {
 function initializeFirebase(): { app: FirebaseApp; db: Firestore; storage: FirebaseStorage; } {
   const apps = getApps();
   const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
-  // Conectamos a tu base de datos específica "wb-data".
-  // Si no se especifica, Firestore intenta conectar a la base de datos "(default)".
-  const db = getFirestore(app, 'wb-data');
-  const storage = getStorage(app);
+  const db = getFirestore(app);
+  // Forzar la conexión al bucket de almacenamiento correcto.
+  const storage = getStorage(app, firebaseConfig.storageBucket);
   return { app, db, storage };
 }
 
