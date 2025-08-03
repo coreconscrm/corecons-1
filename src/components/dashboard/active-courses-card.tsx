@@ -215,6 +215,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
   const [activeClient, setActiveClient] = useState<Client | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   const handleEdit = (client: Client) => {
     setActiveClient(client);
@@ -240,26 +241,34 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
   };
 
   const groupedClients = useMemo(() => {
-    const filtered = priorityFilter !== null ? clients.filter(c => c.priority === priorityFilter) : clients;
+    let filteredClients = [...clients];
+
+    if (priorityFilter !== null) {
+      filteredClients = filteredClients.filter(c => c.priority === priorityFilter);
+    }
+
+    if (categoryFilter !== null) {
+      filteredClients = filteredClients.filter(c => (c.category || 'General') === categoryFilter);
+    }
 
     const groups: { [key: string]: Client[] } = {};
     categories.forEach(cat => {
-        groups[cat] = [];
+      groups[cat] = [];
     });
     if (!groups['General']) {
       groups['General'] = [];
     }
-    
-    filtered.forEach(client => {
-        const categoryKey = client.category || 'General';
-        if (!groups[categoryKey]) {
-            groups[categoryKey] = [];
-        }
-        groups[categoryKey].push(client);
+
+    filteredClients.forEach(client => {
+      const categoryKey = client.category || 'General';
+      if (!groups[categoryKey]) {
+        groups[categoryKey] = [];
+      }
+      groups[categoryKey].push(client);
     });
 
     return groups;
-  }, [clients, priorityFilter, categories]);
+  }, [clients, priorityFilter, categoryFilter, categories]);
 
   const handleFilterClick = (priority: number) => {
     setPriorityFilter(prev => (prev === priority ? null : priority));
@@ -285,9 +294,9 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
         <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Obra</Button>
       </CardHeader>
       
-      <div className="flex items-center gap-4 px-6 pb-4 border-b">
-        <span className="text-sm font-medium">Filtrar por prioridad:</span>
+      <div className="flex flex-wrap items-center gap-4 px-6 pb-4 border-b">
         <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Prioridad:</span>
             {[1, 2, 3].map((p) => (
             <Button
                 key={p}
@@ -299,18 +308,32 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                 {p}
             </Button>
             ))}
+            {priorityFilter !== null && (
+                <Button variant="ghost" size="sm" onClick={() => setPriorityFilter(null)}>
+                    Limpiar
+                </Button>
+            )}
         </div>
-        {priorityFilter !== null && (
-            <Button variant="ghost" size="sm" onClick={() => setPriorityFilter(null)}>
-                Limpiar filtro
-            </Button>
-        )}
+        <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Subsección:</span>
+            <Select value={categoryFilter || 'all'} onValueChange={(value) => setCategoryFilter(value === 'all' ? null : value)}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por subsección..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Mostrar Todas</SelectItem>
+                    {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </div>
 
       <CardContent className="pt-6">
         <Accordion type="multiple" className="w-full space-y-4">
           {Object.entries(groupedClients).map(([category, clientsInGroup]) => {
-            if (clientsInGroup.length === 0) return null;
+            if (clientsInGroup.length === 0 && categoryFilter !== null) return null;
             return (
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
@@ -320,7 +343,7 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4 space-y-4">
-                      {clientsInGroup.map(client => {
+                      {clientsInGroup.length > 0 ? clientsInGroup.map(client => {
                         const provider = providers.find(p => p.id === client.providerId);
                         return (
                           <Accordion key={client.id} type="single" collapsible>
@@ -425,7 +448,11 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
                             </AccordionItem>
                           </Accordion>
                         )
-                      })}
+                      }) : (
+                        <div className="text-center py-4 text-sm text-muted-foreground">
+                            No hay clientes en esta subsección.
+                        </div>
+                      )}
                   </AccordionContent>
                 </AccordionItem>
             )

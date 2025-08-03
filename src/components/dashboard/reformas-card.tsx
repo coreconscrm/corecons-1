@@ -214,6 +214,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
   const [activeReforma, setActiveReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   const handleEdit = (reforma: Reforma) => {
     setActiveReforma(reforma);
@@ -239,7 +240,15 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
   };
 
   const groupedReformas = useMemo(() => {
-    const filtered = priorityFilter !== null ? reformas.filter(c => c.priority === priorityFilter) : reformas;
+    let filteredReformas = [...reformas];
+
+    if (priorityFilter !== null) {
+      filteredReformas = filteredReformas.filter(c => c.priority === priorityFilter);
+    }
+
+    if (categoryFilter !== null) {
+      filteredReformas = filteredReformas.filter(c => (c.category || 'General') === categoryFilter);
+    }
     
     const groups: { [key: string]: Reforma[] } = {};
     categories.forEach(cat => {
@@ -249,7 +258,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
       groups['General'] = [];
     }
 
-    filtered.forEach(reforma => {
+    filteredReformas.forEach(reforma => {
         const categoryKey = reforma.category || 'General';
         if (!groups[categoryKey]) {
             groups[categoryKey] = [];
@@ -258,7 +267,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
     });
 
     return groups;
-  }, [reformas, priorityFilter, categories]);
+  }, [reformas, priorityFilter, categoryFilter, categories]);
 
 
   const handleFilterClick = (priority: number) => {
@@ -284,9 +293,9 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
         <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Reforma</Button>
       </CardHeader>
       
-      <div className="flex items-center gap-4 px-6 pb-4 border-b">
-        <span className="text-sm font-medium">Filtrar por prioridad:</span>
+      <div className="flex flex-wrap items-center gap-4 px-6 pb-4 border-b">
         <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Prioridad:</span>
             {[1, 2, 3].map((p) => (
             <Button
                 key={p}
@@ -298,18 +307,32 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                 {p}
             </Button>
             ))}
+            {priorityFilter !== null && (
+                <Button variant="ghost" size="sm" onClick={() => setPriorityFilter(null)}>
+                    Limpiar
+                </Button>
+            )}
         </div>
-        {priorityFilter !== null && (
-            <Button variant="ghost" size="sm" onClick={() => setPriorityFilter(null)}>
-                Limpiar filtro
-            </Button>
-        )}
+        <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Subsección:</span>
+            <Select value={categoryFilter || 'all'} onValueChange={(value) => setCategoryFilter(value === 'all' ? null : value)}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por subsección..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Mostrar Todas</SelectItem>
+                    {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </div>
 
       <CardContent className="pt-6">
         <Accordion type="multiple" className="w-full space-y-4">
         {Object.entries(groupedReformas).map(([category, reformasInGroup]) => {
-            if (reformasInGroup.length === 0) return null;
+            if (reformasInGroup.length === 0 && categoryFilter !== null) return null;
             return (
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
@@ -319,7 +342,7 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4 space-y-4">
-                      {reformasInGroup.map(reforma => {
+                      {reformasInGroup.length > 0 ? reformasInGroup.map(reforma => {
                         const provider = providers.find(p => p.id === reforma.providerId);
                         return (
                           <Accordion key={reforma.id} type="single" collapsible>
@@ -424,7 +447,11 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
                             </AccordionItem>
                           </Accordion>
                         )
-                      })}
+                      }) : (
+                         <div className="text-center py-4 text-sm text-muted-foreground">
+                            No hay clientes en esta subsección.
+                        </div>
+                      )}
                     </AccordionContent>
                 </AccordionItem>
             )
