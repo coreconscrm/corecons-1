@@ -57,9 +57,10 @@ export type DaniPriority = {
   documentName?: string;
 };
 
-function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (values: any) => void }) {
+function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (values: any) => Promise<void> }) {
     const { toast } = useToast();
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [documentFile, setDocumentFile] = useState<File | null>(null);
 
     const form = useForm<z.infer<typeof presentarSchema>>({
@@ -75,6 +76,15 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
             presentationDate: null,
         },
     });
+    
+    useEffect(() => {
+        if (!open) {
+            form.reset();
+            setDocumentFile(null);
+            setIsUploading(false);
+            setUploadProgress(null);
+        }
+    }, [open, form]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -86,26 +96,44 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
     
     const handleSubmit = async (values: z.infer<typeof presentarSchema>) => {
         setIsUploading(true);
+        setUploadProgress(0);
         const presentacionId = `presentar-${Date.now()}`;
         let submissionData = { ...values, date: new Date() };
 
         try {
             if (documentFile) {
                 const storageRef = ref(storage, `a_presentar/${presentacionId}/${documentFile.name}`);
-                const snapshot = await uploadBytesResumable(storageRef, documentFile);
-                const downloadURL = await getDownloadURL(snapshot.ref);
-                submissionData.documentUrl = downloadURL;
-                submissionData.documentName = documentFile.name;
+                const uploadTask = uploadBytesResumable(storageRef, documentFile);
+
+                await new Promise<void>((resolve, reject) => {
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            setUploadProgress(Math.round(progress));
+                        },
+                        (error) => {
+                            console.error("Upload failed:", error);
+                            reject(error);
+                        },
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            submissionData.documentUrl = downloadURL;
+                            submissionData.documentName = documentFile.name;
+                            resolve();
+                        }
+                    );
+                });
             }
 
-            onSubmit(submissionData);
-            form.reset();
+            await onSubmit(submissionData);
+            toast({ title: "Guardado", description: "La entrada 'A Presentar' se ha guardado correctamente." });
             onOpenChange(false);
+            window.location.reload();
         } catch (error) {
             console.error("Error processing form:", error);
             toast({ variant: 'destructive', title: "Error al guardar", description: (error as Error).message });
-        } finally {
             setIsUploading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -167,10 +195,10 @@ function PresentarForm({ open, onOpenChange, onSubmit }: { open: boolean, onOpen
                             )}
                         />
                         <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <DialogClose asChild><Button type="button" variant="secondary" disabled={isUploading}>Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isUploading}>
                                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Guardar
+                                {isUploading ? `Subiendo (${uploadProgress}%)` : 'Guardar'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -315,7 +343,7 @@ function PriorityForm({ priority, onSubmit, open, onOpenChange }: { priority?: D
     );
 }
 
-export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority, onDeletePriority, onAddPresentar }: { priorities: DaniPriority[], onAddPriority: (priority: any) => void, onUpdatePriority: (priority: any) => void, onDeletePriority: (id: string) => void, onAddPresentar: (p: any) => void }) {
+export function DaniPrioritiesCard({ priorities, onAddPriority, onUpdatePriority, onDeletePriority, onAddPresentar }: { priorities: DaniPriority[], onAddPriority: (priority: any) => void, onUpdatePriority: (priority: any) => void, onDeletePriority: (id: string) => void, onAddPresentar: (p: any) => Promise<void> }) {
     const [isFormOpen, setFormOpen] = useState(false);
     const [isPresentarFormOpen, setPresentarFormOpen] = useState(false);
     const [activePriority, setActivePriority] = useState<DaniPriority | undefined>(undefined);
