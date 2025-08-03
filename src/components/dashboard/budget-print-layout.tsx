@@ -19,7 +19,7 @@ function PrintLayoutHeader({ company }: { company: Company | null }) {
     <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200">
       <div className="flex items-center gap-6">
         {company?.logo ? (
-          <Image src={company.logo} alt={`${company.name} logo`} width={120} height={50} className="object-contain" data-ai-hint="logo" unoptimized />
+          <img src={company.logo} alt={`${company.name} logo`} style={{ width: '120px', height: 'auto', maxHeight: '50px', objectFit: 'contain' }} data-ai-hint="logo" />
         ) : (
           <Building2 className="h-16 w-16 text-gray-800" />
         )}
