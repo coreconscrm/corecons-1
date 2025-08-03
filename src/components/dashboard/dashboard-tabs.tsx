@@ -63,7 +63,10 @@ export function DashboardTabs({
           onAddDaniPriority={(p: any) => actions.createItem('dani_priorities', p)}
           onUpdateDaniPriority={(p: any) => actions.updateItem('dani_priorities', p)}
           onDeleteDaniPriority={(id: string) => actions.deleteItem('dani_priorities', id)}
+          aPresentar={data.aPresentar}
           onAddPresentar={(p: any) => actions.createItem('a_presentar', p)}
+          onUpdatePresentar={(p: any) => actions.updateItem('a_presentar', p)}
+          onDeletePresentar={(id: string) => actions.deleteItem('a_presentar', id)}
           chatMessages={data.chatMessages}
           team={data.team}
           onAddChatMessage={(message: any) => actions.createItem('chat_messages', message)}

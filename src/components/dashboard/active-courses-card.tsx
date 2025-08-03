@@ -33,7 +33,7 @@ const clientSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado", ""]).optional(),
+  estado: z.enum(["En Contacto", "Ayudando", "Presupuestando", "Firmado", "Construyendo", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
@@ -41,6 +41,16 @@ const clientSchema = z.object({
 });
 
 type Client = z.infer<typeof clientSchema> & { id: string };
+
+const statusOrder: (z.infer<typeof clientSchema>['estado'])[] = [
+    "En Contacto",
+    "Ayudando",
+    "Presupuestando",
+    "Firmado",
+    "Construyendo",
+    "Finalizado"
+];
+
 
 function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldName: 'memoria' | 'planos', clientId: string | undefined, label: string }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -89,7 +99,7 @@ function FileUploader({ form, fieldName, clientId, label }: { form: any, fieldNa
 function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { client?: Client, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
   });
 
   useEffect(() => {
@@ -104,14 +114,14 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
             arquitecto: client.arquitecto || "",
             providerId: client.providerId || "",
             obtenido: client.obtenido || "",
-            estado: client.estado || "",
+            estado: client.estado || "En Contacto",
             infoAdicional: client.infoAdicional || "",
             memoria: client.memoria || "",
             planos: client.planos || "",
             priority: client.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
       }
     }
   }, [client, open, form]);
@@ -169,12 +179,7 @@ function ClientForm({ client, onSubmit, onOpenChange, open, providers }: { clien
                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                         <SelectContent>
-                            <SelectItem value="Contactado">Contactado</SelectItem>
-                            <SelectItem value="En Progreso">En Progreso</SelectItem>
-                            <SelectItem value="En Licencia">En Licencia</SelectItem>
-                            <SelectItem value="Firmado">Firmado</SelectItem>
-                            <SelectItem value="En Construcción">En Construcción</SelectItem>
-                            <SelectItem value="Finalizado">Finalizado</SelectItem>
+                            {statusOrder.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                         </Select><FormMessage />
                     </FormItem>
@@ -244,11 +249,21 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
     }
   };
 
-  const filteredClients = useMemo(() => {
-    if (priorityFilter === null) {
-      return clients;
-    }
-    return clients.filter(client => client.priority === priorityFilter);
+  const groupedClients = useMemo(() => {
+    const filtered = priorityFilter !== null ? clients.filter(c => c.priority === priorityFilter) : clients;
+
+    const groups: { [key: string]: Client[] } = {};
+    statusOrder.forEach(status => {
+        groups[status!] = [];
+    });
+    groups['Sin Estado Especificado'] = [];
+
+    filtered.forEach(client => {
+        const statusKey = client.estado && statusOrder.includes(client.estado) ? client.estado : 'Sin Estado Especificado';
+        groups[statusKey].push(client);
+    });
+
+    return groups;
   }, [clients, priorityFilter]);
 
   const handleFilterClick = (priority: number) => {
@@ -298,102 +313,113 @@ export function ClientListCard({ clients, onAddClient, onUpdateClient, onDeleteC
       </div>
 
       <CardContent className="pt-6">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          {filteredClients.map(client => {
-            const provider = providers.find(p => p.id === client.providerId);
+        <Accordion type="multiple" className="w-full space-y-4">
+          {Object.entries(groupedClients).map(([status, clientsInGroup]) => {
+            if (clientsInGroup.length === 0) return null;
             return (
-              <AccordionItem value={client.id} key={client.id} className="border-none">
-                 <Card className="flex flex-col overview-card">
-                  <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                        <div className="text-left">
-                          <h3 className="font-semibold text-lg">{client.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            {client.estado && <Badge variant="secondary">{client.estado}</Badge>}
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(client)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                  </CardHeader>
-                  <AccordionContent className="px-6 pb-6 pt-0">
-                    <div className="space-y-4 flex-grow text-sm">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">Prioridad:</h4>
-                        {[1, 2, 3].map((p) => (
-                          <Button
-                            key={p}
-                            variant={client.priority === p ? 'default' : 'outline'}
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => handlePriorityChange(client, p)}
-                          >
-                            {p}
-                          </Button>
-                        ))}
-                      </div>
-                      <Separator />
-                      <div>
-                        <h4 className="font-semibold mb-2">Contacto</h4>
-                        <div className="space-y-1 text-muted-foreground">
-                          <p>{client.contact}</p>
-                          <div className="flex items-center gap-2"><Phone size={14}/> {client.phone}</div>
-                          <div className="flex items-center gap-2"><Mail size={14}/> {client.email}</div>
-                          {client.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {client.localizacion}</div>}
-                        </div>
-                      </div>
-                      <Separator />
-                      <div>
-                        <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
-                        <div className="space-y-1 text-muted-foreground">
-                          <div className="flex justify-between"><span>Arquitecto:</span> <strong>{client.arquitecto || 'N/A'}</strong></div>
-                          <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
-                          {client.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{client.obtenido}</strong></div>}
-                        </div>
-                      </div>
-                       {client.infoAdicional && (
-                          <div className="pt-2 border-t">
-                            <h4 className="font-semibold mb-1">Info Adicional:</h4>
-                            <p 
-                              className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
-                              onClick={() => setViewingInfo(client.infoAdicional || null)}
-                            >
-                              {client.infoAdicional.substring(0, 100)}{client.infoAdicional.length > 100 ? '...' : ''}
-                            </p>
-                        </div>
-                       )}
-                      <Separator />
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
-                            <Button className="w-full" variant="outline" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
-                        </a>
-                        <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
-                            <Button className="w-full" variant="outline" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
-                        </a>
-                      </div>
-                    </div>
+                <AccordionItem value={status} key={status} className="border-b-0">
+                    <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
+                        {status} ({clientsInGroup.length})
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-4">
+                      {clientsInGroup.map(client => {
+                        const provider = providers.find(p => p.id === client.providerId);
+                        return (
+                          <Accordion key={client.id} type="single" collapsible>
+                            <AccordionItem value={client.id} className="border-none">
+                               <Card className="flex flex-col overview-card">
+                                <CardHeader className="flex flex-row items-center justify-between p-4">
+                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                                      <div className="text-left">
+                                        <h3 className="font-semibold text-lg">{client.name}</h3>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AlertDialog>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                          <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                          <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(client)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(client, 'obra_nueva')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la obra.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => onDeleteClient(client.id)}>Eliminar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardHeader>
+                                <AccordionContent className="px-6 pb-6 pt-0">
+                                  <div className="space-y-4 flex-grow text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-semibold">Prioridad:</h4>
+                                      {[1, 2, 3].map((p) => (
+                                        <Button
+                                          key={p}
+                                          variant={client.priority === p ? 'default' : 'outline'}
+                                          size="icon"
+                                          className="h-8 w-8 rounded-full"
+                                          onClick={() => handlePriorityChange(client, p)}
+                                        >
+                                          {p}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Contacto</h4>
+                                      <div className="space-y-1 text-muted-foreground">
+                                        <p>{client.contact}</p>
+                                        <div className="flex items-center gap-2"><Phone size={14}/> {client.phone}</div>
+                                        <div className="flex items-center gap-2"><Mail size={14}/> {client.email}</div>
+                                        {client.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {client.localizacion}</div>}
+                                      </div>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
+                                      <div className="space-y-1 text-muted-foreground">
+                                        <div className="flex justify-between"><span>Arquitecto:</span> <strong>{client.arquitecto || 'N/A'}</strong></div>
+                                        <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
+                                        {client.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{client.obtenido}</strong></div>}
+                                      </div>
+                                    </div>
+                                     {client.infoAdicional && (
+                                        <div className="pt-2 border-t">
+                                          <h4 className="font-semibold mb-1">Info Adicional:</h4>
+                                          <p 
+                                            className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
+                                            onClick={() => setViewingInfo(client.infoAdicional || null)}
+                                          >
+                                            {client.infoAdicional.substring(0, 100)}{client.infoAdicional.length > 100 ? '...' : ''}
+                                          </p>
+                                      </div>
+                                     )}
+                                    <Separator />
+                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                      <a href={client.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!client.memoria ? 'pointer-events-none' : ''}>
+                                          <Button className="w-full" variant="outline" disabled={!client.memoria}><FileText className="mr-2"/> Memoria</Button>
+                                      </a>
+                                      <a href={client.planos || '#'} target="_blank" rel="noopener noreferrer" className={!client.planos ? 'pointer-events-none' : ''}>
+                                          <Button className="w-full" variant="outline" disabled={!client.planos}><FileText className="mr-2"/> Planos</Button>
+                                      </a>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </Card>
+                            </AccordionItem>
+                          </Accordion>
+                        )
+                      })}
                   </AccordionContent>
-                </Card>
-              </AccordionItem>
+                </AccordionItem>
             )
           })}
         </Accordion>

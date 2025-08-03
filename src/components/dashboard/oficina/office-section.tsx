@@ -6,9 +6,10 @@ import { JuanfranNotesCard, type JuanFranNote } from "../juanfran-notes-card";
 import { SandraNotesCard, type SandraNote } from "../sandra-notes-card";
 import { JordanSectionCard, type JordanItem } from "../jordan-checklist-card";
 import { DaniPrioritiesCard, type DaniPriority } from "../dani-priorities-card";
+import { APresentarCard, type APresentarItem } from "../a-presentar-card";
 import { ChatSection } from "../chat-section";
 import { JulianNotesCard, type JulianNote } from "../julian-notes-card";
-import { BookUser, MessageSquare, ListChecks } from "lucide-react";
+import { BookUser, MessageSquare, ListChecks, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 
@@ -29,7 +30,10 @@ export function OfficeSection({
     onAddDaniPriority,
     onUpdateDaniPriority,
     onDeleteDaniPriority,
+    aPresentar,
     onAddPresentar,
+    onUpdatePresentar,
+    onDeletePresentar,
     chatMessages,
     team,
     onAddChatMessage,
@@ -56,7 +60,10 @@ export function OfficeSection({
     onAddDaniPriority: (p: any) => void;
     onUpdateDaniPriority: (p: any) => void;
     onDeleteDaniPriority: (id: string) => void;
-    onAddPresentar: (p: any) => void;
+    aPresentar: APresentarItem[];
+    onAddPresentar: (p: any) => Promise<void>;
+    onUpdatePresentar: (p: any) => Promise<void>;
+    onDeletePresentar: (id: string) => Promise<void>;
     chatMessages: any[];
     team: any[];
     onAddChatMessage: (message: any) => void;
@@ -67,7 +74,7 @@ export function OfficeSection({
     onUpdateJulianNote: (note: any) => void;
     onDeleteJulianNote: (id: string) => void;
 }) {
-    const [activeTab, setActiveTab] = useState('juanfran');
+    const [activeTab, setActiveTab] = useState('dani');
     
     const tabs = [
         { value: "juanfran", label: "Apuntes de Juanfran", icon: ListChecks },
@@ -75,6 +82,7 @@ export function OfficeSection({
         { value: "sandra", label: "Apuntes de Sandra", icon: BookUser },
         { value: "jordan", label: "CheckList de Jordan", icon: ListChecks },
         { value: "dani", label: "Prioridades para Dani", icon: BookUser },
+        { value: "presentar", label: "A Presentar", icon: Presentation },
         { value: "chat", label: "Chat", icon: MessageSquare },
     ];
 
@@ -92,7 +100,7 @@ export function OfficeSection({
 
     return (
         <div className="w-full space-y-6">
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
                 {tabs.map(tab => (
                     <Button
                         key={tab.value}
@@ -145,7 +153,14 @@ export function OfficeSection({
                         onAddPriority={onAddDaniPriority}
                         onUpdatePriority={onUpdateDaniPriority}
                         onDeletePriority={onDeleteDaniPriority}
-                        onAddPresentar={onAddPresentar}
+                    />
+                )}
+                {activeTab === 'presentar' && (
+                    <APresentarCard
+                        items={aPresentar}
+                        onAddItem={onAddPresentar}
+                        onUpdateItem={onUpdatePresentar}
+                        onDeleteItem={onDeletePresentar}
                     />
                 )}
                 {activeTab === 'chat' && (

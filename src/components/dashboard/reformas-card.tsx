@@ -33,7 +33,7 @@ const reformaSchema = z.object({
   arquitecto: z.string().optional(),
   providerId: z.string().optional(),
   obtenido: z.enum(["Formulario", "Correo", "Whatsapp", "Promotoras", "Recomendado", ""]).optional(),
-  estado: z.enum(["Contactado", "En Progreso", "En Licencia", "Firmado", "En Construcción", "Finalizado", ""]).optional(),
+  estado: z.enum(["En Contacto", "Ayudando", "Presupuestando", "Firmado", "Construyendo", "Finalizado", ""]).optional(),
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
@@ -41,6 +41,16 @@ const reformaSchema = z.object({
 });
 
 type Reforma = z.infer<typeof reformaSchema> & { id: string };
+
+const statusOrder: (z.infer<typeof reformaSchema>['estado'])[] = [
+    "En Contacto",
+    "Ayudando",
+    "Presupuestando",
+    "Firmado",
+    "Construyendo",
+    "Finalizado"
+];
+
 
 function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldName: 'memoria' | 'planos', reformaId: string | undefined, label: string }) {
     const [isUploading, setIsUploading] = useState(false);
@@ -88,7 +98,7 @@ function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldN
 function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[] }) {
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
-    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
+    defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null },
   });
 
   useEffect(() => {
@@ -103,14 +113,14 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
             arquitecto: reforma.arquitecto || "",
             providerId: reforma.providerId || "",
             obtenido: reforma.obtenido || "",
-            estado: reforma.estado || "",
+            estado: reforma.estado || "En Contacto",
             infoAdicional: reforma.infoAdicional || "",
             memoria: reforma.memoria || "",
             planos: reforma.planos || "",
             priority: reforma.priority,
         });
       } else {
-        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
+        form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", estado: "En Contacto", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null });
       }
     }
   }, [reforma, open, form]);
@@ -168,12 +178,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers }: { ref
                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value ?? ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger></FormControl>
                         <SelectContent>
-                            <SelectItem value="Contactado">Contactado</SelectItem>
-                            <SelectItem value="En Progreso">En Progreso</SelectItem>
-                            <SelectItem value="En Licencia">En Licencia</SelectItem>
-                            <SelectItem value="Firmado">Firmado</SelectItem>
-                            <SelectItem value="En Construcción">En Construcción</SelectItem>
-                            <SelectItem value="Finalizado">Finalizado</SelectItem>
+                             {statusOrder.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                         </Select><FormMessage />
                     </FormItem>
@@ -243,12 +248,23 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
     }
   };
 
-  const filteredReformas = useMemo(() => {
-    if (priorityFilter === null) {
-      return reformas;
-    }
-    return reformas.filter(reforma => reforma.priority === priorityFilter);
+  const groupedReformas = useMemo(() => {
+    const filtered = priorityFilter !== null ? reformas.filter(c => c.priority === priorityFilter) : reformas;
+
+    const groups: { [key: string]: Reforma[] } = {};
+    statusOrder.forEach(status => {
+        groups[status!] = [];
+    });
+    groups['Sin Estado Especificado'] = [];
+
+    filtered.forEach(reforma => {
+        const statusKey = reforma.estado && statusOrder.includes(reforma.estado) ? reforma.estado : 'Sin Estado Especificado';
+        groups[statusKey].push(reforma);
+    });
+
+    return groups;
   }, [reformas, priorityFilter]);
+
 
   const handleFilterClick = (priority: number) => {
     setPriorityFilter(prev => (prev === priority ? null : priority));
@@ -296,100 +312,113 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
       </div>
 
       <CardContent className="pt-6">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          {filteredReformas.map(reforma => {
-            const provider = providers.find(p => p.id === reforma.providerId);
+        <Accordion type="multiple" className="w-full space-y-4">
+        {Object.entries(groupedReformas).map(([status, reformasInGroup]) => {
+            if (reformasInGroup.length === 0) return null;
             return (
-              <AccordionItem value={reforma.id} key={reforma.id} className="border-none">
-                <Card className="flex flex-col overview-card">
-                  <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                        <div className="text-left">
-                          <h3 className="font-semibold text-lg">{reforma.name}</h3>
-                          {reforma.estado && <Badge variant="secondary" className="mt-1">{reforma.estado}</Badge>}
-                        </div>
-                      </AccordionTrigger>
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(reforma)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'reformas')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la reforma.</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteReforma(reforma.id)}>Eliminar</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                  </CardHeader>
-                  <AccordionContent className="px-6 pb-6 pt-0">
-                    <div className="space-y-4 flex-grow text-sm">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">Prioridad:</h4>
-                        {[1, 2, 3].map((p) => (
-                          <Button
-                            key={p}
-                            variant={reforma.priority === p ? 'default' : 'outline'}
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => handlePriorityChange(reforma, p)}
-                          >
-                            {p}
-                          </Button>
-                        ))}
-                      </div>
-                      <Separator />
-                      <div>
-                        <h4 className="font-semibold mb-2">Contacto</h4>
-                        <div className="space-y-1 text-muted-foreground">
-                          <p>{reforma.contact}</p>
-                          <div className="flex items-center gap-2"><Phone size={14}/> {reforma.phone}</div>
-                          <div className="flex items-center gap-2"><Mail size={14}/> {reforma.email}</div>
-                          {reforma.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {reforma.localizacion}</div>}
-                        </div>
-                      </div>
-                      <Separator />
-                      <div>
-                        <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
-                        <div className="space-y-1 text-muted-foreground">
-                          <div className="flex justify-between"><span>Arquitecto:</span> <strong>{reforma.arquitecto || 'N/A'}</strong></div>
-                          <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
-                          {reforma.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{reforma.obtenido}</strong></div>}
-                        </div>
-                      </div>
-                        {reforma.infoAdicional && (
-                          <div className="pt-2 border-t">
-                            <h4 className="font-semibold mb-1">Info Adicional:</h4>
-                            <p 
-                              className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
-                              onClick={() => setViewingInfo(reforma.infoAdicional || null)}
-                            >
-                              {reforma.infoAdicional.substring(0, 100)}{reforma.infoAdicional.length > 100 ? '...' : ''}
-                            </p>
-                        </div>
-                        )}
-                        <Separator/>
-                        <div className="grid grid-cols-2 gap-2 pt-2">
-                            <a href={reforma.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!reforma.memoria ? 'pointer-events-none' : ''}>
-                                <Button className="w-full" variant="outline" disabled={!reforma.memoria}><FileText className="mr-2"/> Memoria</Button>
-                            </a>
-                            <a href={reforma.planos || '#'} target="_blank" rel="noopener noreferrer" className={!reforma.planos ? 'pointer-events-none' : ''}>
-                                <Button className="w-full" variant="outline" disabled={!reforma.planos}><FileText className="mr-2"/> Planos</Button>
-                            </a>
-                        </div>
-                    </div>
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
+                <AccordionItem value={status} key={status} className="border-b-0">
+                    <AccordionTrigger className="text-xl font-semibold p-2 rounded-md bg-secondary/50 hover:bg-secondary">
+                        {status} ({reformasInGroup.length})
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-4">
+                      {reformasInGroup.map(reforma => {
+                        const provider = providers.find(p => p.id === reforma.providerId);
+                        return (
+                          <Accordion key={reforma.id} type="single" collapsible>
+                            <AccordionItem value={reforma.id} key={reforma.id} className="border-none">
+                              <Card className="flex flex-col overview-card">
+                                <CardHeader className="flex flex-row items-center justify-between p-4">
+                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                                      <div className="text-left">
+                                        <h3 className="font-semibold text-lg">{reforma.name}</h3>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AlertDialog>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                          <DropdownMenuItem onSelect={() => handleEdit(reforma)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
+                                          <DropdownMenuItem onSelect={() => onCreateSeguimientoFromClient(reforma)}><Repeat className="mr-2"/>Añadir a Seguimiento</DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'enviados')}><FilePlus2 className="mr-2"/>Crear Presupuesto</DropdownMenuItem>
+                                          <DropdownMenuItem onSelect={() => onCreateBudgetFromClient(reforma, 'reformas')}><Copy className="mr-2"/>Copiar a Presupuestos</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                          <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente la reforma.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => onDeleteReforma(reforma.id)}>Eliminar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardHeader>
+                                <AccordionContent className="px-6 pb-6 pt-0">
+                                  <div className="space-y-4 flex-grow text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-semibold">Prioridad:</h4>
+                                      {[1, 2, 3].map((p) => (
+                                        <Button
+                                          key={p}
+                                          variant={reforma.priority === p ? 'default' : 'outline'}
+                                          size="icon"
+                                          className="h-8 w-8 rounded-full"
+                                          onClick={() => handlePriorityChange(reforma, p)}
+                                        >
+                                          {p}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Contacto</h4>
+                                      <div className="space-y-1 text-muted-foreground">
+                                        <p>{reforma.contact}</p>
+                                        <div className="flex items-center gap-2"><Phone size={14}/> {reforma.phone}</div>
+                                        <div className="flex items-center gap-2"><Mail size={14}/> {reforma.email}</div>
+                                        {reforma.localizacion && <div className="flex items-center gap-2"><MapPin size={14}/> {reforma.localizacion}</div>}
+                                      </div>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Detalles del Proyecto</h4>
+                                      <div className="space-y-1 text-muted-foreground">
+                                        <div className="flex justify-between"><span>Arquitecto:</span> <strong>{reforma.arquitecto || 'N/A'}</strong></div>
+                                        <div className="flex justify-between"><span>Proveedor:</span> <strong>{provider?.name || 'N/A'}</strong></div>
+                                        {reforma.obtenido && <div className="flex justify-between"><span>Obtenido:</span> <strong>{reforma.obtenido}</strong></div>}
+                                      </div>
+                                    </div>
+                                      {reforma.infoAdicional && (
+                                        <div className="pt-2 border-t">
+                                          <h4 className="font-semibold mb-1">Info Adicional:</h4>
+                                          <p 
+                                            className="text-sm text-muted-foreground cursor-pointer hover:text-foreground"
+                                            onClick={() => setViewingInfo(reforma.infoAdicional || null)}
+                                          >
+                                            {reforma.infoAdicional.substring(0, 100)}{reforma.infoAdicional.length > 100 ? '...' : ''}
+                                          </p>
+                                      </div>
+                                      )}
+                                      <Separator/>
+                                      <div className="grid grid-cols-2 gap-2 pt-2">
+                                          <a href={reforma.memoria || '#'} target="_blank" rel="noopener noreferrer" className={!reforma.memoria ? 'pointer-events-none' : ''}>
+                                              <Button className="w-full" variant="outline" disabled={!reforma.memoria}><FileText className="mr-2"/> Memoria</Button>
+                                          </a>
+                                          <a href={reforma.planos || '#'} target="_blank" rel="noopener noreferrer" className={!reforma.planos ? 'pointer-events-none' : ''}>
+                                              <Button className="w-full" variant="outline" disabled={!reforma.planos}><FileText className="mr-2"/> Planos</Button>
+                                          </a>
+                                      </div>
+                                  </div>
+                                </AccordionContent>
+                              </Card>
+                            </AccordionItem>
+                          </Accordion>
+                        )
+                      })}
+                    </AccordionContent>
+                </AccordionItem>
             )
           })}
         </Accordion>
