@@ -118,9 +118,9 @@ export default function Page() {
   const [notepadContent, setNotepadContent] = useState("");
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
   
-  const fetchDiskItems = useCallback(async () => {
+  const fetchDiskItems = useCallback(async (path: string = 'disco/') => {
     try {
-        const diskRef = ref(storage, 'disco/');
+        const diskRef = ref(storage, path);
         const res = await listAll(diskRef);
         
         const folders = res.prefixes.map(folderRef => ({
@@ -141,15 +141,22 @@ export default function Page() {
             };
         }));
 
-        setData(prev => ({ ...prev, diskItems: [...folders, ...files] }));
+        return [...folders, ...files];
     } catch (error) {
         console.error("Error fetching disk items:", error);
+        return [];
     }
   }, []);
 
+  const fetchAllDiskItems = useCallback(async () => {
+    const rootItems = await fetchDiskItems();
+    setData(prev => ({...prev, diskItems: rootItems}));
+  }, [fetchDiskItems]);
+
+
   // Fetch all data from Firestore
   useEffect(() => {
-    fetchDiskItems();
+    fetchAllDiskItems();
 
     const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
       let q;
@@ -236,7 +243,7 @@ export default function Page() {
       unsubSegOptions();
       unsubSheetUrl();
     };
-  }, [fetchDiskItems]);
+  }, [fetchAllDiskItems]);
 
   const handleLoadForms = useCallback(async (formData: any[]) => {
       if (!formData || formData.length === 0) {
@@ -540,32 +547,83 @@ export default function Page() {
         const fullPath = `${path}${file.name}`;
         const fileRef = ref(storage, fullPath);
         await uploadBytes(fileRef, file);
-        await fetchDiskItems(); // Re-fetch to show new file
+        await fetchAllDiskItems(); // Re-fetch to show new file
         toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
-    }, [fetchDiskItems, toast]);
+    }, [fetchAllDiskItems, toast]);
 
     const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
         const placeholderPath = `${path}${folderName}/.placeholder`;
         const placeholderRef = ref(storage, placeholderPath);
         await uploadBytes(placeholderRef, new Blob());
-        await fetchDiskItems(); // Re-fetch to show new folder
+        await fetchAllDiskItems(); // Re-fetch to show new folder
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
-    }, [fetchDiskItems, toast]);
-
+    }, [fetchAllDiskItems, toast]);
+    
     const handleDiskDeleteItem = useCallback(async (path: string, type: 'file' | 'folder') => {
+        const deleteFolderContents = async (folderPath: string) => {
+            const folderRef = ref(storage, folderPath);
+            const res = await listAll(folderRef);
+            await Promise.all(res.items.map(itemRef => deleteObject(itemRef)));
+            await Promise.all(res.prefixes.map(prefixRef => deleteFolderContents(prefixRef.fullPath)));
+        };
+
         if (type === 'file') {
             const fileRef = ref(storage, path);
             await deleteObject(fileRef);
         } else { // folder
-            const folderRef = ref(storage, path);
-            const res = await listAll(folderRef);
-            // This is recursive and will delete all sub-items
-            await Promise.all(res.items.map(itemRef => deleteObject(itemRef)));
-            await Promise.all(res.prefixes.map(prefixRef => handleDiskDeleteItem(prefixRef.fullPath, 'folder')));
+            await deleteFolderContents(path);
         }
-        await fetchDiskItems();
+        await fetchAllDiskItems();
         toast({ title: 'Elemento Eliminado' });
-    }, [fetchDiskItems, toast]);
+    }, [fetchAllDiskItems, toast]);
+    
+    const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
+        const moveFile = async (sourceFile: string, destFile: string) => {
+            const sourceRef = ref(storage, sourceFile);
+            const fileBlob = await getDownloadURL(sourceRef).then(url => fetch(url).then(res => res.blob()));
+            
+            const destRef = ref(storage, destFile);
+            await uploadBytes(destRef, fileBlob);
+            await deleteObject(sourceRef);
+        }
+
+        const moveFolder = async (sourceFolder: string, destFolder: string) => {
+            const listResult = await listAll(ref(storage, sourceFolder));
+            
+            // Move files
+            for (const item of listResult.items) {
+                const newDestPath = `${destFolder}/${item.name}`;
+                await moveFile(item.fullPath, newDestPath);
+            }
+            
+            // Move subfolders
+            for (const prefix of listResult.prefixes) {
+                const newDestFolderPath = `${destFolder}/${prefix.name}`;
+                await moveFolder(prefix.fullPath, newDestFolderPath);
+            }
+        }
+        
+        const sourceRef = ref(storage, sourcePath);
+        
+        try {
+            const metadata = await getMetadata(sourceRef);
+            // It's a file
+            await moveFile(sourcePath, `${destPath}${sourceRef.name}`);
+        } catch (error: any) {
+            if (error.code === 'storage/object-not-found') {
+                // It's likely a folder
+                const folderName = sourcePath.split('/').filter(Boolean).pop();
+                if (folderName) {
+                    await moveFolder(sourcePath, `${destPath}${folderName}`);
+                }
+            } else {
+                throw error;
+            }
+        }
+        
+        await fetchAllDiskItems();
+        toast({ title: 'Elemento movido', description: 'El elemento se ha movido correctamente.' });
+    }, [fetchAllDiskItems, toast]);
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -705,6 +763,8 @@ export default function Page() {
                 handleDiskUpload,
                 handleDiskCreateFolder,
                 handleDiskDeleteItem,
+                handleDiskMoveItem,
+                fetchDiskItems
               }}
             />
           </div>

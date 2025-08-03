@@ -12,13 +12,13 @@ export function CompanySection({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
-    diskItems, onUploadFile, onCreateFolder, onDeleteItem,
+    diskItems, onUploadFile, onCreateFolder, onDeleteItem, onMoveItem, fetchDiskItems,
     visibleTabs
 }: {
     companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
-    diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>,
+    diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, onMoveItem: (sourcePath: string, destPath: string) => Promise<void>, fetchDiskItems: (path?: string) => Promise<any[]>,
     visibleTabs: any
 }) {
     const tabs = [
@@ -71,10 +71,12 @@ export function CompanySection({
                 )}
                 {activeTab === 'disk' && visibleTabs.companies && (
                     <DiskSection
-                        items={diskItems}
+                        initialItems={diskItems}
                         onUploadFile={onUploadFile}
                         onCreateFolder={onCreateFolder}
                         onDeleteItem={onDeleteItem}
+                        onMoveItem={onMoveItem}
+                        fetchItems={fetchDiskItems}
                     />
                 )}
                 {activeTab === 'documents' && visibleTabs.companies && (

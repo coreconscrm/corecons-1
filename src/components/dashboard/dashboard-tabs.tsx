@@ -219,6 +219,8 @@ export function DashboardTabs({
           onUploadFile={actions.handleDiskUpload}
           onCreateFolder={actions.handleDiskCreateFolder}
           onDeleteItem={actions.handleDiskDeleteItem}
+          onMoveItem={actions.handleDiskMoveItem}
+          fetchDiskItems={actions.fetchDiskItems}
         />
       </TabsContent>}
 
