@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { createProjectBreakdown, type ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createFormsReport, type FormsReport } from '@/ai/flows/create-forms-report';
@@ -13,6 +12,7 @@ import { AiReportGenerator, AiReportViewer } from './report-components';
 import { BrainCircuit } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { Button } from "@/components/ui/button";
 
 
 export { type AiBudgetItem };
@@ -112,55 +112,66 @@ export function AiSection({
     };
     
     return (
-        <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v, 'main')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="budgets"><BrainCircuit className="mr-2" />Presupuestos y Precios</TabsTrigger>
-                <TabsTrigger value="reports"><BrainCircuit className="mr-2" />Reportes de Formularios</TabsTrigger>
-            </TabsList>
-            <TabsContent value="budgets" className="mt-6">
-                <Tabs value={subTab} onValueChange={(v) => handleTabChange(v, 'sub')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="upload">
-                         Subir para Presupuestos IA
-                        </TabsTrigger>
-                        <TabsTrigger value="view-and-edit">
-                         Presupuestos IA
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="upload" className="mt-6">
-                        <BudgetUploader 
-                            onAnalysisComplete={handleSaveToAiBudgets}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="view-and-edit" className="mt-6">
-                        <AiBudgetsSection 
-                            aiBudgets={aiBudgets}
-                            onUpdateAiBudget={onUpdateAiBudget}
-                            onDeleteAiBudget={onDeleteAiBudget}
-                            companies={companies} 
-                            onCreateBudgetFromAi={onCreateBudgetFromAi}
-                            onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
-                         />
-                    </TabsContent>
-                </Tabs>
-            </TabsContent>
-            <TabsContent value="reports" className="mt-6">
-                <Tabs value={reportsSubTab} onValueChange={(v) => handleTabChange(v, 'reports')} className="w-full">
-                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="generator">Generador de Reportes</TabsTrigger>
-                        <TabsTrigger value="viewer">Visor de Reporte IA</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="generator" className="mt-6">
-                        <AiReportGenerator forms={forms} onGenerateReport={handleGenerateReport} />
-                    </TabsContent>
-                    <TabsContent value="viewer" className="mt-6">
-                        <AiReportViewer latestReport={latestReport} />
-                    </TabsContent>
-                </Tabs>
-            </TabsContent>
-        </Tabs>
+        <div className="w-full space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <Button variant={activeTab === 'budgets' ? 'default' : 'outline'} onClick={() => handleTabChange('budgets', 'main')} className="w-full">
+                    <BrainCircuit className="mr-2" />Presupuestos y Precios
+                </Button>
+                <Button variant={activeTab === 'reports' ? 'default' : 'outline'} onClick={() => handleTabChange('reports', 'main')} className="w-full">
+                    <BrainCircuit className="mr-2" />Reportes de Formularios
+                </Button>
+            </div>
+            
+            <div className="mt-6">
+                {activeTab === 'budgets' && (
+                    <div className="w-full space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                             <Button variant={subTab === 'upload' ? 'default' : 'outline'} onClick={() => handleTabChange('upload', 'sub')} className="w-full">
+                                Subir para Presupuestos IA
+                            </Button>
+                            <Button variant={subTab === 'view-and-edit' ? 'default' : 'outline'} onClick={() => handleTabChange('view-and-edit', 'sub')} className="w-full">
+                                Presupuestos IA
+                            </Button>
+                        </div>
+                        
+                        {subTab === 'upload' && (
+                             <BudgetUploader 
+                                onAnalysisComplete={handleSaveToAiBudgets}
+                            />
+                        )}
+                         {subTab === 'view-and-edit' && (
+                            <AiBudgetsSection 
+                                aiBudgets={aiBudgets}
+                                onUpdateAiBudget={onUpdateAiBudget}
+                                onDeleteAiBudget={onDeleteAiBudget}
+                                companies={companies} 
+                                onCreateBudgetFromAi={onCreateBudgetFromAi}
+                                onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                            />
+                         )}
+                    </div>
+                )}
+                 {activeTab === 'reports' && (
+                    <div className="w-full space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <Button variant={reportsSubTab === 'generator' ? 'default' : 'outline'} onClick={() => handleTabChange('generator', 'reports')} className="w-full">
+                                Generador de Reportes
+                            </Button>
+                             <Button variant={reportsSubTab === 'viewer' ? 'default' : 'outline'} onClick={() => handleTabChange('viewer', 'reports')} className="w-full">
+                                Visor de Reporte IA
+                            </Button>
+                        </div>
+                        
+                        {reportsSubTab === 'generator' && (
+                            <AiReportGenerator forms={forms} onGenerateReport={handleGenerateReport} />
+                        )}
+                        {reportsSubTab === 'viewer' && (
+                            <AiReportViewer latestReport={latestReport} />
+                        )}
+                    </div>
+                 )}
+            </div>
+        </div>
     );
 }
 

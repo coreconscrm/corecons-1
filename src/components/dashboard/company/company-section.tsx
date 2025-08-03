@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentsCard, type Document } from "../documents-card";
 import { TeamListCard } from "../study-time-analysis-card";
 import { CompanyProfilesCard, type Company } from "../company-card";
 import { DiskSection } from "./disk-section";
+import { Button } from "@/components/ui/button";
 
 export function CompanySection({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
@@ -46,46 +46,48 @@ export function CompanySection({
     };
 
     return (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
+        <div className="w-full space-y-6">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {tabs.map(tab => (
-                    <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    <Button
+                        key={tab.value}
+                        variant={activeTab === tab.value ? "default" : "outline"}
+                        onClick={() => handleTabChange(tab.value)}
+                        className="w-full"
+                    >
+                        {tab.label}
+                    </Button>
                 ))}
-            </TabsList>
-            {visibleTabs.companies && (
-                <TabsContent value="profiles" className="mt-6">
+            </div>
+
+            <div className="mt-6">
+                {activeTab === 'profiles' && visibleTabs.companies && (
                     <CompanyProfilesCard 
                         companies={companies}
                         onAddCompany={onAddCompany}
                         onUpdateCompany={onUpdateCompany}
                         onDeleteCompany={onDeleteCompany}
                     />
-                </TabsContent>
-            )}
-             {visibleTabs.companies && (
-                <TabsContent value="disk" className="mt-6">
+                )}
+                {activeTab === 'disk' && visibleTabs.companies && (
                     <DiskSection
                         items={diskItems}
                         onUploadFile={onUploadFile}
                         onCreateFolder={onCreateFolder}
                         onDeleteItem={onDeleteItem}
                     />
-                </TabsContent>
-            )}
-            {visibleTabs.companies && (
-                <TabsContent value="documents" className="mt-6">
+                )}
+                {activeTab === 'documents' && visibleTabs.companies && (
                     <DocumentsCard 
                         documents={documents}
                         onAddDocument={onAddDocument}
                         onDeleteDocument={onDeleteDocument}
                     />
-                </TabsContent>
-            )}
-            {visibleTabs.team && (
-                 <TabsContent value="team" className="mt-6">
+                )}
+                {activeTab === 'team' && visibleTabs.team && (
                     <TeamListCard team={team} onAddTeamMember={onAddTeamMember} onUpdateTeamMember={onUpdateTeamMember} onDeleteTeamMember={onDeleteTeamMember} />
-                </TabsContent>
-            )}
-        </Tabs>
+                )}
+            </div>
+        </div>
     )
 }

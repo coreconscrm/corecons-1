@@ -3,8 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { BudgetListCard, type Budget, type BudgetCategory } from '../budgets-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Company } from "../company-card";
+import { Button } from "@/components/ui/button";
 
 const budgetCategories: { value: BudgetCategory, label: string }[] = [
     { value: 'enviados', label: 'Enviados' },
@@ -15,7 +14,7 @@ const budgetCategories: { value: BudgetCategory, label: string }[] = [
 
 export { type Budget, type BudgetCategory };
 
-export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], companies: Company[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
+export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpdateBudget, onDeleteBudget }: { budgets: Budget[], clients: any[], companies: any[], onAddBudget: (b: any) => void, onUpdateBudget: (b: any) => void, onDeleteBudget: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState<BudgetCategory>('enviados');
   
   useEffect(() => {
@@ -36,26 +35,32 @@ export function BudgetSection({ budgets, clients, companies, onAddBudget, onUpda
   }, [budgets, activeTab]);
 
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        {budgetCategories.map(tab => (
-          <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
-        ))}
-      </TabsList>
-      {budgetCategories.map(tab => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-6">
-          <BudgetListCard
-            title={`Presupuestos de ${tab.label}`}
-            budgets={activeTab === tab.value ? filteredBudgets : []}
-            clients={clients}
-            companies={companies}
-            onAddBudget={onAddBudget}
-            onUpdateBudget={onUpdateBudget}
-            onDeleteBudget={onDeleteBudget}
-            activeCategory={tab.value as BudgetCategory}
-          />
-        </TabsContent>
-      ))}
-    </Tabs>
+    <div className="w-full space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {budgetCategories.map(tab => (
+              <Button
+                  key={tab.value}
+                  variant={activeTab === tab.value ? "default" : "outline"}
+                  onClick={() => handleTabChange(tab.value)}
+                  className="w-full"
+              >
+                  {tab.label}
+              </Button>
+            ))}
+        </div>
+        
+        <div className="mt-6">
+            <BudgetListCard
+              title={`Presupuestos de ${budgetCategories.find(c => c.value === activeTab)?.label}`}
+              budgets={filteredBudgets}
+              clients={clients}
+              companies={companies}
+              onAddBudget={onAddBudget}
+              onUpdateBudget={onUpdateBudget}
+              onDeleteBudget={onDeleteBudget}
+              activeCategory={activeTab}
+            />
+        </div>
+    </div>
   )
 }

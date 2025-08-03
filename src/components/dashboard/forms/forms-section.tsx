@@ -18,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
@@ -446,6 +445,12 @@ export function FormsSection({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeTab, setActiveTab] = useState("forms");
 
+    const tabs = [
+        { value: "forms", label: "Formularios Web" },
+        { value: "contacts", label: "Contactos Manuales" },
+        { value: "priority", label: "Añadidos a seguimiento" },
+    ];
+
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -475,79 +480,89 @@ export function FormsSection({
     };
 
     return (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <div className="w-full space-y-6">
             <GoogleSheetDialog open={isSheetDialogOpen} onOpenChange={setSheetDialogOpen} currentUrl={sheetUrl} onSave={onSaveSheetUrl} />
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
 
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="forms">Formularios Web</TabsTrigger>
-                <TabsTrigger value="contacts">Contactos Manuales</TabsTrigger>
-                <TabsTrigger value="priority">Añadidos a seguimiento</TabsTrigger>
-            </TabsList>
-            <TabsContent value="forms" className="mt-6">
-                <DynamicTableCard
-                    title="Formularios Web"
-                    description="Datos cargados desde CSV o Google Sheets."
-                    items={forms}
-                    columnConfig={formCols}
-                    onColumnConfigChange={onFormColsChange}
-                    onAddItem={() => {}} // No se pueden añadir manualmente
-                    onUpdateItem={() => {}} // No se pueden editar
-                    onDeleteItem={onDeleteForm}
-                    itemActions={(item) => (
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <Forward className="mr-2 h-4 w-4" /> Mover a...
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'contacts')}>
-                                    <Users className="mr-2 h-4 w-4" /> Contactos Manuales
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'priority_calls')}>
-                                    <Phone className="mr-2 h-4 w-4" /> Añadidos a seguimiento
-                                </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                    )}
-                >
-                     <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Subir CSV</Button>
-                     <Button variant="outline" onClick={() => setSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4" />Conectar Sheet</Button>
-                </DynamicTableCard>
-            </TabsContent>
-            <TabsContent value="contacts" className="mt-6">
-                <DynamicTableCard
-                    title="Contactos Manuales"
-                    description="Contactos añadidos manualmente que requieren seguimiento."
-                    items={contacts}
-                    columnConfig={contactCols}
-                    onColumnConfigChange={onContactColsChange}
-                    onAddItem={onAddContact}
-                    onUpdateItem={onUpdateContact}
-                    onDeleteItem={onDeleteContact}
-                    itemActions={(item) => (
-                        <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'contacts')}>
-                            <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
-                        </DropdownMenuItem>
-                    )}
-                />
-            </TabsContent>
-            <TabsContent value="priority" className="mt-6">
-                 <DynamicTableCard
-                    title="Añadidos a seguimiento"
-                    description="Contactos importantes que necesitan una llamada urgente."
-                    items={priorityCalls}
-                    columnConfig={priorityCols}
-                    onColumnConfigChange={onPriorityColsChange}
-                    onAddItem={onAddPriorityCall}
-                    onUpdateItem={onUpdatePriorityCall}
-                    onDeleteItem={onDeletePriorityCall}
-                    itemActions={(item) => (
-                        <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'priority_calls')}>
-                            <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
-                        </DropdownMenuItem>
-                    )}
-                />
-            </TabsContent>
-        </Tabs>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {tabs.map(tab => (
+                    <Button
+                        key={tab.value}
+                        variant={activeTab === tab.value ? "default" : "outline"}
+                        onClick={() => handleTabChange(tab.value)}
+                        className="w-full"
+                    >
+                        {tab.label}
+                    </Button>
+                ))}
+            </div>
+            
+            <div className="mt-6">
+                {activeTab === 'forms' && (
+                    <DynamicTableCard
+                        title="Formularios Web"
+                        description="Datos cargados desde CSV o Google Sheets."
+                        items={forms}
+                        columnConfig={formCols}
+                        onColumnConfigChange={onFormColsChange}
+                        onAddItem={() => {}} // No se pueden añadir manualmente
+                        onUpdateItem={() => {}} // No se pueden editar
+                        onDeleteItem={onDeleteForm}
+                        itemActions={(item) => (
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Forward className="mr-2 h-4 w-4" /> Mover a...
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'contacts')}>
+                                        <Users className="mr-2 h-4 w-4" /> Contactos Manuales
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => onMoveFormContact(item, 'priority_calls')}>
+                                        <Phone className="mr-2 h-4 w-4" /> Añadidos a seguimiento
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        )}
+                    >
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Subir CSV</Button>
+                        <Button variant="outline" onClick={() => setSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4" />Conectar Sheet</Button>
+                    </DynamicTableCard>
+                )}
+                 {activeTab === 'contacts' && (
+                    <DynamicTableCard
+                        title="Contactos Manuales"
+                        description="Contactos añadidos manualmente que requieren seguimiento."
+                        items={contacts}
+                        columnConfig={contactCols}
+                        onColumnConfigChange={onContactColsChange}
+                        onAddItem={onAddContact}
+                        onUpdateItem={onUpdateContact}
+                        onDeleteItem={onDeleteContact}
+                        itemActions={(item) => (
+                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'contacts')}>
+                                <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
+                            </DropdownMenuItem>
+                        )}
+                    />
+                )}
+                 {activeTab === 'priority' && (
+                    <DynamicTableCard
+                        title="Añadidos a seguimiento"
+                        description="Contactos importantes que necesitan una llamada urgente."
+                        items={priorityCalls}
+                        columnConfig={priorityCols}
+                        onColumnConfigChange={onPriorityColsChange}
+                        onAddItem={onAddPriorityCall}
+                        onUpdateItem={onUpdatePriorityCall}
+                        onDeleteItem={onDeletePriorityCall}
+                        itemActions={(item) => (
+                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'priority_calls')}>
+                                <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento
+                            </DropdownMenuItem>
+                        )}
+                    />
+                )}
+            </div>
+        </div>
     );
 }

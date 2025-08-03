@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientListCard } from "../active-courses-card";
 import { ReformaListCard } from "../reformas-card";
 import type { BudgetCategory } from "../budgets/budgets-section";
+import { Button } from "@/components/ui/button";
 
 export function ClientsSection({
     clients, providers, onAddClient, onUpdateClient, onDeleteClient, onCreateBudgetFromClient, onCreateSeguimientoFromClient,
@@ -24,21 +24,37 @@ export function ClientsSection({
     const defaultTab = tabs.length > 0 ? tabs[0].value : "";
     const [activeTab, setActiveTab] = useState(defaultTab);
     
+    useEffect(() => {
+        const savedTab = localStorage.getItem('clientsSection_activeTab');
+        if (savedTab && tabs.some(t => t.value === savedTab)) {
+            setActiveTab(savedTab);
+        } else if (tabs.length > 0) {
+            setActiveTab(tabs[0].value);
+        }
+    }, [visibleTabs, tabs]);
+
     const handleTabChange = (value: string) => {
         setActiveTab(value);
         localStorage.setItem('clientsSection_activeTab', value);
     };
 
     return (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
+         <div className="w-full space-y-6">
+            <div className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`}}>
                 {tabs.map(tab => (
-                    <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    <Button
+                        key={tab.value}
+                        variant={activeTab === tab.value ? "default" : "outline"}
+                        onClick={() => handleTabChange(tab.value)}
+                        className="w-full"
+                    >
+                        {tab.label}
+                    </Button>
                 ))}
-            </TabsList>
+            </div>
 
-            {visibleTabs.clients && (
-                <TabsContent value="obra-nueva" className="mt-6">
+            <div className="mt-6">
+                {activeTab === 'obra-nueva' && visibleTabs.clients && (
                     <ClientListCard 
                         clients={clients} 
                         providers={providers} 
@@ -48,11 +64,8 @@ export function ClientsSection({
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
                         onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
                     />
-                </TabsContent>
-            )}
-
-            {visibleTabs.reformas && (
-                <TabsContent value="reformas" className="mt-6">
+                )}
+                {activeTab === 'reformas' && visibleTabs.reformas && (
                     <ReformaListCard 
                         reformas={reformas} 
                         providers={providers} 
@@ -62,8 +75,8 @@ export function ClientsSection({
                         onCreateBudgetFromClient={onCreateBudgetFromClient}
                         onCreateSeguimientoFromClient={onCreateSeguimientoFromClient}
                     />
-                </TabsContent>
-            )}
-        </Tabs>
+                )}
+            </div>
+        </div>
     );
 }

@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProviderListCard } from "../tasks-card";
 import { CollaboratorsListCard, type Collaborator } from "../collaborators-card";
 import { InterioristasListCard, type Interiorista } from "../interioristas-card";
@@ -10,6 +9,7 @@ import { ConstructorasListCard, type Constructora } from "../constructoras-card"
 import { ReformistasListCard, type Reformista } from "../reformistas-card";
 import { InmobiliariasListCard, type Inmobiliaria } from "../inmobiliarias-card";
 import { PriceListCard } from "../prices-card";
+import { Button } from "@/components/ui/button";
 
 type Provider = { id: string; name: string; priceList?: any[] };
 
@@ -58,75 +58,73 @@ export function ProviderSection({
     };
     
     return (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)` }}>
-                {tabs.map(tab => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
-            </TabsList>
-            {visibleTabs.providers && (
-              <TabsContent value="providers" className="mt-6">
-                  <ProviderListCard 
-                      providers={providers}
-                      onAddProvider={onAddProvider}
-                      onUpdateProvider={onUpdateProvider}
-                      onDeleteProvider={onDeleteProvider}
-                  />
-              </TabsContent>
-            )}
-            {visibleTabs.collaborators && (
-              <TabsContent value="collaborators" className="mt-6">
-                  <CollaboratorsListCard 
-                      collaborators={collaborators}
-                      onAddCollaborator={onAddCollaborator}
-                      onUpdateCollaborator={onUpdateCollaborator}
-                      onDeleteCollaborator={onDeleteCollaborator}
-                  />
-              </TabsContent>
-            )}
-            {visibleTabs.interioristas && (
-              <TabsContent value="interioristas" className="mt-6">
-                  <InterioristasListCard 
-                      interioristas={interioristas}
-                      onAddInteriorista={onAddInteriorista}
-                      onUpdateInteriorista={onUpdateInteriorista}
-                      onDeleteInteriorista={onDeleteInteriorista}
-                  />
-              </TabsContent>
-            )}
-             {visibleTabs.constructoras && (
-              <TabsContent value="constructoras" className="mt-6">
-                  <ConstructorasListCard 
-                      constructoras={constructoras}
-                      onAddConstructora={onAddConstructora}
-                      onUpdateConstructora={onUpdateConstructora}
-                      onDeleteConstructora={onDeleteConstructora}
-                  />
-              </TabsContent>
-            )}
-             {visibleTabs.reformistas && (
-              <TabsContent value="reformistas" className="mt-6">
-                  <ReformistasListCard 
-                      reformistas={reformistas}
-                      onAddReformista={onAddReformista}
-                      onUpdateReformista={onUpdateReformista}
-                      onDeleteReformista={onDeleteReformista}
-                  />
-              </TabsContent>
-            )}
-            {visibleTabs.inmobiliarias && (
-              <TabsContent value="inmobiliarias" className="mt-6">
-                  <InmobiliariasListCard 
-                      inmobiliarias={inmobiliarias}
-                      onAddInmobiliaria={onAddInmobiliaria}
-                      onUpdateInmobiliaria={onUpdateInmobiliaria}
-                      onDeleteInmobiliaria={onDeleteInmobiliaria}
-                  />
-              </TabsContent>
-            )}
-            {visibleTabs.prices && (
-              <TabsContent value="prices" className="mt-6">
-                  <PriceListCard providers={providers} />
-              </TabsContent>
-            )}
-        </Tabs>
+        <div className="w-full space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                {tabs.map(tab => (
+                    <Button
+                        key={tab.value}
+                        variant={activeTab === tab.value ? "default" : "outline"}
+                        onClick={() => handleTabChange(tab.value)}
+                        className="w-full"
+                    >
+                        {tab.label}
+                    </Button>
+                ))}
+            </div>
+            
+            <div className="mt-6">
+                {activeTab === 'providers' && visibleTabs.providers && (
+                    <ProviderListCard 
+                        providers={providers}
+                        onAddProvider={onAddProvider}
+                        onUpdateProvider={onUpdateProvider}
+                        onDeleteProvider={onDeleteProvider}
+                    />
+                )}
+                {activeTab === 'collaborators' && visibleTabs.collaborators && (
+                    <CollaboratorsListCard 
+                        collaborators={collaborators}
+                        onAddCollaborator={onAddCollaborator}
+                        onUpdateCollaborator={onUpdateCollaborator}
+                        onDeleteCollaborator={onDeleteCollaborator}
+                    />
+                )}
+                {activeTab === 'interioristas' && visibleTabs.interioristas && (
+                    <InterioristasListCard 
+                        interioristas={interioristas}
+                        onAddInteriorista={onAddInteriorista}
+                        onUpdateInteriorista={onUpdateInteriorista}
+                        onDeleteInteriorista={onDeleteInteriorista}
+                    />
+                )}
+                {activeTab === 'constructoras' && visibleTabs.constructoras && (
+                    <ConstructorasListCard 
+                        constructoras={constructoras}
+                        onAddConstructora={onAddConstructora}
+                        onUpdateConstructora={onUpdateConstructora}
+                        onDeleteConstructora={onDeleteConstructora}
+                    />
+                )}
+                {activeTab === 'reformistas' && visibleTabs.reformistas && (
+                     <ReformistasListCard 
+                        reformistas={reformistas}
+                        onAddReformista={onAddReformista}
+                        onUpdateReformista={onUpdateReformista}
+                        onDeleteReformista={onDeleteReformista}
+                    />
+                )}
+                {activeTab === 'inmobiliarias' && visibleTabs.inmobiliarias && (
+                    <InmobiliariasListCard 
+                        inmobiliarias={inmobiliarias}
+                        onAddInmobiliaria={onAddInmobiliaria}
+                        onUpdateInmobiliaria={onUpdateInmobiliaria}
+                        onDeleteInmobiliaria={onDeleteInmobiliaria}
+                    />
+                )}
+                {activeTab === 'prices' && visibleTabs.prices && (
+                    <PriceListCard providers={providers} />
+                )}
+            </div>
+        </div>
     )
 }
