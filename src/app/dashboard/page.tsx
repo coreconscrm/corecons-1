@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db, storage } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId, getDocs } from "firebase/firestore";
-import { ref, listAll, getDownloadURL, uploadBytes, deleteObject, getMetadata } from "firebase/storage";
+import { ref, listAll, getDownloadURL, uploadBytes, deleteObject, getMetadata, getBytes } from "firebase/storage";
 import { Header } from "@/components/dashboard/header";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { Toaster } from '@/components/ui/toaster';
@@ -580,10 +580,10 @@ export default function Page() {
     const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
         const moveFile = async (sourceFile: string, destFile: string) => {
             const sourceRef = ref(storage, sourceFile);
-            const fileBlob = await getDownloadURL(sourceRef).then(url => fetch(url).then(res => res.blob()));
+            const fileBytes = await getBytes(sourceRef);
             
             const destRef = ref(storage, destFile);
-            await uploadBytes(destRef, fileBlob);
+            await uploadBytes(destRef, fileBytes);
             await deleteObject(sourceRef);
         }
 
