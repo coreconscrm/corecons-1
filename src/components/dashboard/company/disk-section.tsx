@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Folder, File, MoreVertical, FolderUp, Upload, Trash2, ChevronRight, Home, FolderPlus, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
