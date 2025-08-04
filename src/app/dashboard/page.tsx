@@ -609,54 +609,57 @@ export default function Page() {
     const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
         const moveFile = async (sourceFile: string, destFile: string) => {
             const sourceRef = ref(storage, sourceFile);
-            const metadata = await getMetadata(sourceRef); // Get metadata to preserve contentType
-            const fileBytes = await getBytes(sourceRef);
-            
-            const destRef = ref(storage, destFile);
-            await uploadBytes(destRef, fileBytes, metadata); // Pass metadata
-            await deleteObject(sourceRef);
+            try {
+                const metadata = await getMetadata(sourceRef); // Get metadata to preserve contentType
+                const fileBytes = await getBytes(sourceRef);
+                const destRef = ref(storage, destFile);
+                await uploadBytes(destRef, fileBytes, metadata); // Pass metadata
+                await deleteObject(sourceRef);
+            } catch (error) {
+                 toast({ variant: 'destructive', title: `Error al mover archivo`, description: (error as Error).message });
+                 throw error;
+            }
         }
-
-        const moveFolder = async (sourceFolder: string, destFolder: string) => {
-            const listResult = await listAll(ref(storage, sourceFolder));
+    
+        const moveFolder = async (sourceFolderPath: string, destFolderPath: string) => {
+            const listResult = await listAll(ref(storage, sourceFolderPath));
             
+            // Ensure destination folder exists by creating a placeholder
+            const destPlaceholderRef = ref(storage, `${destFolderPath}.placeholder`);
+            await uploadBytes(destPlaceholderRef, new Blob());
+
             // Move files
             for (const item of listResult.items) {
-                 if (item.name === '.placeholder') continue; // Skip placeholder files
-                const newDestPath = `${destFolder}${item.name}`;
-                await moveFile(item.fullPath, newDestPath);
+                if (item.name === '.placeholder') continue;
+                await moveFile(item.fullPath, `${destFolderPath}${item.name}`);
             }
             
             // Move subfolders
             for (const prefix of listResult.prefixes) {
-                const newDestFolderPath = `${destFolder}${prefix.name}/`;
-                await moveFolder(prefix.fullPath, newDestFolderPath);
+                await moveFolder(prefix.fullPath, `${destFolderPath}${prefix.name}/`);
             }
-            // Delete the now-empty original folder by deleting its placeholder
-            const placeholderRef = ref(storage, `${sourceFolder}.placeholder`);
+
+            // Delete original source folder by removing its placeholder
             try {
-              await deleteObject(placeholderRef);
-            } catch (error) {
-               // may not exist, that's fine
+                const sourcePlaceholderRef = ref(storage, `${sourceFolderPath}.placeholder`);
+                await deleteObject(sourcePlaceholderRef);
+            } catch (e) {
+                // If it fails, maybe there wasn't a placeholder, try deleting the "folder" ref (which won't work but good to try)
+                try { await deleteObject(ref(storage, sourceFolderPath)); } catch(e2){}
             }
         }
         
         try {
-            const sourceRef = ref(storage, sourcePath);
-            await getMetadata(sourceRef);
-            // It's a file
-            await moveFile(sourcePath, `${destPath}${sourceRef.name}`);
+            // First, check if source is a file
+            await getMetadata(ref(storage, sourcePath));
+            const sourceName = sourcePath.split('/').pop() || 'unknownfile';
+            await moveFile(sourcePath, `${destPath}${sourceName}`);
         } catch (error: any) {
+            // If it's not found, assume it's a folder
             if (error.code === 'storage/object-not-found') {
-                // It's likely a folder
                 const folderName = sourcePath.split('/').filter(Boolean).pop();
                 if (folderName) {
-                    const newDestFolderPath = `${destPath}${folderName}/`;
-                    // Ensure the destination folder exists before moving contents
-                    const destFolderPlaceholder = ref(storage, `${newDestFolderPath}.placeholder`);
-                    await uploadBytes(destFolderPlaceholder, new Blob());
-                    
-                    await moveFolder(sourcePath, newDestFolderPath);
+                    await moveFolder(sourcePath, `${destPath}${folderName}/`);
                 }
             } else {
                 toast({ variant: 'destructive', title: 'Error al mover', description: (error as Error).message });
