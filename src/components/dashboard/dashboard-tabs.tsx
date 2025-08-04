@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -230,7 +231,7 @@ export function DashboardTabs({
           linkSections={data.linkSections}
           onAddItem={actions.createItem}
           onUpdateItem={actions.updateItem}
-          onDeleteItem={actions.deleteItem}
+          onDeleteLinkItem={actions.deleteItem}
         />
       </TabsContent>}
 

@@ -15,14 +15,14 @@ export function CompanySection({
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
     diskItems, onUploadFile, onCreateFolder, onDeleteItem, onMoveItem, fetchDiskItems,
     visibleTabs,
-    links, linkSections, onAddItem, onUpdateItem, onDeleteItem
+    links, linkSections, onAddItem, onUpdateItem, onDeleteLinkItem
 }: {
     companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
     diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, onMoveItem: (sourcePath: string, destPath: string) => Promise<void>, fetchDiskItems: (path?: string) => Promise<any[]>,
     visibleTabs: any,
-    links: any[], linkSections: any[], onAddItem: (collection: string, item: any) => Promise<void>, onUpdateItem: (collection: string, item: any) => Promise<void>, onDeleteItem: (collection: string, id: string) => Promise<void>
+    links: any[], linkSections: any[], onAddItem: (collection: string, item: any) => Promise<void>, onUpdateItem: (collection: string, item: any) => Promise<void>, onDeleteLinkItem: (collection: string, id: string) => Promise<void>
 }) {
     const tabs = [
         { value: "profiles", label: "Perfiles de Empresa", visible: visibleTabs.companies },
@@ -89,10 +89,10 @@ export function CompanySection({
                         sections={linkSections}
                         onAddLink={(link: any) => onAddItem('company_links', link)}
                         onUpdateLink={(link: any) => onUpdateItem('company_links', link)}
-                        onDeleteLink={(id: string) => onDeleteItem('company_links', id)}
+                        onDeleteLink={(id: string) => onDeleteLinkItem('company_links', id)}
                         onAddSection={(section: any) => onAddItem('link_sections', section)}
                         onUpdateSection={(section: any) => onUpdateItem('link_sections', section)}
-                        onDeleteSection={(id: string) => onDeleteItem('link_sections', id)}
+                        onDeleteSection={(id: string) => onDeleteLinkItem('link_sections', id)}
                     />
                 )}
                 {activeTab === 'documents' && visibleTabs.companies && (

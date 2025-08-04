@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -153,7 +154,7 @@ export default function Page() {
             };
         }));
 
-        return [...folders, ...files];
+        return [...folders, ...files].filter(item => !item.name.endsWith('.placeholder'));
     } catch (error) {
         console.error("Error fetching disk items:", error);
         return [];
@@ -172,7 +173,7 @@ export default function Page() {
 
     const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
       let q;
-      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar'].includes(collectionName)) {
+      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
         q = query(collection(db, collectionName), orderBy("date", "desc"));
       } else if (collectionName === 'seguimientos') {
          q = query(collection(db, collectionName)); // Sorting is handled client-side
@@ -371,7 +372,7 @@ export default function Page() {
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
     const dataToSave = { ...itemData };
-    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar'].includes(collectionName)) {
+    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
         if (!dataToSave.date) {
             dataToSave.date = Timestamp.now();
         }
@@ -587,7 +588,7 @@ export default function Page() {
     const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
         const placeholderPath = `${path}${folderName}/.placeholder`;
         const placeholderRef = ref(storage, placeholderPath);
-        await uploadBytes(placeholderRef, new Blob());
+        await uploadBytes(placeholderRef, new Blob([], { type: 'application/octet-stream' }));
         await fetchAllDiskItems(); // Re-fetch to show new folder
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
     }, [fetchAllDiskItems, toast]);
@@ -622,9 +623,13 @@ export default function Page() {
             const sourceFolderRef = ref(storage, sourceFolderPath);
             const listResult = await listAll(sourceFolderRef);
     
+            // Ensure destination folder exists
+            const destFolderPlaceholderRef = ref(storage, `${destFolderPath}.placeholder`);
+            await uploadBytes(destFolderPlaceholderRef, new Blob([], { type: 'application/octet-stream' }));
+
             // Move files
             for (const itemRef of listResult.items) {
-                if (itemRef.name !== '.placeholder') {
+                if (!itemRef.name.endsWith('.placeholder')) {
                   await moveFile(itemRef, destFolderPath);
                 }
             }
