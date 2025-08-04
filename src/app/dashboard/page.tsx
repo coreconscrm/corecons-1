@@ -72,6 +72,8 @@ const collectionStateMap: Record<string, string> = {
     julian_notes: 'julianNotes',
     ia_budgets: 'aiBudgets',
     a_presentar: 'aPresentar',
+    company_links: 'companyLinks',
+    link_sections: 'linkSections',
 };
 
 // Main Page Component
@@ -111,6 +113,8 @@ export default function Page() {
     julianNotes: [],
     aiBudgets: [],
     aPresentar: [],
+    companyLinks: [],
+    linkSections: [],
     sheetUrl: '',
     formCols: [],
     contactCols: [],
@@ -607,56 +611,54 @@ export default function Page() {
     }, [fetchAllDiskItems, toast]);
     
     const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
-      const moveFile = async (sourceFileRef: any, destFolder: string) => {
-          const destFileRef = ref(storage, `${destFolder}${sourceFileRef.name}`);
-          const fileBytes = await getBytes(sourceFileRef);
-          await uploadBytes(destFileRef, fileBytes);
-          await deleteObject(sourceFileRef);
-      };
-  
-      const moveFolder = async (sourceFolderPath: string, destFolderPath: string) => {
-          const sourceFolderRef = ref(storage, sourceFolderPath);
-          const listResult = await listAll(sourceFolderRef);
-  
-          // Move files
-          for (const itemRef of listResult.items) {
-              await moveFile(itemRef, destFolderPath);
-          }
-  
-          // Move subfolders recursively
-          for (const prefixRef of listResult.prefixes) {
-              await moveFolder(prefixRef.fullPath, `${destFolderPath}${prefixRef.name}/`);
-          }
-          // After moving everything, delete the now-empty source folder's placeholder if it exists.
-           try {
-              await deleteObject(ref(storage, `${sourceFolderPath}.placeholder`));
-           } catch(e) { /* Might not exist, which is fine */ }
-      };
-  
-      try {
-          // Determine if it's a file or a folder
-          const metadata = await getMetadata(ref(storage, sourcePath)).catch(() => null);
-  
-          if (metadata) { // It's a file
-              const sourceFileRef = ref(storage, sourcePath);
-              await moveFile(sourceFileRef, destPath);
-          } else { // It's a folder
-              const folderName = sourcePath.split('/').filter(Boolean).pop();
-              if (folderName) {
-                  const newDestPath = `${destPath}${folderName}/`;
-                  // Create placeholder for destination to ensure it exists
-                  await uploadBytes(ref(storage, `${newDestPath}.placeholder`), new Blob());
-                  await moveFolder(sourcePath, newDestPath);
-              }
-          }
-  
-          await fetchAllDiskItems();
-          toast({ title: 'Elemento movido', description: 'El elemento se ha movido correctamente.' });
-      } catch (error: any) {
-          console.error("Error moving item:", error);
-          toast({ variant: 'destructive', title: 'Error al mover', description: (error as Error).message });
-      }
-  }, [fetchAllDiskItems, toast]);
+        const moveFile = async (sourceFileRef: any, destFolder: string) => {
+            const destFileRef = ref(storage, `${destFolder}${sourceFileRef.name}`);
+            const fileBytes = await getBytes(sourceFileRef);
+            await uploadBytes(destFileRef, fileBytes);
+            await deleteObject(sourceFileRef);
+        };
+    
+        const moveFolder = async (sourceFolderPath: string, destFolderPath: string) => {
+            const sourceFolderRef = ref(storage, sourceFolderPath);
+            const listResult = await listAll(sourceFolderRef);
+    
+            // Move files
+            for (const itemRef of listResult.items) {
+                if (itemRef.name !== '.placeholder') {
+                  await moveFile(itemRef, destFolderPath);
+                }
+            }
+    
+            // Move subfolders recursively
+            for (const prefixRef of listResult.prefixes) {
+                await moveFolder(prefixRef.fullPath, `${destFolderPath}${prefixRef.name}/`);
+            }
+            
+            // Delete the source folder (and its placeholder) after moving everything
+            await deleteFolderContents(sourceFolderPath);
+        };
+    
+        try {
+            const metadata = await getMetadata(ref(storage, sourcePath)).catch(() => null);
+    
+            if (metadata) { // It's a file
+                const sourceFileRef = ref(storage, sourcePath);
+                await moveFile(sourceFileRef, destPath);
+            } else { // It's a folder
+                const folderName = sourcePath.split('/').filter(Boolean).pop();
+                if (folderName) {
+                    const newDestPath = `${destPath}${folderName}/`;
+                    await moveFolder(sourcePath, newDestPath);
+                }
+            }
+    
+            await fetchAllDiskItems();
+            toast({ title: 'Elemento movido', description: 'El elemento se ha movido correctamente.' });
+        } catch (error: any) {
+            console.error("Error moving item:", error);
+            toast({ variant: 'destructive', title: 'Error al mover', description: (error as Error).message });
+        }
+    }, [fetchAllDiskItems, toast]);
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -808,5 +810,3 @@ export default function Page() {
     </div>
   );
 }
-
-    

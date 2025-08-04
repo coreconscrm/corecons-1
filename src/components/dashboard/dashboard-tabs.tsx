@@ -226,6 +226,11 @@ export function DashboardTabs({
           onDeleteItem={actions.handleDiskDeleteItem}
           onMoveItem={actions.handleDiskMoveItem}
           fetchDiskItems={actions.fetchDiskItems}
+          links={data.companyLinks}
+          linkSections={data.linkSections}
+          onAddItem={actions.createItem}
+          onUpdateItem={actions.updateItem}
+          onDeleteItem={actions.deleteItem}
         />
       </TabsContent>}
 
@@ -235,5 +240,3 @@ export function DashboardTabs({
     </Tabs>
   );
 }
-
-    
