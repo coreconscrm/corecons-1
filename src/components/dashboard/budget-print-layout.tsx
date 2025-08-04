@@ -15,31 +15,31 @@ function PrintLayoutHeader({ company }: { company: Company | null }) {
   });
 
   return (
-    <header className="flex justify-between items-start pb-8 border-b-2 border-gray-200 print:!color-adjust-exact">
-      <div className="flex items-center gap-6">
+    <header className="flex justify-between items-start pb-4 border-b-2 border-gray-200 print:!color-adjust-exact">
+      <div className="flex items-center gap-4">
         {company?.logo ? (
-          <img src={company.logo} alt={`${company.name} logo`} style={{ width: '120px', height: 'auto', maxHeight: '50px', objectFit: 'contain', colorAdjust: 'exact' }} data-ai-hint="logo" />
+          <img src={company.logo} alt={`${company.name} logo`} style={{ width: '90px', height: 'auto', maxHeight: '40px', objectFit: 'contain', colorAdjust: 'exact' }} data-ai-hint="logo" />
         ) : (
-          <Building2 className="h-16 w-16 text-gray-800" />
+          <Building2 className="h-12 w-12 text-gray-800" />
         )}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{company?.name || "Nombre de la Empresa"}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.name || "Nombre de la Empresa"}</h1>
           {company && (
             <>
-              <p className="text-sm text-gray-600">{company.address}</p>
-              <p className="text-sm text-gray-600">CIF: {company.cif}</p>
-              <div className="text-sm text-gray-600 flex flex-col mt-1">
-                {company.phone && <span className="flex items-center gap-2"><Phone size={12} /> {company.phone}</span>}
-                {company.email && <span className="flex items-center gap-2"><Mail size={12} /> {company.email}</span>}
-                {company.web && <a href={company.web} className="flex items-center gap-2 hover:underline"><Globe size={12} /> {company.web}</a>}
+              <p className="text-xs text-gray-600">{company.address}</p>
+              <p className="text-xs text-gray-600">CIF: {company.cif}</p>
+              <div className="text-xs text-gray-600 flex flex-col mt-1">
+                {company.phone && <span className="flex items-center gap-2"><Phone size={10} /> {company.phone}</span>}
+                {company.email && <span className="flex items-center gap-2"><Mail size={10} /> {company.email}</span>}
+                {company.web && <a href={company.web} className="flex items-center gap-2 hover:underline"><Globe size={10} /> {company.web}</a>}
               </div>
             </>
           )}
         </div>
       </div>
       <div className="text-right">
-        <h2 className="text-2xl font-semibold uppercase text-gray-500">Presupuesto</h2>
-        <p className="text-sm text-gray-500 mt-1">Fecha: {currentDate}</p>
+        <h2 className="text-xl font-semibold uppercase text-gray-500">Presupuesto</h2>
+        <p className="text-xs text-gray-500 mt-1">Fecha: {currentDate}</p>
       </div>
     </header>
   );
@@ -88,17 +88,18 @@ export function BudgetPrintLayout({ budget, client, company, printOptions = { su
     <div className="bg-white text-black p-8 font-sans print:text-sm">
       <PrintLayoutHeader company={company} />
 
-      <section className="my-8 flex justify-between">
-         <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase">Presupuesto Para:</h3>
-            <p className="font-bold text-lg text-gray-800">{client.name || "Cliente sin especificar"}</p>
-            {client.contact && <p className="text-gray-600">{client.contact}</p>}
-            {client.email && <p className="text-gray-600">{client.email}</p>}
-            {client.phone && <p className="text-gray-600">{client.phone}</p>}
-        </div>
-        <div className="text-right">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase">Nombre del Proyecto:</h3>
-            <p className="font-bold text-lg text-gray-800">{budget.name}</p>
+      <section className="my-8">
+         <h3 className="text-xs font-semibold text-gray-500 uppercase">Presupuesto Para:</h3>
+         <p className="font-bold text-base text-gray-800">{client.name || "Cliente sin especificar"}</p>
+         {client.contact && <p className="text-sm text-gray-600">{client.contact}</p>}
+         <div className="text-sm text-gray-600">
+            {client.email && <p>{client.email}</p>}
+            {client.phone && <p>{client.phone}</p>}
+         </div>
+
+        <div className="mt-4">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase">Nombre del Proyecto:</h3>
+            <p className="font-bold text-base text-gray-800">{budget.name}</p>
         </div>
       </section>
       
@@ -226,15 +227,14 @@ export function AiBudgetPrintLayout({ budget, company, printOptions = { summaryO
         <div className="bg-white text-black p-8 font-sans print:text-sm">
             <PrintLayoutHeader company={company} />
 
-            <section className="my-8 flex justify-between">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase">Presupuesto Para:</h3>
-                    <p className="font-bold text-lg text-gray-800">{clientInfo.name}</p>
-                    {budget.description && <p className="text-gray-600">{budget.description}</p>}
-                </div>
-                <div className="text-right">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase">Nombre del Proyecto:</h3>
-                    <p className="font-bold text-lg text-gray-800">{budget.title}</p>
+            <section className="my-8">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase">Presupuesto Para:</h3>
+                <p className="font-bold text-base text-gray-800">{clientInfo.name}</p>
+                 {budget.description && <p className="text-sm text-gray-600">{budget.description}</p>}
+                
+                <div className="mt-4">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase">Nombre del Proyecto:</h3>
+                    <p className="font-bold text-base text-gray-800">{budget.title}</p>
                 </div>
             </section>
             
