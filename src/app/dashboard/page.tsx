@@ -59,7 +59,7 @@ const collectionStateMap: Record<string, string> = {
     seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
     seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
     seguimientoCategories: ['General'],
-    clientCategories: ['General'],
+    clientCategories: ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'],
     budgets: 'budgets',
     companies: 'companies',
     documents: 'documents',
@@ -98,7 +98,7 @@ export default function Page() {
     seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
     seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
     seguimientoCategories: ['General'],
-    clientCategories: ['General'],
+    clientCategories: ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'],
     budgets: [],
     companies: [],
     documents: [],
@@ -143,7 +143,9 @@ export default function Page() {
                 type: 'file' as const,
                 path: itemRef.fullPath,
                 url: url,
-                fileType: metadata.contentType
+                fileType: metadata.contentType,
+                size: metadata.size,
+                updated: metadata.updated,
             };
         }));
 
@@ -215,7 +217,7 @@ export default function Page() {
     const unsubClientCategories = onSnapshot(clientCategoriesDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            setData(prev => ({...prev, clientCategories: data.categories || ['General']}));
+            setData(prev => ({...prev, clientCategories: data.categories || ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado']}));
         }
     });
     
@@ -607,10 +609,11 @@ export default function Page() {
     const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
         const moveFile = async (sourceFile: string, destFile: string) => {
             const sourceRef = ref(storage, sourceFile);
+            const metadata = await getMetadata(sourceRef); // Get metadata to preserve contentType
             const fileBytes = await getBytes(sourceRef);
             
             const destRef = ref(storage, destFile);
-            await uploadBytes(destRef, fileBytes);
+            await uploadBytes(destRef, fileBytes, metadata); // Pass metadata
             await deleteObject(sourceRef);
         }
 
@@ -619,21 +622,28 @@ export default function Page() {
             
             // Move files
             for (const item of listResult.items) {
-                const newDestPath = `${destFolder}/${item.name}`;
+                 if (item.name === '.placeholder') continue; // Skip placeholder files
+                const newDestPath = `${destFolder}${item.name}`;
                 await moveFile(item.fullPath, newDestPath);
             }
             
             // Move subfolders
             for (const prefix of listResult.prefixes) {
-                const newDestFolderPath = `${destFolder}/${prefix.name}`;
+                const newDestFolderPath = `${destFolder}${prefix.name}/`;
                 await moveFolder(prefix.fullPath, newDestFolderPath);
+            }
+            // Delete the now-empty original folder by deleting its placeholder
+            const placeholderRef = ref(storage, `${sourceFolder}.placeholder`);
+            try {
+              await deleteObject(placeholderRef);
+            } catch (error) {
+               // may not exist, that's fine
             }
         }
         
-        const sourceRef = ref(storage, sourcePath);
-        
         try {
-            const metadata = await getMetadata(sourceRef);
+            const sourceRef = ref(storage, sourcePath);
+            await getMetadata(sourceRef);
             // It's a file
             await moveFile(sourcePath, `${destPath}${sourceRef.name}`);
         } catch (error: any) {
@@ -641,9 +651,15 @@ export default function Page() {
                 // It's likely a folder
                 const folderName = sourcePath.split('/').filter(Boolean).pop();
                 if (folderName) {
-                    await moveFolder(sourcePath, `${destPath}${folderName}`);
+                    const newDestFolderPath = `${destPath}${folderName}/`;
+                    // Ensure the destination folder exists before moving contents
+                    const destFolderPlaceholder = ref(storage, `${newDestFolderPath}.placeholder`);
+                    await uploadBytes(destFolderPlaceholder, new Blob());
+                    
+                    await moveFolder(sourcePath, newDestFolderPath);
                 }
             } else {
+                toast({ variant: 'destructive', title: 'Error al mover', description: (error as Error).message });
                 throw error;
             }
         }
