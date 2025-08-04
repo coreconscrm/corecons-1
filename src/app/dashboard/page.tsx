@@ -40,6 +40,7 @@ const defaultVisibleTabs = {
     seguimiento: true,
     ia: true,
     oficina: true,
+    estimaciones: true,
 };
 
 const collectionStateMap: Record<string, string> = {
@@ -75,6 +76,7 @@ const collectionStateMap: Record<string, string> = {
     a_presentar: 'aPresentar',
     company_links: 'companyLinks',
     link_sections: 'linkSections',
+    estimaciones: 'estimaciones',
 };
 
 // Main Page Component
@@ -116,6 +118,7 @@ export default function Page() {
     aPresentar: [],
     companyLinks: [],
     linkSections: [],
+    estimaciones: [],
     sheetUrl: '',
     formCols: [],
     contactCols: [],
@@ -181,6 +184,8 @@ export default function Page() {
         q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
       } else if (collectionName === 'forms') {
         q = query(collection(db, collectionName), orderBy(documentId())); // Order by document ID for consistency
+      } else if (collectionName === 'estimaciones') {
+        q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
       }
       else {
         q = query(collection(db, collectionName));
@@ -377,7 +382,7 @@ export default function Page() {
             dataToSave.date = Timestamp.now();
         }
     }
-    if (['contacts', 'priority_calls'].includes(collectionName)) {
+    if (['contacts', 'priority_calls', 'estimaciones'].includes(collectionName)) {
         if (!dataToSave.createdAt) {
             dataToSave.createdAt = Timestamp.now();
         }

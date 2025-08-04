@@ -26,6 +26,7 @@ type VisibleTabs = {
     seguimiento: boolean;
     ia: boolean;
     oficina: boolean;
+    estimaciones: boolean;
 }
 
 const tabLabels: Record<keyof VisibleTabs, string> = {
@@ -46,6 +47,7 @@ const tabLabels: Record<keyof VisibleTabs, string> = {
     companies: "Empresa (Perfiles y Docs)",
     ia: "Inteligencia Artificial",
     oficina: "Oficina",
+    estimaciones: "Empresa (Estimaciones)",
 };
 
 export function SettingsCard({ visibleTabs, onTabVisibilityChange }: { visibleTabs: VisibleTabs, onTabVisibilityChange: (tabs: any) => void }) {
