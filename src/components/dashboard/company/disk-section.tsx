@@ -140,12 +140,9 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
         setIsLoading(false);
     }, [fetchItems]);
     
-    useEffect(() => {
-        setItems(initialItems.filter(item => {
-            const parentPath = item.path.substring(0, item.path.lastIndexOf('/') + 1);
-            return parentPath === currentPath;
-        }));
-    }, [initialItems, currentPath]);
+     useEffect(() => {
+        loadItems(currentPath);
+    }, [currentPath, loadItems]);
 
     const breadcrumbs = useMemo(() => {
         const parts = currentPath.split('/').filter(p => p && p !== 'disco');
