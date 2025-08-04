@@ -14,10 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useToast } from "@/hooks/use-toast";
 
 // --- Schema & Type ---
 
@@ -215,6 +216,7 @@ export function EstimationsCard({
   const [isFormOpen, setFormOpen] = useState(false);
   const [editingEstimation, setEditingEstimation] = useState<Estimation | undefined>(undefined);
   const [viewingEstimation, setViewingEstimation] = useState<Estimation | null>(null);
+  const { toast } = useToast();
 
   const handleEdit = (estimation: Estimation) => {
     setEditingEstimation(estimation);
@@ -233,6 +235,17 @@ export function EstimationsCard({
       onAddEstimation(values);
     }
   };
+
+  const handleDuplicate = (estimation: Estimation) => {
+    const { id, createdAt, ...restOfEstimation } = estimation;
+    const newEstimation = {
+      ...restOfEstimation,
+      title: `${estimation.title} (Copia)`,
+    };
+    onAddEstimation(newEstimation);
+    toast({ title: "Estimación duplicada", description: `Se ha creado una copia de "${estimation.title}".` });
+  };
+
 
   return (
     <>
@@ -296,6 +309,7 @@ export function EstimationsCard({
                                 <DropdownMenuContent>
                                     <DropdownMenuItem onSelect={() => setViewingEstimation(item)}><Eye className="mr-2" />Ver Detalles</DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleDuplicate(item)}><Copy className="mr-2" />Duplicar</DropdownMenuItem>
                                     <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
                                 </DropdownMenuContent>
                                 </DropdownMenu>
