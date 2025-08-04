@@ -236,29 +236,29 @@ export function LinksSection({
 
                 return (
                   <AccordionItem value={section.id} key={section.id} className="border rounded-md px-4">
-                    <AccordionTrigger>
-                        <div className="flex justify-between items-center w-full">
+                    <div className="flex justify-between items-center w-full">
+                        <AccordionTrigger className="flex-1">
                             <h3 className="text-lg font-semibold flex items-center gap-2"><Folder size={20} /> {sectionName}</h3>
-                             <div onClick={(e) => e.stopPropagation()}>
-                                <AlertDialog>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onSelect={() => handleEditSection(section)}><Pencil className="mr-2" />Editar Sección</DropdownMenuItem>
-                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar Sección</DropdownMenuItem></AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la sección y todos los enlaces que contiene. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onDeleteSection(section.id)}>Eliminar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
+                        </AccordionTrigger>
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <AlertDialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => handleEditSection(section)}><Pencil className="mr-2" />Editar Sección</DropdownMenuItem>
+                                        <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar Sección</DropdownMenuItem></AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la sección y todos los enlaces que contiene. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDeleteSection(section.id)}>Eliminar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
-                    </AccordionTrigger>
+                    </div>
                     <AccordionContent className="pt-4">
                         {linksInSection.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
