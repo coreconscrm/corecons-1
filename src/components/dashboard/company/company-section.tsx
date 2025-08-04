@@ -13,14 +13,14 @@ export function CompanySection({
     companies, onAddCompany, onUpdateCompany, onDeleteCompany,
     documents, onAddDocument, onDeleteDocument,
     team, onAddTeamMember, onUpdateTeamMember, onDeleteTeamMember,
-    diskItems, onUploadFile, onCreateFolder, onDeleteItem, onMoveItem, fetchDiskItems,
+    diskItems, onUploadFile, onCreateFolder, onDeleteItem, fetchDiskItems,
     visibleTabs,
     links, linkSections, onAddItem, onUpdateItem, onDeleteLinkItem
 }: {
     companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
     team: any[], onAddTeamMember: (member: any) => void, onUpdateTeamMember: (member: any) => void, onDeleteTeamMember: (id: any) => void,
-    diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, onMoveItem: (sourcePath: string, destPath: string) => Promise<void>, fetchDiskItems: (path?: string) => Promise<any[]>,
+    diskItems: any[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, fetchDiskItems: (path?: string) => Promise<any[]>,
     visibleTabs: any,
     links: any[], linkSections: any[], onAddItem: (collection: string, item: any) => Promise<void>, onUpdateItem: (collection: string, item: any) => Promise<void>, onDeleteLinkItem: (collection: string, id: string) => Promise<void>
 }) {
@@ -79,7 +79,6 @@ export function CompanySection({
                         onUploadFile={onUploadFile}
                         onCreateFolder={onCreateFolder}
                         onDeleteItem={onDeleteItem}
-                        onMoveItem={onMoveItem}
                         fetchItems={fetchDiskItems}
                     />
                 )}

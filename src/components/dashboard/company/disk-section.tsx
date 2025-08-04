@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { Folder, File, MoreVertical, FolderUp, Upload, Trash2, ChevronRight, Home, FolderPlus, Loader2, ArrowLeft, Move } from "lucide-react";
+import { Folder, File, MoreVertical, Upload, Trash2, ChevronRight, Home, FolderPlus, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,89 +46,11 @@ function CreateFolderDialog({ open, onOpenChange, onCreate }: { open: boolean, o
     );
 }
 
-function MoveItemDialog({ item, open, onOpenChange, onMove, fetchItems }: { item: DiskItem, open: boolean, onOpenChange: (open: boolean) => void, onMove: (sourcePath: string, destPath: string) => void, fetchItems: (path?: string) => Promise<DiskItem[]> }) {
-    const [destinationPath, setDestinationPath] = useState("disco/");
-    const [folderTree, setFolderTree] = useState<DiskItem[]>([]);
-    const [loadingTree, setLoadingTree] = useState(false);
-
-    const loadFolders = useCallback(async (path: string) => {
-        setLoadingTree(true);
-        const items = await fetchItems(path);
-        const folders = items.filter(i => i.type === 'folder');
-        setFolderTree(folders);
-        setLoadingTree(false);
-    }, [fetchItems]);
-    
-    useEffect(() => {
-        if (open) {
-            setDestinationPath("disco/");
-            loadFolders("disco/");
-        }
-    }, [open, loadFolders]);
-    
-    const handleMove = () => {
-        onMove(item.path, destinationPath);
-        onOpenChange(false);
-    };
-
-    const breadcrumbs = useMemo(() => {
-        const parts = destinationPath.split('/').filter(p => p && p !== 'disco');
-        const crumbs = [{ name: 'Disco', path: 'disco/' }];
-        let path = 'disco/';
-        for (const part of parts) {
-            path += `${part}/`;
-            crumbs.push({ name: part, path });
-        }
-        return crumbs;
-    }, [destinationPath]);
-
-    const handleNavigate = (path: string) => {
-        setDestinationPath(path);
-        loadFolders(path);
-    }
-    
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Mover "{item.name}"</DialogTitle>
-                    <DialogDescription>Selecciona la carpeta de destino.</DialogDescription>
-                </DialogHeader>
-                <div className="p-2 border rounded-md min-h-[200px]">
-                    <div className="flex items-center gap-1.5 text-sm p-1">
-                        {breadcrumbs.map((crumb, index) => (
-                           <React.Fragment key={crumb.path}>
-                             <Button variant="link" className="p-0 h-auto" onClick={() => handleNavigate(crumb.path)}>{crumb.name}</Button>
-                             {index < breadcrumbs.length - 1 && <ChevronRight className="h-4 w-4" />}
-                           </React.Fragment>
-                        ))}
-                    </div>
-                    <ScrollArea className="h-48">
-                        {loadingTree ? <Loader2 className="animate-spin m-auto" /> : (
-                            folderTree.map(folder => (
-                                <div key={folder.path} className="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted" onClick={() => handleNavigate(folder.path)}>
-                                    <Folder className="h-5 w-5 text-primary" />
-                                    <span>{folder.name}</span>
-                                </div>
-                            ))
-                        )}
-                    </ScrollArea>
-                </div>
-                <DialogFooter>
-                     <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                     <Button onClick={handleMove}>Mover Aquí</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDeleteItem, onMoveItem, fetchItems }: { initialItems: DiskItem[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, onMoveItem: (sourcePath: string, destPath: string) => Promise<void>, fetchItems: (path?: string) => Promise<DiskItem[]> }) {
+export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDeleteItem, fetchItems }: { initialItems: DiskItem[], onUploadFile: (path: string, file: File) => Promise<void>, onCreateFolder: (path: string, folderName: string) => Promise<void>, onDeleteItem: (path: string, type: 'file' | 'folder') => Promise<void>, fetchItems: (path?: string) => Promise<DiskItem[]> }) {
     const [currentPath, setCurrentPath] = useState("disco/");
     const [items, setItems] = useState<DiskItem[]>(initialItems);
     const [isCreateFolderOpen, setCreateFolderOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [movingItem, setMovingItem] = useState<DiskItem | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     
@@ -209,8 +131,7 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
         <Card>
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
             <CreateFolderDialog open={isCreateFolderOpen} onOpenChange={setCreateFolderOpen} onCreate={handleCreateFolder} />
-            {movingItem && <MoveItemDialog item={movingItem} open={!!movingItem} onOpenChange={() => setMovingItem(null)} onMove={onMoveItem} fetchItems={fetchItems} />}
-
+            
             <CardHeader>
                 <CardTitle>Disco</CardTitle>
                 <CardDescription>Explorador de archivos y carpetas de la empresa.</CardDescription>
@@ -258,7 +179,6 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
                                         <Button variant="ghost" size="icon" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100"><MoreVertical className="h-4 w-4" /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        <DropdownMenuItem onSelect={() => setMovingItem(item)}><Move className="mr-2 h-4 w-4" />Mover</DropdownMenuItem>
                                         <AlertDialogTrigger asChild>
                                             <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
                                         </AlertDialogTrigger>
@@ -282,7 +202,7 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
                     <div className="text-center py-12 text-muted-foreground">
                         <p>Esta carpeta está vacía.</p>
                     </div>
-                )}
+                 )}
                  {isLoading && (
                     <div className="flex items-center justify-center py-10">
                         <Loader2 className="h-8 w-8 animate-spin" />

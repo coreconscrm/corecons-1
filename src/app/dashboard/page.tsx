@@ -611,59 +611,6 @@ export default function Page() {
         toast({ title: 'Elemento Eliminado' });
     }, [fetchAllDiskItems, toast]);
     
-    const handleDiskMoveItem = useCallback(async (sourcePath: string, destPath: string) => {
-        const moveFile = async (sourceFileRef: any, destFolder: string) => {
-            const destFileRef = ref(storage, `${destFolder}${sourceFileRef.name}`);
-            const fileBytes = await getBytes(sourceFileRef);
-            await uploadBytes(destFileRef, fileBytes);
-            await deleteObject(sourceFileRef);
-        };
-    
-        const moveFolder = async (sourceFolderPath: string, destFolderPath: string) => {
-            const sourceFolderRef = ref(storage, sourceFolderPath);
-            const listResult = await listAll(sourceFolderRef);
-    
-            // Ensure destination folder exists
-            const destFolderPlaceholderRef = ref(storage, `${destFolderPath}.placeholder`);
-            await uploadBytes(destFolderPlaceholderRef, new Blob([], { type: 'application/octet-stream' }));
-
-            // Move files
-            for (const itemRef of listResult.items) {
-                if (!itemRef.name.endsWith('.placeholder')) {
-                  await moveFile(itemRef, destFolderPath);
-                }
-            }
-    
-            // Move subfolders recursively
-            for (const prefixRef of listResult.prefixes) {
-                await moveFolder(prefixRef.fullPath, `${destFolderPath}${prefixRef.name}/`);
-            }
-            
-            // Delete the source folder (and its placeholder) after moving everything
-            await deleteFolderContents(sourceFolderPath);
-        };
-    
-        try {
-            const metadata = await getMetadata(ref(storage, sourcePath)).catch(() => null);
-    
-            if (metadata) { // It's a file
-                const sourceFileRef = ref(storage, sourcePath);
-                await moveFile(sourceFileRef, destPath);
-            } else { // It's a folder
-                const folderName = sourcePath.split('/').filter(Boolean).pop();
-                if (folderName) {
-                    const newDestPath = `${destPath}${folderName}/`;
-                    await moveFolder(sourcePath, newDestPath);
-                }
-            }
-    
-            await fetchAllDiskItems();
-            toast({ title: 'Elemento movido', description: 'El elemento se ha movido correctamente.' });
-        } catch (error: any) {
-            console.error("Error moving item:", error);
-            toast({ variant: 'destructive', title: 'Error al mover', description: (error as Error).message });
-        }
-    }, [fetchAllDiskItems, toast]);
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -804,7 +751,6 @@ export default function Page() {
                 handleDiskUpload,
                 handleDiskCreateFolder,
                 handleDiskDeleteItem,
-                handleDiskMoveItem,
                 fetchDiskItems
               }}
             />
