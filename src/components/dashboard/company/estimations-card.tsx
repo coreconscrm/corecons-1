@@ -26,6 +26,8 @@ const estimationSchema = z.object({
   tipoObra: z.string().min(1, "El tipo de obra es requerido."),
   description: z.string().min(1, "La descripción es requerida."),
   notes: z.string().optional(),
+  price: z.coerce.number().optional(),
+  m2: z.coerce.number().optional(),
 });
 
 export type Estimation = z.infer<typeof estimationSchema> & {
@@ -43,6 +45,8 @@ function EstimationForm({ estimation, onSubmit, open, onOpenChange }: { estimati
       tipoObra: "",
       description: "",
       notes: "",
+      price: 0,
+      m2: 0,
     },
   });
 
@@ -56,6 +60,8 @@ function EstimationForm({ estimation, onSubmit, open, onOpenChange }: { estimati
           tipoObra: "",
           description: "",
           notes: "",
+          price: undefined,
+          m2: undefined,
         });
       }
     }
@@ -85,6 +91,14 @@ function EstimationForm({ estimation, onSubmit, open, onOpenChange }: { estimati
                 </FormItem>
               )}
             />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem><FormLabel>Precio (€)</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="m2" render={({ field }) => (
+                    <FormItem><FormLabel>Metros Cuadrados (m²)</FormLabel><FormControl><Input type="number" placeholder="120" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                )} />
+            </div>
             <FormField
               control={form.control}
               name="tipoObra"
@@ -113,7 +127,7 @@ function EstimationForm({ estimation, onSubmit, open, onOpenChange }: { estimati
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Notas Adicionales</FormLabel>
-                  <FormControl><Input placeholder="Consideraciones, precios de referencia, etc." {...field} /></FormControl>
+                  <FormControl><Input placeholder="Consideraciones, precios de referencia, etc." {...field} value={field.value ?? ''} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -134,6 +148,8 @@ function EstimationForm({ estimation, onSubmit, open, onOpenChange }: { estimati
 function ViewEstimationDialog({ estimation, open, onOpenChange }: { estimation: Estimation | null, open: boolean, onOpenChange: (open: boolean) => void }) {
     if (!estimation) return null;
 
+    const pricePerM2 = (estimation.price && estimation.m2) ? estimation.price / estimation.m2 : 0;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl">
@@ -145,6 +161,20 @@ function ViewEstimationDialog({ estimation, open, onOpenChange }: { estimation: 
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] my-4">
                     <div className="space-y-4 pr-4">
+                        <div className="grid grid-cols-3 gap-4">
+                             <div>
+                                <h4 className="font-semibold text-muted-foreground">Precio</h4>
+                                <p>€{estimation.price?.toLocaleString('es-ES') || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-muted-foreground">Superficie</h4>
+                                <p>{estimation.m2 || 'N/A'} m²</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-muted-foreground">Precio/m²</h4>
+                                <p>{pricePerM2 > 0 ? `€${pricePerM2.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</p>
+                            </div>
+                        </div>
                         <div>
                             <h4 className="font-semibold text-muted-foreground">Tipo de Obra</h4>
                             <p>{estimation.tipoObra}</p>
@@ -233,45 +263,60 @@ export function EstimationsCard({
                 <TableRow>
                   <TableHead>Título</TableHead>
                   <TableHead>Tipo de Obra</TableHead>
+                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead className="text-right">m²</TableHead>
+                  <TableHead className="text-right">€/m²</TableHead>
                   <TableHead>Creado</TableHead>
                   <TableHead className="text-right w-[100px]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {estimations.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.tipoObra}</TableCell>
-                    <TableCell>
-                      {item.createdAt?.toDate ? format(item.createdAt.toDate(), "dd/MM/yyyy") : 'N/A'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onSelect={() => setViewingEstimation(item)}><Eye className="mr-2" />Ver Detalles</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará la estimación permanentemente.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteEstimation(item.id)}>Eliminar</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {estimations.map(item => {
+                    const pricePerM2 = (item.price && item.m2) ? item.price / item.m2 : 0;
+                    return (
+                        <TableRow key={item.id}>
+                            <TableCell className="font-medium">{item.title}</TableCell>
+                            <TableCell>{item.tipoObra}</TableCell>
+                            <TableCell className="text-right font-mono">
+                                {item.price ? `€${item.price.toLocaleString('es-ES')}` : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                                {item.m2 ? `${item.m2}` : 'N/A'}
+                            </TableCell>
+                             <TableCell className="text-right font-mono">
+                                {pricePerM2 > 0 ? `€${pricePerM2.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                            {item.createdAt?.toDate ? format(item.createdAt.toDate(), "dd/MM/yyyy") : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                            <AlertDialog>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => setViewingEstimation(item)}><Eye className="mr-2" />Ver Detalles</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará la estimación permanentemente.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDeleteEstimation(item.id)}>Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
                 {estimations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No hay estimaciones.
                     </TableCell>
                   </TableRow>
