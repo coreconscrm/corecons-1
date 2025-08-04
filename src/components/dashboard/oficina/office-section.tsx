@@ -9,8 +9,9 @@ import { DaniPrioritiesCard, type DaniPriority } from "../dani-priorities-card";
 import { APresentarCard, type APresentarItem } from "../a-presentar-card";
 import { ChatSection } from "../chat-section";
 import { JulianNotesCard, type JulianNote } from "../julian-notes-card";
-import { BookUser, MessageSquare, ListChecks, Presentation } from "lucide-react";
+import { BookUser, MessageSquare, ListChecks, Presentation, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 
 export function OfficeSection({
@@ -75,6 +76,7 @@ export function OfficeSection({
     onDeleteJulianNote: (id: string) => void;
 }) {
     const [activeTab, setActiveTab] = useState('dani');
+    const { toast } = useToast();
     
     const tabs = [
         { value: "juanfran", label: "Apuntes de Juanfran", icon: ListChecks },
@@ -97,6 +99,70 @@ export function OfficeSection({
         setActiveTab(value);
         localStorage.setItem('officeSection_activeTab', value);
     };
+
+    const handlePassChecklist = (
+        sourceItem: JuanFranNote | JordanItem | SandraNote | JulianNote,
+        sourceType: 'juanfran' | 'jordan' | 'sandra' | 'julian',
+        targetUserId: string,
+        annotations: string
+    ) => {
+        const targetUser = team.find(t => t.id === targetUserId);
+        if (!targetUser) {
+            toast({ variant: "destructive", title: "Error", description: "No se encontró al miembro del equipo de destino." });
+            return;
+        }
+
+        const sourceUser = team.find(t => t.name.toLowerCase().startsWith(sourceType));
+        const sourceUserName = sourceUser ? sourceUser.name : sourceType.charAt(0).toUpperCase() + sourceType.slice(1);
+
+        const checklistContent = (sourceItem.items || [])
+            .map(item => `- [${item.completed ? 'x' : ' '}] ${item.text}`)
+            .join('\n');
+
+        const newItemContent = `
+Checklist pasada desde ${sourceUserName}:
+${checklistContent}
+
+---
+**Anotaciones de ${sourceUserName}:**
+${annotations}
+        `.trim();
+
+        const newItem = {
+            title: `(Pasado) ${sourceItem.title}`,
+            content: newItemContent,
+            type: 'note', // Passed checklists become notes
+            date: new Date(),
+            completed: false,
+        };
+
+        // Determine which "add" function to call based on the target user's name
+        const targetUserName = targetUser.name.toLowerCase();
+        if (targetUserName.startsWith('juanfran')) {
+            onAddJuanfranNote(newItem);
+        } else if (targetUserName.startsWith('sandra')) {
+            onAddSandraNote(newItem);
+        } else if (targetUserName.startsWith('jordan')) {
+            onAddJordanChecklist(newItem);
+        } else if (targetUserName.startsWith('julian')) {
+            onAddJulianNote(newItem);
+        } else {
+             // Fallback or handle other users if necessary
+             toast({ variant: "destructive", title: "Error", description: `No se encontró una sección de notas para ${targetUser.name}.` });
+             return;
+        }
+        
+        // Delete original item
+        switch(sourceType) {
+            case 'juanfran': onDeleteJuanfranNote(sourceItem.id); break;
+            case 'jordan': onDeleteJordanChecklist(sourceItem.id); break;
+            case 'sandra': onDeleteSandraNote(sourceItem.id); break;
+            case 'julian': onDeleteJulianNote(sourceItem.id); break;
+        }
+
+        toast({ title: "Checklist Pasada", description: `La checklist "${sourceItem.title}" ha sido pasada a ${targetUser.name}.` });
+    };
+
 
     return (
         <div className="w-full space-y-6">
@@ -121,6 +187,8 @@ export function OfficeSection({
                         onAddJuanfranNote={onAddJuanfranNote}
                         onUpdateJuanfranNote={onUpdateJuanfranNote}
                         onDeleteJuanfranNote={onDeleteJuanfranNote}
+                        team={team}
+                        onPassChecklist={(item, target, notes) => handlePassChecklist(item, 'juanfran', target, notes)}
                     />
                 )}
                 {activeTab === 'julian' && (
@@ -129,6 +197,8 @@ export function OfficeSection({
                         onAddJulianNote={onAddJulianNote}
                         onUpdateJulianNote={onUpdateJulianNote}
                         onDeleteJulianNote={onDeleteJulianNote}
+                        team={team}
+                        onPassChecklist={(item, target, notes) => handlePassChecklist(item, 'julian', target, notes)}
                     />
                 )}
                 {activeTab === 'sandra' && (
@@ -137,6 +207,8 @@ export function OfficeSection({
                         onAddNote={onAddSandraNote}
                         onUpdateNote={onUpdateSandraNote}
                         onDeleteNote={onDeleteSandraNote}
+                        team={team}
+                        onPassChecklist={(item, target, notes) => handlePassChecklist(item, 'sandra', target, notes)}
                     />
                 )}
                 {activeTab === 'jordan' && (
@@ -145,6 +217,8 @@ export function OfficeSection({
                         onAddItem={onAddJordanChecklist}
                         onUpdateItem={onUpdateJordanChecklist}
                         onDeleteItem={onDeleteJordanChecklist}
+                        team={team}
+                        onPassChecklist={(item, target, notes) => handlePassChecklist(item, 'jordan', target, notes)}
                     />
                 )}
                 {activeTab === 'dani' && (

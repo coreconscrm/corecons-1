@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ListChecks, PlusCircle, Trash2, Pencil, CheckCircle2, NotebookText, MoreHorizontal, Eye } from "lucide-react";
+import { ListChecks, PlusCircle, Trash2, Pencil, CheckCircle2, NotebookText, MoreHorizontal, Eye, Send } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -22,6 +22,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { BookUser } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 // --- Schemas ---
@@ -40,8 +41,15 @@ const noteSchema = z.object({
   content: z.string().min(1, "El contenido no puede estar vacío."),
 });
 
+const passChecklistSchema = z.object({
+    targetUserId: z.string().min(1, "Debes seleccionar un destinatario."),
+    annotations: z.string().optional(),
+});
+
+
 // --- Types ---
 export type ChecklistItem = z.infer<typeof checklistItemSchema>;
+type TeamMember = { id: string, name: string };
 export type SandraNote = {
   id: string;
   type: 'note' | 'checklist';
@@ -54,6 +62,73 @@ export type SandraNote = {
 
 
 // --- Forms ---
+function PassChecklistForm({
+    open,
+    onOpenChange,
+    team,
+    onPass,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    team: TeamMember[];
+    onPass: (targetUserId: string, annotations: string) => void;
+}) {
+    const form = useForm<z.infer<typeof passChecklistSchema>>({
+        resolver: zodResolver(passChecklistSchema),
+        defaultValues: { annotations: "" },
+    });
+
+    const handleSubmit = (values: z.infer<typeof passChecklistSchema>) => {
+        onPass(values.targetUserId, values.annotations || "");
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Pasar Checklist a Compañero</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="targetUserId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Pasar a:</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="Selecciona un compañero..." /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>{team.map(member => <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="annotations"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Anotaciones (opcional)</FormLabel>
+                                    <FormControl><Textarea placeholder="Añade un comentario..." {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                            <Button type="submit">Pasar Checklist</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function ChecklistForm({ checklist, onSubmit, open, onOpenChange }: { checklist?: SandraNote, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const form = useForm<z.infer<typeof checklistSchema>>({
         resolver: zodResolver(checklistSchema),
@@ -200,10 +275,25 @@ function NoteForm({ note, onSubmit, open, onOpenChange }: { note?: SandraNote, o
 }
 
 // --- Main Component ---
-export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }: { notes: SandraNote[], onAddNote: (note: any) => void, onUpdateNote: (note: any) => void, onDeleteNote: (id: string) => void }) {
+export function SandraNotesCard({
+    notes,
+    onAddNote,
+    onUpdateNote,
+    onDeleteNote,
+    team,
+    onPassChecklist,
+}: {
+    notes: SandraNote[];
+    onAddNote: (note: any) => void;
+    onUpdateNote: (note: any) => void;
+    onDeleteNote: (id: string) => void;
+    team: TeamMember[];
+    onPassChecklist: (item: SandraNote, targetUserId: string, annotations: string) => void;
+}) {
     const [activeForm, setActiveForm] = useState<'note' | 'checklist' | null>(null);
     const [editingItem, setEditingItem] = useState<SandraNote | undefined>(undefined);
     const [viewingNote, setViewingNote] = useState<SandraNote | null>(null);
+    const [passingItem, setPassingItem] = useState<SandraNote | null>(null);
 
 
     const handleEdit = (item: SandraNote) => {
@@ -240,6 +330,10 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
         onUpdateNote({ ...note, completed: !note.completed });
     };
 
+    const handlePassClick = (item: SandraNote) => {
+        setPassingItem(item);
+    };
+
     const calculateProgress = (items: ChecklistItem[] = []) => {
         if (items.length === 0) return 0;
         const completedCount = items.filter(item => item.completed).length;
@@ -251,6 +345,17 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
 
     return (
         <Card>
+            {passingItem && (
+                <PassChecklistForm
+                    open={!!passingItem}
+                    onOpenChange={(open) => !open && setPassingItem(null)}
+                    team={team}
+                    onPass={(targetUserId, annotations) => {
+                        onPassChecklist(passingItem, targetUserId, annotations);
+                        setPassingItem(null);
+                    }}
+                />
+            )}
             <ChecklistForm
                 checklist={editingItem?.type === 'checklist' ? editingItem : undefined}
                 onSubmit={handleSubmit}
@@ -382,6 +487,7 @@ export function SandraNotesCard({ notes, onAddNote, onUpdateNote, onDeleteNote }
                                             ))}
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => handlePassClick(checklist)}><Send className="mr-2 h-4 w-4" />Pasar</Button>
                                             <Button variant="outline" size="sm" onClick={() => handleEdit(checklist)}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
