@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Link2, PlusCircle, MoreHorizontal, Pencil, Trash2, Folder, ExternalLink } from "lucide-react";
 
 // --- Schemas ---
@@ -229,84 +229,85 @@ export function LinksSection({
         </CardHeader>
         <CardContent>
           {sections.length > 0 ? (
-            <div className="space-y-6">
+             <Accordion type="multiple" className="w-full space-y-4">
               {Object.entries(groupedLinks).map(([sectionName, linksInSection]) => {
                 const section = sections.find(s => s.name === sectionName);
                 if (!section) return null;
 
                 return (
-                  <div key={section.id}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold flex items-center gap-2"><Folder size={20} /> {sectionName}</h3>
-                      <AlertDialog>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                  <DropdownMenuItem onSelect={() => handleEditSection(section)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                  <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                          <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la sección y todos los enlaces que contiene. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDeleteSection(section.id)}>Eliminar</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Título</TableHead>
-                                <TableHead>URL</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {linksInSection.map(link => (
-                                <TableRow key={link.id}>
-                                    <TableCell className="font-medium">{link.title}</TableCell>
-                                    <TableCell>
-                                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                                        {link.url} <ExternalLink size={14} />
-                                      </a>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => handleEditLink(link)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el enlace.</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteLink(link.id)}>Eliminar</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    </TableCell>
-                                </TableRow>
-                                ))}
-                                {linksInSection.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
-                                    No hay enlaces en esta sección.
-                                    </TableCell>
-                                </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                  </div>
+                  <AccordionItem value={section.id} key={section.id} className="border rounded-md px-4">
+                    <AccordionTrigger>
+                        <div className="flex justify-between items-center w-full">
+                            <h3 className="text-lg font-semibold flex items-center gap-2"><Folder size={20} /> {sectionName}</h3>
+                             <div onClick={(e) => e.stopPropagation()}>
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onSelect={() => handleEditSection(section)}><Pencil className="mr-2" />Editar Sección</DropdownMenuItem>
+                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar Sección</DropdownMenuItem></AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la sección y todos los enlaces que contiene. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onDeleteSection(section.id)}>Eliminar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        {linksInSection.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {linksInSection.map(link => (
+                                <Card key={link.id}>
+                                    <CardHeader className="flex-row items-start justify-between">
+                                        <div>
+                                            <CardTitle className="text-base">{link.title}</CardTitle>
+                                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline break-all">
+                                                {link.url}
+                                            </a>
+                                        </div>
+                                         <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => handleEditLink(link)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el enlace.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteLink(link.id)}>Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </CardHeader>
+                                    <CardFooter>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="w-full">
+                                                <ExternalLink className="mr-2 h-4 w-4" /> Abrir Enlace
+                                            </a>
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                            </div>
+                        ) : (
+                             <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                                <p>No hay enlaces en esta sección.</p>
+                            </div>
+                        )}
+                    </AccordionContent>
+                  </AccordionItem>
                 );
               })}
-            </div>
+            </Accordion>
           ) : (
             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
                 <p>No hay secciones creadas. Haz clic en "Crear Sección" para empezar.</p>
