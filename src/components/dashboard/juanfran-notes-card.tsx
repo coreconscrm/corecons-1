@@ -397,63 +397,7 @@ export function JuanfranNotesCard({
                 </DropdownMenu>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Simple Notes Section */}
-                <div>
-                    <h3 className="text-xl font-semibold mb-3">Apuntes Rápidos</h3>
-                    {simpleNotes.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {simpleNotes.map(note => (
-                            <Card 
-                                key={note.id} 
-                                className={cn("flex flex-col cursor-pointer hover:border-primary", note.completed && "bg-muted/50 text-muted-foreground")}
-                                onClick={() => setViewingNote(note)}
-                            >
-                                <CardHeader className="flex-row items-center justify-between pb-2">
-                                    <CardTitle className={cn("text-lg", note.completed && "line-through")}>{note.title}</CardTitle>
-                                    <div onClick={(e) => e.stopPropagation()}>
-                                        <AlertDialog>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => setViewingNote(note)}><Eye className="mr-2" />Ver</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => handleEdit(note)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el apunte permanentemente.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteJuanfranNote(note.id)}>Eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                     <p className={cn("text-sm text-muted-foreground truncate", note.completed && "line-through")}>
-                                        {note.content}
-                                    </p>
-                                </CardContent>
-                                <CardFooter onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id={`note-check-${note.id}`} checked={note.completed} onCheckedChange={() => handleToggleCompleted(note)} />
-                                        <label htmlFor={`note-check-${note.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                            Archivar
-                                        </label>
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                        </div>
-                    ) : (
-                         <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                            <p>No hay apuntes rápidos.</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Checklists Section */}
+                 {/* Checklists Section */}
                 <div>
                      <h3 className="text-xl font-semibold mb-3">Checklists</h3>
                      {checklists.length > 0 ? (
@@ -510,6 +454,61 @@ export function JuanfranNotesCard({
                             <CheckCircle2 className="mx-auto h-12 w-12" />
                             <h3 className="mt-4 text-lg font-semibold">Todo en orden</h3>
                             <p className="mt-1 text-sm">No hay checklists. ¡Crea una para empezar!</p>
+                        </div>
+                    )}
+                </div>
+                {/* Simple Notes Section */}
+                <div>
+                    <h3 className="text-xl font-semibold mb-3">Apuntes Rápidos</h3>
+                    {simpleNotes.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {simpleNotes.map(note => (
+                            <Card 
+                                key={note.id} 
+                                className={cn("flex flex-col cursor-pointer hover:border-primary", note.completed && "bg-muted/50 text-muted-foreground")}
+                                onClick={() => setViewingNote(note)}
+                            >
+                                <CardHeader className="flex-row items-center justify-between pb-2">
+                                    <CardTitle className={cn("text-lg", note.completed && "line-through")}>{note.title}</CardTitle>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setViewingNote(note)}><Eye className="mr-2" />Ver</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleEdit(note)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el apunte permanentemente.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteJuanfranNote(note.id)}>Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                     <p className={cn("text-sm text-muted-foreground truncate", note.completed && "line-through")}>
+                                        {note.content}
+                                    </p>
+                                </CardContent>
+                                <CardFooter onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id={`note-check-${note.id}`} checked={note.completed} onCheckedChange={() => handleToggleCompleted(note)} />
+                                        <label htmlFor={`note-check-${note.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            Archivar
+                                        </label>
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                        </div>
+                    ) : (
+                         <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                            <p>No hay apuntes rápidos.</p>
                         </div>
                     )}
                 </div>
