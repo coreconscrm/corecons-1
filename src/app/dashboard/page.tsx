@@ -133,6 +133,7 @@ export default function Page() {
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const fetchDiskItems = useCallback(async (path: string = 'disco/') => {
     try {
@@ -253,7 +254,7 @@ export default function Page() {
     
     fetchAllDataOnce();
 
-  }, [fetchAllDiskItems, toast]);
+  }, [fetchAllDiskItems, toast, refreshTrigger]);
 
   const handleLoadForms = useCallback(async (formData: any[]) => {
       if (!formData || formData.length === 0) {
@@ -300,6 +301,7 @@ export default function Page() {
 
       await batch.commit();
       toast({ title: 'Datos sincronizados', description: `Se han sincronizado los registros desde la hoja.` });
+      setRefreshTrigger(prev => prev + 1);
   }, [toast]);
 
   useEffect(() => {
@@ -357,14 +359,11 @@ export default function Page() {
   
   const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer' | 'categories', options: any[]) => {
       const dbKey = type === 'estado' ? 'estadoOptions' : (type === 'porHacer' ? 'porHacerOptions' : 'categories');
-      const stateKey = collectionStateMap[`seguimiento${type.charAt(0).toUpperCase() + type.slice(1)}`];
       try {
           const docRef = doc(db, 'config', 'seguimientoOptions');
           await setDoc(docRef, { [dbKey]: options }, { merge: true });
           
-          if (stateKey) {
-            setData((prevData: any) => ({ ...prevData, [stateKey]: options }));
-          }
+          setRefreshTrigger(prev => prev + 1);
           
           toast({ title: "Opciones guardadas", description: "Las nuevas opciones se han guardado correctamente." });
       } catch (error) {
@@ -378,6 +377,7 @@ export default function Page() {
             const docRef = doc(db, 'config', 'clientCategories');
             await setDoc(docRef, { categories }, { merge: true });
             toast({ title: "Subsecciones guardadas", description: "Las nuevas subsecciones se han guardado correctamente." });
+            setRefreshTrigger(prev => prev + 1);
         } catch (error) {
             console.error("Error saving client categories:", error);
             toast({ variant: "destructive", title: "Error al guardar subsecciones", description: (error as Error).message });
@@ -400,6 +400,7 @@ export default function Page() {
     try {
         await addDoc(collection(db, collectionName), dataToSave);
         toast({ title: "Elemento añadido", description: "El nuevo elemento se ha guardado correctamente." });
+        setRefreshTrigger(prev => prev + 1);
     } catch (error) {
         console.error(`Error adding item to ${collectionName}:`, error);
         toast({ variant: 'destructive', title: "Error al añadir", description: (error as Error).message });
@@ -417,6 +418,7 @@ export default function Page() {
         const itemRef = doc(db, collectionName, id);
         await updateDoc(itemRef, data);
         toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
+        setRefreshTrigger(prev => prev + 1);
     } catch (error) {
         console.error(`Error updating item in ${collectionName}:`, error);
         toast({ variant: 'destructive', title: "Error al actualizar", description: (error as Error).message });
@@ -427,6 +429,7 @@ export default function Page() {
     try {
       await deleteDoc(doc(db, collectionName, id));
       toast({ title: "Elemento eliminado", description: "El elemento ha sido borrado." });
+      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error(`Error deleting item ${id} from ${collectionName}:`, error);
       toast({ variant: 'destructive', title: "Error al eliminar", description: (error as Error).message });
@@ -437,6 +440,7 @@ export default function Page() {
     try {
       await setDoc(doc(db, 'config', 'googleSheet'), { url });
       toast({ title: 'URL guardada', description: 'La conexión con Google Sheets se ha actualizado.' });
+       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error al guardar URL', description: (error as Error).message });
     }
@@ -447,6 +451,7 @@ export default function Page() {
       try {
           await setDoc(doc(db, 'config', docId), { columns });
           toast({ title: 'Configuración guardada', description: 'La vista de la tabla ha sido actualizada.' });
+           setRefreshTrigger(prev => prev + 1);
       } catch(error) {
           toast({ variant: 'destructive', title: 'Error al guardar', description: (error as Error).message });
       }
@@ -500,6 +505,7 @@ export default function Page() {
       batch.delete(contactRef);
       await batch.commit();
       toast({ title: 'Movido a Seguimiento', description: `${newSeguimiento.name} ahora está en la lista de seguimiento.` });
+      setRefreshTrigger(prev => prev + 1);
   }, [toast]);
   
     const handleMoveFormContact = useCallback(async (formItem: any, destination: 'contacts' | 'priority_calls') => {
@@ -521,6 +527,7 @@ export default function Page() {
             await batch.commit();
             const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento';
             toast({ title: 'Contacto movido', description: `El contacto ha sido movido a ${destinationName}.` });
+            setRefreshTrigger(prev => prev + 1);
         } catch (error) {
             console.error(`Error moving contact from forms:`, error);
             toast({ variant: 'destructive', title: "Error al mover", description: (error as Error).message });
@@ -595,6 +602,7 @@ export default function Page() {
         await uploadBytes(fileRef, file);
         await fetchAllDiskItems(); 
         toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
+        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
 
     const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
@@ -603,6 +611,7 @@ export default function Page() {
         await uploadBytes(placeholderRef, new Blob([], { type: 'application/octet-stream' }));
         await fetchAllDiskItems();
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
+        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
     const deleteFolderContents = async (folderPath: string) => {
@@ -621,6 +630,7 @@ export default function Page() {
         }
         await fetchAllDiskItems();
         toast({ title: 'Elemento Eliminado' });
+        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
 
