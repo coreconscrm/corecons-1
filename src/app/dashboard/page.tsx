@@ -60,10 +60,10 @@ const collectionStateMap: Record<string, string> = {
     contacts: 'contacts',
     priority_calls: 'priorityCalls',
     seguimientos: 'seguimientos',
-    seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
-    seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
+    seguimientoEstadoOptions: 'seguimientoEstadoOptions',
+    seguimientoPorHacerOptions: 'seguimientoPorHacerOptions',
     seguimientoCategories: 'seguimientoCategories',
-    clientCategories: ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'],
+    clientCategories: 'clientCategories',
     budgets: 'budgets',
     companies: 'companies',
     documents: 'documents',
@@ -181,7 +181,7 @@ export default function Page() {
 
             // Fetch all collections using getDocs
             for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
-                if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(stateKey)) continue;
+                if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(collectionName)) continue;
                 
                 let q;
                 if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
@@ -356,12 +356,16 @@ export default function Page() {
   };
   
   const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer' | 'categories', options: any[]) => {
-      const key = type === 'estado' ? 'estadoOptions' : (type === 'porHacer' ? 'porHacerOptions' : 'categories');
+      const dbKey = type === 'estado' ? 'estadoOptions' : (type === 'porHacer' ? 'porHacerOptions' : 'categories');
+      const stateKey = collectionStateMap[`seguimiento${type.charAt(0).toUpperCase() + type.slice(1)}`];
       try {
           const docRef = doc(db, 'config', 'seguimientoOptions');
-          await setDoc(docRef, { [key]: options }, { merge: true });
-          // Update local state immediately
-          setData((prevData: any) => ({ ...prevData, [stateKey]: options }));
+          await setDoc(docRef, { [dbKey]: options }, { merge: true });
+          
+          if (stateKey) {
+            setData((prevData: any) => ({ ...prevData, [stateKey]: options }));
+          }
+          
           toast({ title: "Opciones guardadas", description: "Las nuevas opciones se han guardado correctamente." });
       } catch (error) {
           console.error("Error saving seguimiento options:", error);
