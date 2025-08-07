@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react";
@@ -22,6 +23,8 @@ import { format, parse, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen, FolderOpen, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 const seguimientoSchema = z.object({
   name: z.string().optional(),
@@ -35,6 +38,7 @@ const seguimientoSchema = z.object({
   category: z.string().optional(),
 });
 
+export type SeguimientoCategory = { name: string; visible: boolean };
 export type Seguimiento = { 
     id: string, 
     name?: string,
@@ -50,73 +54,91 @@ export type Seguimiento = {
 
 function OptionsSettingsDialog({ 
     estadoOptions, 
-    porHacerOptions, 
+    porHacerOptions,
+    categories,
     onSave, 
     open, 
     onOpenChange 
 }: { 
     estadoOptions: string[], 
-    porHacerOptions: string[], 
-    onSave: (type: 'estado' | 'porHacer', options: string[]) => void, 
+    porHacerOptions: string[],
+    categories: SeguimientoCategory[],
+    onSave: (type: 'estado' | 'porHacer' | 'categories', options: any[]) => void, 
     open: boolean, 
     onOpenChange: (o: boolean) => void 
 }) {
     const [currentEstado, setCurrentEstado] = useState(estadoOptions);
     const [currentPorHacer, setCurrentPorHacer] = useState(porHacerOptions);
+    const [currentCategories, setCurrentCategories] = useState(categories);
     const [newEstado, setNewEstado] = useState("");
     const [newPorHacer, setNewPorHacer] = useState("");
+    const [newCategory, setNewCategory] = useState("");
 
     useEffect(() => {
         if (open) {
             setCurrentEstado(estadoOptions);
             setCurrentPorHacer(porHacerOptions);
+            setCurrentCategories(categories);
         }
-    }, [estadoOptions, porHacerOptions, open]);
+    }, [estadoOptions, porHacerOptions, categories, open]);
     
     const handleSave = () => {
         onSave('estado', currentEstado);
         onSave('porHacer', currentPorHacer);
+        onSave('categories', currentCategories);
         onOpenChange(false);
     };
     
-    const handleAddOption = (type: 'estado' | 'porHacer') => {
+    const handleAddOption = (type: 'estado' | 'porHacer' | 'categories') => {
         if (type === 'estado' && newEstado.trim()) {
             setCurrentEstado([...currentEstado, newEstado.trim()]);
             setNewEstado("");
         } else if (type === 'porHacer' && newPorHacer.trim()) {
             setCurrentPorHacer([...currentPorHacer, newPorHacer.trim()]);
             setNewPorHacer("");
+        } else if (type === 'categories' && newCategory.trim()) {
+            if (!currentCategories.some(c => c.name === newCategory.trim())) {
+                setCurrentCategories([...currentCategories, { name: newCategory.trim(), visible: true }]);
+                setNewCategory("");
+            }
         }
     };
 
-    const handleEditOption = (type: 'estado' | 'porHacer', index: number, value: string) => {
+    const handleEditOption = (type: 'estado' | 'porHacer' | 'categories', index: number, value: any) => {
         if (type === 'estado') {
             const updated = [...currentEstado];
             updated[index] = value;
             setCurrentEstado(updated);
-        } else {
+        } else if (type === 'porHacer') {
             const updated = [...currentPorHacer];
             updated[index] = value;
             setCurrentPorHacer(updated);
+        } else if (type === 'categories') {
+            const updated = [...currentCategories];
+            updated[index] = value;
+            setCurrentCategories(updated);
         }
     };
     
-    const handleDeleteOption = (type: 'estado' | 'porHacer', index: number) => {
+    const handleDeleteOption = (type: 'estado' | 'porHacer' | 'categories', index: number) => {
         if (type === 'estado') {
             setCurrentEstado(currentEstado.filter((_, i) => i !== index));
-        } else {
+        } else if (type === 'porHacer') {
             setCurrentPorHacer(currentPorHacer.filter((_, i) => i !== index));
+        } else if (type === 'categories') {
+            setCurrentCategories(currentCategories.filter((_, i) => i !== index));
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Configurar Opciones de Seguimiento</DialogTitle>
-                    <DialogDescription>Añade, edita o elimina las opciones de los desplegables.</DialogDescription>
+                    <DialogDescription>Añade, edita o elimina las opciones de los desplegables y gestiona las subsecciones.</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                    {/* Estado */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg">Opciones de Estado</h3>
                         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
@@ -132,6 +154,7 @@ function OptionsSettingsDialog({
                             <Button size="icon" onClick={() => handleAddOption('estado')}><Plus className="h-4 w-4" /></Button>
                         </div>
                     </div>
+                    {/* Por Hacer */}
                      <div className="space-y-4">
                         <h3 className="font-semibold text-lg">Opciones de "Por Hacer"</h3>
                         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
@@ -147,6 +170,23 @@ function OptionsSettingsDialog({
                            <Button size="icon" onClick={() => handleAddOption('porHacer')}><Plus className="h-4 w-4" /></Button>
                         </div>
                     </div>
+                    {/* Categories */}
+                     <div className="space-y-4">
+                        <h3 className="font-semibold text-lg">Subsecciones</h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                           {currentCategories.map((cat, index) => (
+                               <div key={index} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                                   <Switch id={`vis-${cat.name}`} checked={cat.visible} onCheckedChange={(checked) => handleEditOption('categories', index, {...cat, visible: checked})} />
+                                   <Input className="flex-1 h-8" value={cat.name} onChange={(e) => handleEditOption('categories', index, {...cat, name: e.target.value})} disabled={cat.name === 'General'}/>
+                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteOption('categories', index)} disabled={cat.name === 'General'}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                               </div>
+                           ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <Input placeholder="Nueva subsección" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
+                           <Button size="icon" onClick={() => handleAddOption('categories')}><Plus className="h-4 w-4" /></Button>
+                        </div>
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
@@ -158,7 +198,7 @@ function OptionsSettingsDialog({
 }
 
 
-function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions, categories }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[], categories: string[] }) {
+function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOptions, porHacerOptions, categories }: { seguimiento?: Seguimiento, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, estadoOptions: string[], porHacerOptions: string[], categories: SeguimientoCategory[] }) {
     const form = useForm<z.infer<typeof seguimientoSchema>>({
         resolver: zodResolver(seguimientoSchema),
     });
@@ -258,7 +298,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                             </FormControl>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus weekStartsOn={1} locale={es} />
+                                            <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} initialFocus weekStartsOn={1} locale={es} />
                                         </PopoverContent>
                                     </Popover><FormMessage />
                                 </FormItem>
@@ -268,7 +308,7 @@ function SeguimientoForm({ seguimiento, onSubmit, open, onOpenChange, estadoOpti
                                     <Select onValueChange={field.onChange} value={field.value ?? 'General'}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una subsección" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {categories.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                            {categories.map(option => <SelectItem key={option.name} value={option.name}>{option.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select><FormMessage />
                                 </FormItem>
@@ -301,29 +341,27 @@ export function SeguimientoListCard({
     onDeleteSeguimiento: (id: string) => void,
     estadoOptions: string[],
     porHacerOptions: string[],
-    categories: string[],
-    onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: string[]) => void,
+    categories: SeguimientoCategory[],
+    onSeguimientoOptionsChange: (type: 'estado' | 'porHacer' | 'categories', options: any[]) => void,
 }) {
     const [isFormOpen, setFormOpen] = useState(false);
     const [activeSeguimiento, setActiveSeguimiento] = useState<Seguimiento | undefined>(undefined);
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-    const [newCategory, setNewCategory] = useState("");
-    const { toast } = useToast();
 
     const groupedSeguimientos = useMemo(() => {
+        const visibleCategories = categories.filter(c => c.visible).map(c => c.name);
         const groups: Record<string, Seguimiento[]> = {};
         
-        categories.forEach(cat => {
-            groups[cat] = [];
+        visibleCategories.forEach(catName => {
+            groups[catName] = [];
         });
 
         seguimientos.forEach(s => {
             const category = s.category || 'General';
-            if (!groups[category]) {
-                groups[category] = [];
+            if (groups[category]) {
+                groups[category].push(s);
             }
-            groups[category].push(s);
         });
 
         // Sort items within each group
@@ -362,14 +400,6 @@ export function SeguimientoListCard({
         }
     };
     
-    const handleAddCategory = () => {
-        if (newCategory && !categories.includes(newCategory)) {
-            onSeguimientoOptionsChange('categories', [...categories, newCategory]);
-            setNewCategory("");
-            toast({ title: `Subsección "${newCategory}" creada` });
-        }
-    };
-    
     const formatDisplayDate = (dateString: string | null): string => {
         if (!dateString) return 'N/A';
         const date = parse(dateString, 'dd/MM/yyyy', new Date());
@@ -392,6 +422,7 @@ export function SeguimientoListCard({
                 onOpenChange={setIsOptionsOpen}
                 estadoOptions={estadoOptions}
                 porHacerOptions={porHacerOptions}
+                categories={categories}
                 onSave={onSeguimientoOptionsChange}
             />
 
@@ -412,23 +443,12 @@ export function SeguimientoListCard({
                     <CardTitle>Seguimiento de Clientes</CardTitle>
                     <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="flex items-center gap-2">
-                        <Input 
-                            placeholder="Nueva subsección..." 
-                            value={newCategory} 
-                            onChange={(e) => setNewCategory(e.target.value)} 
-                            className="h-9"
-                        />
-                        <Button size="sm" onClick={handleAddCategory}><Plus className="h-4 w-4 mr-1" /> Añadir</Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => setIsOptionsOpen(true)}>
-                            <Settings className="h-4 w-4" />
-                            <span className="sr-only">Configurar Opciones</span>
-                        </Button>
-                        <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setIsOptionsOpen(true)}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Configurar Subsecciones
+                    </Button>
+                    <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -469,8 +489,8 @@ export function SeguimientoListCard({
                                                         <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
                                                         <DropdownMenuSubContent>
                                                           {categories.map(cat => (
-                                                            <DropdownMenuItem key={cat} onSelect={() => onUpdateSeguimiento({ ...s, category: cat })}>
-                                                                {cat}
+                                                            <DropdownMenuItem key={cat.name} onSelect={() => onUpdateSeguimiento({ ...s, category: cat.name })}>
+                                                                {cat.name}
                                                             </DropdownMenuItem>
                                                           ))}
                                                         </DropdownMenuSubContent>

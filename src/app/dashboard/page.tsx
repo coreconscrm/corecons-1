@@ -43,6 +43,8 @@ const defaultVisibleTabs = {
     estimaciones: true,
 };
 
+const defaultSeguimientoCategories = [{ name: 'General', visible: true }];
+
 const collectionStateMap: Record<string, string> = {
     projects: 'projects',
     clients: 'clients',
@@ -60,7 +62,7 @@ const collectionStateMap: Record<string, string> = {
     seguimientos: 'seguimientos',
     seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
     seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
-    seguimientoCategories: ['General'],
+    seguimientoCategories: 'seguimientoCategories',
     clientCategories: ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'],
     budgets: 'budgets',
     companies: 'companies',
@@ -102,7 +104,7 @@ export default function Page() {
     seguimientos: [],
     seguimientoEstadoOptions: ['buscar terreno', 'esperando'],
     seguimientoPorHacerOptions: ['llamar', 'buscar arquitecto'],
-    seguimientoCategories: ['General'],
+    seguimientoCategories: defaultSeguimientoCategories,
     clientCategories: ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'],
     budgets: [],
     companies: [],
@@ -172,106 +174,86 @@ export default function Page() {
 
   // Fetch all data from Firestore
   useEffect(() => {
-    fetchAllDiskItems();
+    const fetchAllDataOnce = async () => {
+        setIsLoading(true);
+        try {
+            const newDataState: { [key: string]: any } = {};
 
-    const unsubscribes = Object.entries(collectionStateMap).map(([collectionName, stateKey]) => {
-      let q;
-      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
-        q = query(collection(db, collectionName), orderBy("date", "desc"));
-      } else if (collectionName === 'seguimientos') {
-         q = query(collection(db, collectionName)); // Sorting is handled client-side
-      } else if (['contacts', 'priority_calls'].includes(collectionName)) {
-        q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
-      } else if (collectionName === 'forms') {
-        q = query(collection(db, collectionName), orderBy(documentId())); // Order by document ID for consistency
-      } else if (collectionName === 'estimaciones') {
-        q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-      }
-      else {
-        q = query(collection(db, collectionName));
-      }
-      
-      return onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setData((prevData:any) => ({ ...prevData, [stateKey]: items }));
-      }, (error) => console.error(`Error fetching ${collectionName}:`, error));
-    });
-
-    // Fetch dashboard settings
-    const settingsDocRef = doc(db, 'config', 'dashboardSettings');
-    const unsubSettings = onSnapshot(settingsDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const settingsData = docSnap.data();
-            setVisibleTabs(prev => ({ ...prev, ...(settingsData.visibleTabs || {}) }));
-            setShowOverviewPanels(settingsData.showOverviewPanels ?? true);
-        }
-        setIsLoading(false);
-    });
-
-    // Fetch Seguimiento options
-    const segOptionsDocRef = doc(db, 'config', 'seguimientoOptions');
-    const unsubSegOptions = onSnapshot(segOptionsDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const optionsData = docSnap.data();
-            setData(prev => ({
-                ...prev,
-                seguimientoEstadoOptions: optionsData.estadoOptions || [],
-                seguimientoPorHacerOptions: optionsData.porHacerOptions || [],
-                seguimientoCategories: optionsData.categories || ['General'],
-            }));
-        }
-    });
-
-    // Fetch Client categories
-    const clientCategoriesDocRef = doc(db, 'config', 'clientCategories');
-    const unsubClientCategories = onSnapshot(clientCategoriesDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            setData(prev => ({...prev, clientCategories: data.categories || ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado']}));
-        }
-    });
-    
-    // Fetch Google Sheet URL
-    const sheetConfigDocRef = doc(db, 'config', 'googleSheet');
-    const unsubSheetUrl = onSnapshot(sheetConfigDocRef, (doc) => {
-      setData((prev: any) => ({ ...prev, sheetUrl: doc.exists() ? doc.data().url : '' }));
-    });
-    
-    // Fetch Column Configurations
-    ['forms', 'contacts', 'priority_calls'].forEach(type => {
-        const configDocRef = doc(db, 'config', `${type}Columns`);
-        onSnapshot(configDocRef, (docSnap) => {
-            const key = type === 'forms' ? 'formCols' : (type === 'priority_calls' ? 'priorityCols' : 'contactCols');
-            const dataKey = type === 'priority_calls' ? 'priorityCalls' : type;
-
-            if (docSnap.exists()) {
-                 setData(prev => ({ ...prev, [key]: docSnap.data().columns }));
-            } else {
-                 setData(prev => {
-                    const currentItems = prev[dataKey as keyof typeof prev];
-                    if (Array.isArray(currentItems) && currentItems.length > 0 && prev[key].length === 0) {
-                        const firstItemKeys = Object.keys(currentItems[0]).filter(k => k !== 'id');
-                        const newCols = firstItemKeys.map(k => ({
-                            key: k,
-                            visible: true,
-                            displayName: getDisplayName(k)
-                        }));
-                        return { ...prev, [key]: newCols };
-                    }
-                    return prev;
-                });
+            // Fetch all collections using getDocs
+            for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
+                if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(stateKey)) continue;
+                
+                let q;
+                if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
+                  q = query(collection(db, collectionName), orderBy("date", "desc"));
+                } else if (collectionName === 'seguimientos') {
+                  q = query(collection(db, collectionName)); 
+                } else if (['contacts', 'priority_calls'].includes(collectionName)) {
+                  q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+                } else if (collectionName === 'forms') {
+                  q = query(collection(db, collectionName), orderBy(documentId())); 
+                } else if (collectionName === 'estimaciones') {
+                  q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
+                } else {
+                  q = query(collection(db, collectionName));
+                }
+                
+                const snapshot = await getDocs(q);
+                newDataState[stateKey] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             }
-        });
-    });
 
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-      unsubSettings();
-      unsubSegOptions();
-      unsubClientCategories();
-      unsubSheetUrl();
+            // Fetch settings and other single-document configs
+            const settingsDocRef = doc(db, 'config', 'dashboardSettings');
+            const settingsDocSnap = await getDoc(settingsDocRef);
+            if (settingsDocSnap.exists()) {
+                const settingsData = settingsDocSnap.data();
+                setVisibleTabs(prev => ({ ...prev, ...(settingsData.visibleTabs || {}) }));
+                setShowOverviewPanels(settingsData.showOverviewPanels ?? true);
+            }
+
+            const segOptionsDocRef = doc(db, 'config', 'seguimientoOptions');
+            const segOptionsDocSnap = await getDoc(segOptionsDocRef);
+            if (segOptionsDocSnap.exists()) {
+                const optionsData = segOptionsDocSnap.data();
+                const rawCategories = optionsData.categories || defaultSeguimientoCategories;
+                const standardizedCategories = rawCategories.map((cat: any) => typeof cat === 'string' ? { name: cat, visible: true } : cat);
+                if (!standardizedCategories.some((cat: any) => cat.name === 'General')) {
+                    standardizedCategories.unshift({ name: 'General', visible: true });
+                }
+                newDataState.seguimientoEstadoOptions = optionsData.estadoOptions || [];
+                newDataState.seguimientoPorHacerOptions = optionsData.porHacerOptions || [];
+                newDataState.seguimientoCategories = standardizedCategories;
+            } else {
+                newDataState.seguimientoCategories = defaultSeguimientoCategories;
+            }
+
+            const clientCategoriesDocRef = doc(db, 'config', 'clientCategories');
+            const clientCategoriesDocSnap = await getDoc(clientCategoriesDocRef);
+            if (clientCategoriesDocSnap.exists()) {
+                newDataState.clientCategories = clientCategoriesDocSnap.data().categories || ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'];
+            }
+            
+            const sheetConfigDocRef = doc(db, 'config', 'googleSheet');
+            const sheetConfigDocSnap = await getDoc(sheetConfigDocRef);
+            newDataState.sheetUrl = sheetConfigDocSnap.exists() ? sheetConfigDocSnap.data().url : '';
+            
+            // Set all data at once
+            setData(prevData => ({ ...prevData, ...newDataState }));
+
+            // Fetch storage items last
+            await fetchAllDiskItems();
+
+        } catch (error) {
+            console.error("Failed to fetch data from Firebase:", error);
+            toast({ variant: 'destructive', title: "Error de Conexión", description: "No se pudieron cargar los datos."});
+        } finally {
+            setIsLoading(false);
+        }
     };
-  }, [fetchAllDiskItems]);
+    
+    fetchAllDataOnce();
+
+  }, [fetchAllDiskItems, toast]);
 
   const handleLoadForms = useCallback(async (formData: any[]) => {
       if (!formData || formData.length === 0) {
@@ -279,42 +261,63 @@ export default function Page() {
           return;
       }
       
+      const createFormIdentifier = (form: any) => {
+          const name = form['Nombre'] || form['nombre'] || '';
+          const phone = form['Teléfono'] || form['telefono'] || '';
+          const email = form['Email'] || form['email'] || '';
+          const projectType = form['¿Que Tipo de Proyecto Necesitas?'] || '';
+          return `${name}-${phone}-${email}-${projectType}`.toLowerCase().replace(/\s+/g, '');
+      };
+
       const formsCollectionRef = collection(db, "forms");
       const batch = writeBatch(db);
       
       const existingFormsSnapshot = await getDocs(formsCollectionRef);
-      // Clear existing forms
+      const existingFormsMap = new Map();
       existingFormsSnapshot.forEach(doc => {
-          batch.delete(doc.ref);
+          const data = doc.data();
+          existingFormsMap.set(createFormIdentifier(data), { id: doc.id, ...data });
       });
 
-      // Add new forms
+      const incomingFormIdentifiers = new Set();
+      
       formData.forEach(newItem => {
-          const docRef = doc(formsCollectionRef);
-          batch.set(docRef, newItem);
+          const identifier = createFormIdentifier(newItem);
+          incomingFormIdentifiers.add(identifier);
+          const existingForm = existingFormsMap.get(identifier);
+
+          if (!existingForm) {
+              const docRef = doc(formsCollectionRef);
+              batch.set(docRef, { ...newItem, checked: false });
+          }
+      });
+
+      existingFormsMap.forEach((form, identifier) => {
+          if (!incomingFormIdentifiers.has(identifier)) {
+              batch.delete(doc(db, "forms", form.id));
+          }
       });
 
       await batch.commit();
-      toast({ title: 'Datos actualizados', description: `Se han cargado ${formData.length} nuevos registros desde la hoja.` });
+      toast({ title: 'Datos sincronizados', description: `Se han sincronizado los registros desde la hoja.` });
   }, [toast]);
 
   useEffect(() => {
-    const fetchSheetData = () => {
-      if (data.sheetUrl) {
+    if (data.sheetUrl) {
         Papa.parse(data.sheetUrl, {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: (results) => {
-                handleLoadForms(results.data);
+                if (results.data) {
+                    handleLoadForms(results.data);
+                }
             },
             error: (err) => {
                 toast({ variant: "destructive", title: "Error al leer Google Sheet", description: `No se pudo acceder a la URL. Verifica que esté publicada correctamente. Error: ${(err as Error).message}` });
             },
         });
-      }
-    };
-    fetchSheetData();
+    }
   }, [data.sheetUrl, handleLoadForms, toast]);
   
   const handleTabChange = (tab: string) => {
@@ -352,11 +355,13 @@ export default function Page() {
       }
   };
   
-  const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer' | 'categories', options: string[]) => {
+  const handleSeguimientoOptionsChange = async (type: 'estado' | 'porHacer' | 'categories', options: any[]) => {
       const key = type === 'estado' ? 'estadoOptions' : (type === 'porHacer' ? 'porHacerOptions' : 'categories');
       try {
           const docRef = doc(db, 'config', 'seguimientoOptions');
           await setDoc(docRef, { [key]: options }, { merge: true });
+          // Update local state immediately
+          setData((prevData: any) => ({ ...prevData, [stateKey]: options }));
           toast({ title: "Opciones guardadas", description: "Las nuevas opciones se han guardado correctamente." });
       } catch (error) {
           console.error("Error saving seguimiento options:", error);
@@ -502,11 +507,9 @@ export default function Page() {
 
         const batch = writeBatch(db);
 
-        // Add to new collection
         const newDocRef = doc(collection(db, destination));
         batch.set(newDocRef, { ...data, createdAt: Timestamp.now() });
 
-        // Delete from old collection
         const oldDocRef = doc(db, 'forms', id);
         batch.delete(oldDocRef);
 
@@ -586,7 +589,7 @@ export default function Page() {
         const fullPath = `${path}${file.name}`;
         const fileRef = ref(storage, fullPath);
         await uploadBytes(fileRef, file);
-        await fetchAllDiskItems(); // Re-fetch to show new file
+        await fetchAllDiskItems(); 
         toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
     }, [fetchAllDiskItems, toast]);
 
@@ -594,7 +597,7 @@ export default function Page() {
         const placeholderPath = `${path}${folderName}/.placeholder`;
         const placeholderRef = ref(storage, placeholderPath);
         await uploadBytes(placeholderRef, new Blob([], { type: 'application/octet-stream' }));
-        await fetchAllDiskItems(); // Re-fetch to show new folder
+        await fetchAllDiskItems();
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
     }, [fetchAllDiskItems, toast]);
     
@@ -631,9 +634,10 @@ export default function Page() {
   const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
 
   // Metrics for Seguimiento Overview
-  const totalSeguimientos = data.seguimientos.length;
+  const activeSeguimientos = data.seguimientos.filter((s: any) => !s.archived);
+  const totalSeguimientos = activeSeguimientos.length;
   
-  const llamarEstaSemana = data.seguimientos.filter((s: any) => {
+  const llamarEstaSemana = activeSeguimientos.filter((s: any) => {
     if (!s.siguienteLlamada || typeof s.siguienteLlamada !== 'string') return false;
     const nextCallDate = parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date());
     if (!isValid(nextCallDate)) return false;
@@ -648,10 +652,12 @@ export default function Page() {
     return isToday(p.presentationDate.toDate());
   }).length;
   
-  const seguimientoMetrics = data.seguimientoCategories.reduce((acc: any, category: string) => {
-      acc[category] = data.seguimientos.filter((s: any) => s.category === category).length;
-      return acc;
-  }, {});
+  const seguimientoMetrics = (data.seguimientoCategories || [])
+    .filter((cat: any) => cat.visible)
+    .reduce((acc: any, category: any) => {
+        acc[category.name] = activeSeguimientos.filter((s: any) => s.category === category.name).length;
+        return acc;
+    }, {});
 
   // Metrics for Oficina Overview
   const countPending = (items: any[]) => {
