@@ -731,7 +731,7 @@ function AiBudgetCard({
     onPrint: (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => void,
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
-    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
+    onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMovePartida: (sourceChapter: string, sourceIndex: number, destChapter: string, destIndex: number) => void;
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
 }) {
@@ -986,7 +986,7 @@ function AiBudgetCard({
                 </CardHeader>
                 <AccordionContent>
                     <DragDropContext onDragEnd={onDragEnd}>
-                        <CardContent className="flex-grow space-y-6">
+                        <div className="flex-grow space-y-6 px-6 pb-6">
                             <Accordion type="multiple" className="w-full">
                                 {budget.breakdown.capitulos.map((capitulo, index) => (
                                     <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
@@ -1165,7 +1165,7 @@ function AiBudgetCard({
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
-                        </CardContent>
+                        </div>
                     </DragDropContext>
                     <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                         <div className="text-xl font-bold">
