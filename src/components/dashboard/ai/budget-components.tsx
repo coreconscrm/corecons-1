@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move } from "lucide-react";
+import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createProjectBreakdown } from "@/ai/flows/create-project-breakdown";
@@ -19,14 +19,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Textarea } from "../../ui/textarea";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "../../ui/dropdown-menu";
+import { Textarea } from "../ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { AiBudgetPrintLayout } from "../budget-print-layout";
 import type { Company } from "../company/company-section";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { RadioGroup, RadioGroupItem } from "../../ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 
 // --- Tipos de Datos ---
@@ -798,6 +799,29 @@ function AiBudgetCard({
         onSaveChanges(budget);
         setHasChanges(false);
     }
+    
+    const onDragEnd = (result: DropResult) => {
+        const { source, destination, draggableId } = result;
+
+        if (!destination) {
+            return;
+        }
+        
+        const chapterName = destination.droppableId;
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+
+        if (!chapter || source.index === destination.index) {
+            return;
+        }
+
+        const [reorderedItem] = chapter.partidas.splice(source.index, 1);
+        chapter.partidas.splice(destination.index, 0, reorderedItem);
+
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown });
+        setHasChanges(true);
+    };
+
 
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
@@ -919,183 +943,196 @@ function AiBudgetCard({
                     </div>
                 </CardHeader>
                 <AccordionContent>
-                    <CardContent className="flex-grow space-y-6">
-                        <Accordion type="multiple" className="w-full">
-                            {budget.breakdown.capitulos.map((capitulo, index) => (
-                                <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
-                                    <div className="flex items-center gap-2">
-                                        <AccordionTrigger className="text-lg font-semibold flex-1">
-                                            {editingChapter?.oldName === capitulo.nombre ? (
-                                                <Input 
-                                                    value={editingChapter.newName}
-                                                    onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
-                                                    onKeyDown={handleChapterNameKeyDown}
-                                                    onBlur={() => setEditingChapter(null)}
-                                                    autoFocus
-                                                    className="h-8"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <span>{capitulo.nombre}</span>
-                                            )}
-                                        </AccordionTrigger>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-6 w-6 shrink-0" 
-                                            onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
-                                            }}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <AccordionContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[80px]">Nº Partida</TableHead>
-                                                    <TableHead className="w-2/5">Partida</TableHead>
-                                                    <TableHead className="text-right">Medición</TableHead>
-                                                    <TableHead className="text-center">Unidad</TableHead>
-                                                    <TableHead className="text-right">Tu Precio (€/ud)</TableHead>
-                                                    <TableHead className="text-right">Total Partida (€)</TableHead>
-                                                    <TableHead className="w-[50px]"></TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {capitulo.partidas.map((partida, pIndex) => {
-                                                    const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                                    const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                    const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
-                                                    return (
-                                                    <TableRow key={`${partida.descripcion}-${pIndex}`}>
-                                                        <TableCell className="w-[80px]">
-                                                            <Input
-                                                                defaultValue={partida.numero || ''}
-                                                                className="text-left h-8"
-                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="w-2/5">
-                                                            <Textarea
-                                                                defaultValue={partida.descripcion}
-                                                                className="w-full h-auto"
-                                                                onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="text-right w-[100px]">
-                                                            <Input
-                                                                defaultValue={partida.medicion || ''}
-                                                                className="text-right h-8"
-                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="text-center w-[100px]">
-                                                            <Input
-                                                                defaultValue={partida.unidad || ''}
-                                                                className="text-center h-8"
-                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-mono">
-                                                          {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </TableCell>
-                                                        <TableCell className="text-right w-[150px]">
-                                                             <Input
-                                                                type="number"
-                                                                className="text-right"
-                                                                placeholder="0.00"
-                                                                defaultValue={lineTotal || ''}
-                                                                onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent>
-                                                                    <DropdownMenuSub>
-                                                                        <DropdownMenuSubTrigger>
-                                                                            <Move className="mr-2 h-4 w-4" /> Mover a...
-                                                                        </DropdownMenuSubTrigger>
-                                                                        <DropdownMenuSubContent>
-                                                                            {budget.breakdown.capitulos.filter(c => c.nombre !== capitulo.nombre).map(targetChapter => (
-                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(capitulo.nombre, pIndex, targetChapter.nombre)}>
-                                                                                    {targetChapter.nombre}
-                                                                                </DropdownMenuItem>
-                                                                            ))}
-                                                                        </DropdownMenuSubContent>
-                                                                    </DropdownMenuSub>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <CardContent className="flex-grow space-y-6">
+                            <Accordion type="multiple" className="w-full">
+                                {budget.breakdown.capitulos.map((capitulo, index) => (
+                                    <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
+                                        <div className="flex items-center gap-2">
+                                            <AccordionTrigger className="text-lg font-semibold flex-1">
+                                                {editingChapter?.oldName === capitulo.nombre ? (
+                                                    <Input 
+                                                        value={editingChapter.newName}
+                                                        onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
+                                                        onKeyDown={handleChapterNameKeyDown}
+                                                        onBlur={() => setEditingChapter(null)}
+                                                        autoFocus
+                                                        className="h-8"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <span>{capitulo.nombre}</span>
+                                                )}
+                                            </AccordionTrigger>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-6 w-6 shrink-0" 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <AccordionContent>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-[40px]"></TableHead>
+                                                        <TableHead className="w-[80px]">Nº Partida</TableHead>
+                                                        <TableHead className="w-2/5">Partida</TableHead>
+                                                        <TableHead className="text-right">Medición</TableHead>
+                                                        <TableHead className="text-center">Unidad</TableHead>
+                                                        <TableHead className="text-right">Tu Precio (€/ud)</TableHead>
+                                                        <TableHead className="text-right">Total Partida (€)</TableHead>
+                                                        <TableHead className="w-[50px]"></TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <Droppable droppableId={capitulo.nombre}>
+                                                {(provided) => (
+                                                    <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                                                        {capitulo.partidas.map((partida, pIndex) => {
+                                                            const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                                            const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                            return (
+                                                                <Draggable key={`${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`} draggableId={`${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`} index={pIndex}>
+                                                                {(provided) => (
+                                                                    <TableRow ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                                        <TableCell className="w-[40px]"><GripVertical className="h-5 w-5 text-muted-foreground" /></TableCell>
+                                                                        <TableCell className="w-[80px]">
+                                                                            <Input
+                                                                                defaultValue={partida.numero || ''}
+                                                                                className="text-left h-8"
+                                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="w-2/5">
+                                                                            <Textarea
+                                                                                defaultValue={partida.descripcion}
+                                                                                className="w-full h-auto"
+                                                                                onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-right w-[100px]">
+                                                                            <Input
+                                                                                defaultValue={partida.medicion || ''}
+                                                                                className="text-right h-8"
+                                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center w-[100px]">
+                                                                            <Input
+                                                                                defaultValue={partida.unidad || ''}
+                                                                                className="text-center h-8"
+                                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-right font-mono">
+                                                                          {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </TableCell>
+                                                                        <TableCell className="text-right w-[150px]">
+                                                                             <Input
+                                                                                type="number"
+                                                                                className="text-right"
+                                                                                placeholder="0.00"
+                                                                                defaultValue={lineTotal || ''}
+                                                                                onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <DropdownMenu>
+                                                                                <DropdownMenuTrigger asChild>
+                                                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                                                </DropdownMenuTrigger>
+                                                                                <DropdownMenuContent>
+                                                                                    <DropdownMenuSub>
+                                                                                        <DropdownMenuSubTrigger>
+                                                                                            <Move className="mr-2 h-4 w-4" /> Mover a...
+                                                                                        </DropdownMenuSubTrigger>
+                                                                                        <DropdownMenuSubContent>
+                                                                                            {budget.breakdown.capitulos.filter(c => c.nombre !== capitulo.nombre).map(targetChapter => (
+                                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(capitulo.nombre, pIndex, targetChapter.nombre)}>
+                                                                                                    {targetChapter.nombre}
+                                                                                                </DropdownMenuItem>
+                                                                                            ))}
+                                                                                        </DropdownMenuSubContent>
+                                                                                    </DropdownMenuSub>
+                                                                                </DropdownMenuContent>
+                                                                            </DropdownMenu>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                )}
+                                                                </Draggable>
+                                                        )})}
+                                                        {provided.placeholder}
+                                                    </TableBody>
+                                                )}
+                                                </Droppable>
+                                                <UiTableFooter>
+                                                    <TableRow className="bg-secondary/50 hover:bg-secondary">
+                                                        <TableCell colSpan={7} className="text-right font-bold">Total Capítulo</TableCell>
+                                                        <TableCell className="text-right font-bold font-mono">
+                                                            €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </TableCell>
                                                     </TableRow>
-                                                )})}
-                                            </TableBody>
-                                            <UiTableFooter>
-                                                <TableRow className="bg-secondary/50 hover:bg-secondary">
-                                                    <TableCell colSpan={6} className="text-right font-bold">Total Capítulo</TableCell>
-                                                    <TableCell className="text-right font-bold font-mono">
-                                                        €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </TableCell>
-                                                </TableRow>
-                                            </UiTableFooter>
-                                        </Table>
+                                                </UiTableFooter>
+                                            </Table>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="mt-4"
+                                                onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                            >
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                            </Button>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+
+                            <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
+                            </Button>
+
+                            <Accordion type="single" collapsible className="w-full mt-6">
+                                <AccordionItem value="summary">
+                                    <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Capítulo</TableHead>
+                                                        <TableHead className="text-right">Total</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
+                                                        <TableRow key={nombre}>
+                                                            <TableCell className="font-semibold">{nombre}</TableCell>
+                                                            <TableCell className="text-right font-mono">
+                                                                €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                         <Button
                                             variant="outline"
-                                            size="sm"
                                             className="mt-4"
-                                            onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                            onClick={() => onCreateSummaryBudgetFromAi(budget)}
                                         >
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                            <Copy className="mr-2 h-4 w-4" /> Mover Resumen a Presupuestos
                                         </Button>
                                     </AccordionContent>
                                 </AccordionItem>
-                            ))}
-                        </Accordion>
-
-                        <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
-                        </Button>
-
-                        <Accordion type="single" collapsible className="w-full mt-6">
-                            <AccordionItem value="summary">
-                                <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
-                                <AccordionContent>
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Capítulo</TableHead>
-                                                    <TableHead className="text-right">Total</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
-                                                    <TableRow key={nombre}>
-                                                        <TableCell className="font-semibold">{nombre}</TableCell>
-                                                        <TableCell className="text-right font-mono">
-                                                            €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        className="mt-4"
-                                        onClick={() => onCreateSummaryBudgetFromAi(budget)}
-                                    >
-                                        <Copy className="mr-2 h-4 w-4" /> Mover Resumen a Presupuestos
-                                    </Button>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </CardContent>
+                            </Accordion>
+                        </CardContent>
+                    </DragDropContext>
                     <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                         <div className="text-xl font-bold">
                             Total Presupuesto (Tus Precios): <span className="font-mono">€{budgetTotals.grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1245,3 +1282,4 @@ export function AiBudgetsSection({
       </div>
     );
 }
+
