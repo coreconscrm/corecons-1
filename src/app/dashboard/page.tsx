@@ -18,7 +18,7 @@ import { isWithinInterval, parse, startOfWeek, endOfWeek, isValid, isToday } fro
 import { es } from 'date-fns/locale';
 import type { Budget, BudgetCategory } from '@/components/dashboard/budgets/budgets-section';
 import type { AiBudgetItem } from '@/components/dashboard/ai/ai-section';
-import { getDisplayName } from '@/components/dashboard/forms/forms-section';
+import { getDisplayName, type ColumnConfig } from '@/components/dashboard/forms/forms-section';
 import Papa from 'papaparse';
 
 
@@ -237,6 +237,14 @@ export default function Page() {
             const sheetConfigDocSnap = await getDoc(sheetConfigDocRef);
             newDataState.sheetUrl = sheetConfigDocSnap.exists() ? sheetConfigDocSnap.data().url : '';
             
+            // Fetch column configurations
+            const formColsDoc = await getDoc(doc(db, 'config', 'formsColumns'));
+            if (formColsDoc.exists()) newDataState.formCols = formColsDoc.data().columns;
+            const contactColsDoc = await getDoc(doc(db, 'config', 'contactsColumns'));
+            if (contactColsDoc.exists()) newDataState.contactCols = contactColsDoc.data().columns;
+            const priorityColsDoc = await getDoc(doc(db, 'config', 'priority_callsColumns'));
+            if (priorityColsDoc.exists()) newDataState.priorityCols = priorityColsDoc.data().columns;
+            
             // Set all data at once
             setData(prevData => ({ ...prevData, ...newDataState }));
 
@@ -264,9 +272,13 @@ export default function Page() {
                 skipEmptyLines: true,
                 complete: (results) => {
                     if (results.data) {
-                        // Assign a simple temporary ID for rendering purposes
                         const formsWithIds = (results.data as any[]).map((row, index) => ({ ...row, id: `sheet-${index}` }));
-                        setData(prev => ({...prev, sheetForms: formsWithIds }));
+                        const headers = results.meta.fields || [];
+                        setData(prev => ({
+                            ...prev,
+                            sheetForms: formsWithIds,
+                            formCols: prev.formCols.length > 0 ? prev.formCols : headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }))
+                        }));
                     }
                 },
                 error: (err) => {
@@ -277,6 +289,18 @@ export default function Page() {
              setData(prev => ({...prev, sheetForms: [] })); // Clear sheet data if URL is removed
         }
     }, [data.sheetUrl, toast]);
+    
+    // Initialize column configs if they are empty
+    useEffect(() => {
+        if (data.contacts.length > 0 && data.contactCols.length === 0) {
+            const headers = Object.keys(data.contacts[0]).filter(k => k !== 'id');
+            setData(prev => ({ ...prev, contactCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
+        }
+         if (data.priorityCalls.length > 0 && data.priorityCols.length === 0) {
+            const headers = Object.keys(data.priorityCalls[0]).filter(k => k !== 'id');
+            setData(prev => ({ ...prev, priorityCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
+        }
+    }, [data.contacts, data.priorityCalls, data.contactCols, data.priorityCols]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -404,7 +428,7 @@ export default function Page() {
     }
   }, [toast]);
   
-  const handleColumnConfigChange = useCallback(async (type: 'forms' | 'contacts' | 'priority_calls', columns: any[]) => {
+  const handleColumnConfigChange = useCallback(async (type: 'forms' | 'contacts' | 'priority_calls', columns: ColumnConfig[]) => {
       const docId = `${type}Columns`;
       try {
           await setDoc(doc(db, 'config', docId), { columns });

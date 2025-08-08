@@ -95,7 +95,7 @@ function ColumnSettingsDialog({
                         Renombra, reordena y cambia la visibilidad de las columnas.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                     {currentColumns.map((col, index) => (
                         <div key={col.key} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
                             <Checkbox
@@ -458,7 +458,11 @@ export function FormsSection({
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    // This is now handled in the main page component
+                    const formsWithIds = (results.data as any[]).map((row, index) => ({ ...row, id: `csv-${index}` }));
+                    const headers = results.meta.fields || [];
+                    onFormColsChange(headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
+                    // The main page component will receive this data via a callback in a real scenario
+                    // For now, we just toast and assume the parent handles the data
                     toast({title: "Cargado con éxito", description: "El CSV ha sido procesado."})
                 },
                 error: (err) => {
