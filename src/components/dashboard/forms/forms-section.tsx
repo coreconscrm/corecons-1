@@ -209,7 +209,8 @@ function DynamicTableCard({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
-  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible), [columnConfig]);
+  const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible && c.key !== 'called'), [columnConfig]);
+  const isCalledVisible = useMemo(() => columnConfig.some(c => c.key === 'called' && c.visible), [columnConfig]);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -269,6 +270,7 @@ function DynamicTableCard({
               <Table>
                 <TableHeader><TableRow>
                     <TableHead>Acciones</TableHead>
+                     {isCalledVisible && <TableHead>{getDisplayName('called')}</TableHead>}
                     {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
                 </TableRow></TableHeader>
                 <TableBody>
@@ -290,19 +292,20 @@ function DynamicTableCard({
                           </AlertDialogContent>
                         </AlertDialog>
                       </TableCell>
+                       {isCalledVisible && (
+                         <TableCell>
+                             <Checkbox 
+                                 checked={item.called} 
+                                 onCheckedChange={(checked) => {
+                                     const updateFn = isSheetTable ? onUpdateSheetFormStatus : onUpdateItem;
+                                     if(updateFn) updateFn({ ...item, called: !!checked });
+                                 }} 
+                             />
+                         </TableCell>
+                        )}
                       {visibleHeaders.map(h => {
                         const cellKey = `${item.id}-${h.key}`;
-                        if (h.key === 'called') {
-                             const updateFn = isSheetTable ? onUpdateSheetFormStatus : onUpdateItem;
-                             return (
-                                 <TableCell key={cellKey}>
-                                     <Checkbox 
-                                         checked={item.called} 
-                                         onCheckedChange={(checked) => updateFn && updateFn({ ...item, called: !!checked })} 
-                                     />
-                                 </TableCell>
-                             );
-                        }
+                        
                         if (h.key === 'status' && onUpdateItem) {
                             return <TableCell key={cellKey}>
                                 <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
