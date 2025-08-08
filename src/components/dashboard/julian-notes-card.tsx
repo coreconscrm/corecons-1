@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react";
@@ -17,8 +18,8 @@ import { ListChecks, PlusCircle, Trash2, Pencil, CheckCircle2, NotebookText, Mor
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Textarea } from "../ui/textarea";
-import { ScrollArea } from "../ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
