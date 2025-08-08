@@ -408,7 +408,7 @@ export default function Page() {
 }, [toast]);
 
 
-  const updateItem = useCallback(async (collectionName: string, itemData: any) => {
+  const updateItem = useCallback(async (collectionName: string, itemData: any, refresh: boolean = true) => {
     const { id, ...data } = itemData;
     if (!id) {
         toast({ variant: 'destructive', title: 'Error', description: 'No se puede actualizar un elemento sin ID.'});
@@ -417,8 +417,10 @@ export default function Page() {
     try {
         const itemRef = doc(db, collectionName, id);
         await updateDoc(itemRef, data);
-        toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
-        setRefreshTrigger(prev => prev + 1);
+        if (refresh) {
+            toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
+            setRefreshTrigger(prev => prev + 1);
+        }
     } catch (error) {
         console.error(`Error updating item in ${collectionName}:`, error);
         toast({ variant: 'destructive', title: "Error al actualizar", description: (error as Error).message });

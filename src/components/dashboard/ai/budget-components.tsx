@@ -26,6 +26,7 @@ import type { Company } from "../company/company-section";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { RadioGroup, RadioGroupItem } from "../../ui/radio-group";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 
 // --- Tipos de Datos ---
@@ -315,7 +316,7 @@ export function BudgetUploader({
 }
 
 
-function BudgetDetailsDialog({ budget, open, onOpenChange, onSave }: { budget: AiBudgetItem, open: boolean, onOpenChange: (open: boolean) => void, onSave: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void }) {
+function BudgetDetailsDialog({ budget, open, onOpenChange, onSave }: { budget: AiBudgetItem, open: boolean, onOpenChange: (open: boolean) => void, onSave: (values: z.infer<typeof budgetDetailsSchema>) => void }) {
     const form = useForm<z.infer<typeof budgetDetailsSchema>>({
         resolver: zodResolver(budgetDetailsSchema),
         defaultValues: {
@@ -336,7 +337,7 @@ function BudgetDetailsDialog({ budget, open, onOpenChange, onSave }: { budget: A
     }, [budget, open, form]);
 
     const handleSubmit = (values: z.infer<typeof budgetDetailsSchema>) => {
-        onSave(budget.id, values);
+        onSave(values);
         onOpenChange(false);
     };
 
@@ -649,37 +650,154 @@ function AddLineItemDialog({ open, onOpenChange, onSave, chapterName }: { open: 
 // --- Componente para una tarjeta de presupuesto de IA ---
 function AiBudgetCard({ 
     budget, 
-    onLineTotalChange, 
-    onDetailsChange,
+    onBudgetUpdate,
+    onSaveChanges,
     onDelete,
     onPrint,
     onMergeClick,
     onAddToBudgetClick,
-    onChapterNameChange,
-    onAddChapter,
-    onAddLineItem,
-    onPartidaChange,
     onCreateSummaryBudgetFromAi,
-    onMovePartida,
 }: { 
     budget: AiBudgetItem, 
-    onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
-    onDetailsChange: (id: string, values: z.infer<typeof budgetDetailsSchema>) => void,
+    onBudgetUpdate: (updatedBudget: AiBudgetItem) => void;
+    onSaveChanges: (budgetToSave: AiBudgetItem) => void;
     onDelete: (id: string) => void,
     onPrint: (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => void,
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
-    onChapterNameChange: (budgetId: string, oldName: string, newName: string) => void,
-    onAddChapter: (budgetId: string, chapterName: string) => void,
-    onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
-    onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
-    onMovePartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
     const [isAddChapterOpen, setAddChapterOpen] = useState(false);
     const [addingLineItemTo, setAddingLineItemTo] = useState<string | null>(null);
+    const [hasChanges, setHasChanges] = useState(false);
+
+    const onDetailsChange = (values: z.infer<typeof budgetDetailsSchema>) => {
+        onBudgetUpdate({ ...budget, ...values });
+        setHasChanges(true);
+    };
+
+    const onLineTotalChange = (capitulo: string, partida: string, total: string) => {
+        const totalValue = parseFloat(total);
+        const newTotal = isNaN(totalValue) ? 0 : totalValue;
+        const updatedTotals = {
+            ...budget.userLineTotals,
+            [capitulo]: {
+                ...(budget.userLineTotals?.[capitulo] || {}),
+                [partida]: newTotal
+            }
+        };
+        onBudgetUpdate({ ...budget, userLineTotals: updatedTotals });
+        setHasChanges(true);
+    };
+
+    const onChapterNameChange = (oldName: string, newName: string) => {
+        if (!newName.trim() || oldName === newName.trim()) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === oldName);
+        if (chapter) {
+            chapter.nombre = newName.trim();
+        }
+
+        const newUserLineTotals = { ...budget.userLineTotals };
+        if (newUserLineTotals[oldName]) {
+            newUserLineTotals[newName.trim()] = newUserLineTotals[oldName];
+            delete newUserLineTotals[oldName];
+        }
+
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newUserLineTotals });
+        setHasChanges(true);
+    };
+    
+    const onAddChapter = (chapterName: string) => {
+        if (budget.breakdown.capitulos.some((c: any) => c.nombre === chapterName)) {
+            // Toast logic could be added here if needed
+            return;
+        }
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        newBreakdown.capitulos.push({ nombre: chapterName, partidas: [] });
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown });
+        setHasChanges(true);
+    };
+    
+    const onAddLineItem = (chapterName: string, values: z.infer<typeof addLineItemSchema>) => {
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter) return;
+        
+        chapter.partidas.push({
+            numero: values.numero || "",
+            description: values.description,
+            medicion: values.medicion || "",
+            unidad: values.unidad || "",
+            precioUnitario: "", 
+        });
+
+        const newTotal = values.total || 0;
+        const updatedTotals = {
+            ...budget.userLineTotals,
+            [chapterName]: {
+                ...(budget.userLineTotals?.[chapterName] || {}),
+                [values.description]: newTotal,
+            }
+        };
+
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: updatedTotals });
+        setHasChanges(true);
+    };
+
+    const onPartidaChange = (chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => {
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter || !chapter.partidas[partidaIndex]) return;
+
+        let newTotals = budget.userLineTotals;
+        if (field === 'descripcion') {
+            const oldDescription = chapter.partidas[partidaIndex].descripcion;
+            const tempTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+            if (tempTotals[chapterName] && tempTotals[chapterName][oldDescription] !== undefined) {
+                tempTotals[chapterName][value] = tempTotals[chapterName][oldDescription];
+                delete tempTotals[chapterName][oldDescription];
+                newTotals = tempTotals;
+            }
+        }
+
+        chapter.partidas[partidaIndex][field] = value;
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
+        setHasChanges(true);
+    };
+
+    const onMovePartida = (sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
+        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
+
+        if (!sourceChapter || !targetChapter) return;
+
+        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
+        targetChapter.partidas.push(partidaToMove);
+        
+        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
+            if (!newTotals[targetChapterName]) {
+                newTotals[targetChapterName] = {};
+            }
+            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
+            delete newTotals[sourceChapterName][partidaToMove.descripcion];
+        }
+        
+        onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
+        setHasChanges(true);
+    };
+    
+    const handleSave = () => {
+        onSaveChanges(budget);
+        setHasChanges(false);
+    }
 
     const budgetTotals = useMemo(() => {
         let grandTotal = 0;
@@ -701,7 +819,7 @@ function AiBudgetCard({
     const handleChapterNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             if (editingChapter && editingChapter.newName.trim()) {
-                onChapterNameChange(budget.id, editingChapter.oldName, editingChapter.newName.trim());
+                onChapterNameChange(editingChapter.oldName, editingChapter.newName.trim());
                 setEditingChapter(null);
             }
         } else if (e.key === 'Escape') {
@@ -724,7 +842,7 @@ function AiBudgetCard({
                 <AddChapterDialog
                     open={isAddChapterOpen}
                     onOpenChange={setAddChapterOpen}
-                    onSave={(name) => onAddChapter(budget.id, name)}
+                    onSave={(name) => onAddChapter(name)}
                 />
             )}
             {addingLineItemTo && (
@@ -732,14 +850,14 @@ function AiBudgetCard({
                     open={!!addingLineItemTo}
                     onOpenChange={() => setAddingLineItemTo(null)}
                     chapterName={addingLineItemTo}
-                    onSave={(values) => onAddLineItem(budget.id, addingLineItemTo, values)}
+                    onSave={(values) => onAddLineItem(addingLineItemTo, values)}
                 />
             )}
             <Card key={budget.id} className="flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between p-4">
                     <AccordionTrigger className="flex-1 p-0 hover:no-underline">
                         <div className="text-left">
-                            <h3 className="font-semibold text-lg">{budget.title || budget.fileName}</h3>
+                            <h3 className={cn("font-semibold text-lg", hasChanges && "font-bold")}>{budget.title || budget.fileName} {hasChanges && '*'}</h3>
                             <CardDescription className="mt-1">
                                 {budget.clientName && <span className="font-semibold">{budget.clientName}</span>}
                                 {budget.clientName && budget.description && " - "}
@@ -748,58 +866,63 @@ function AiBudgetCard({
                             </CardDescription>
                         </div>
                     </AccordionTrigger>
-                    <AlertDialog>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => onAddToBudgetClick(budget)}>
-                                    <FolderPlus className="mr-2 h-4 w-4" /> Añadir a Presupuestos
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
-                                    <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
-                                </DropdownMenuItem>
-                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        <Printer className="mr-2 h-4 w-4" /> Imprimir
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: false })}>Imprimir Completo</DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: true })}>Imprimir Resumen</DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                                 <DropdownMenuItem onSelect={() => onMergeClick(budget)}>
-                                    <Merge className="mr-2 h-4 w-4" /> Unir con...
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Presupuesto
+                    <div className="flex items-center gap-1">
+                        <Button onClick={handleSave} disabled={!hasChanges} size="sm">
+                            <Save className="mr-2 h-4 w-4" /> Guardar
+                        </Button>
+                        <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => onAddToBudgetClick(budget)}>
+                                        <FolderPlus className="mr-2 h-4 w-4" /> Añadir a Presupuestos
                                     </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                         <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Se eliminará permanentemente este presupuesto analizado.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDelete(budget.id)}>Sí, eliminar</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={() => setDetailsDialogOpen(true)}>
+                                        <Pencil className="mr-2 h-4 w-4" /> Editar Detalles
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            <Printer className="mr-2 h-4 w-4" /> Imprimir
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: false })}>Imprimir Completo</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => onPrint(budget, { summaryOnly: true })}>Imprimir Resumen</DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuItem onSelect={() => onMergeClick(budget)}>
+                                        <Merge className="mr-2 h-4 w-4" /> Unir con...
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Presupuesto
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Se eliminará permanentemente este presupuesto analizado.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(budget.id)}>Sí, eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardHeader>
                 <AccordionContent>
                     <CardContent className="flex-grow space-y-6">
                         <Accordion type="multiple" className="w-full">
                             {budget.breakdown.capitulos.map((capitulo, index) => (
-                                <AccordionItem value={`item-${index}`} key={index}>
+                                <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
                                     <div className="flex items-center gap-2">
                                         <AccordionTrigger className="text-lg font-semibold flex-1">
                                             {editingChapter?.oldName === capitulo.nombre ? (
@@ -847,33 +970,33 @@ function AiBudgetCard({
                                                     const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
                                                     const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
                                                     return (
-                                                    <TableRow key={pIndex}>
+                                                    <TableRow key={`${partida.descripcion}-${pIndex}`}>
                                                         <TableCell className="w-[80px]">
                                                             <Input
                                                                 defaultValue={partida.numero || ''}
                                                                 className="text-left h-8"
-                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'numero', e.target.value)}
+                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="w-2/5">
                                                             <Textarea
                                                                 defaultValue={partida.descripcion}
                                                                 className="w-full h-auto"
-                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'descripcion', e.target.value)}
+                                                                onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-right w-[100px]">
                                                             <Input
                                                                 defaultValue={partida.medicion || ''}
                                                                 className="text-right h-8"
-                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'medicion', e.target.value)}
+                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-center w-[100px]">
                                                             <Input
                                                                 defaultValue={partida.unidad || ''}
                                                                 className="text-center h-8"
-                                                                onBlur={(e) => onPartidaChange(budget.id, capitulo.nombre, pIndex, 'unidad', e.target.value)}
+                                                                onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono">
@@ -885,7 +1008,7 @@ function AiBudgetCard({
                                                                 className="text-right"
                                                                 placeholder="0.00"
                                                                 defaultValue={lineTotal || ''}
-                                                                onBlur={(e) => onLineTotalChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
+                                                                onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)}
                                                             />
                                                         </TableCell>
                                                         <TableCell>
@@ -900,7 +1023,7 @@ function AiBudgetCard({
                                                                         </DropdownMenuSubTrigger>
                                                                         <DropdownMenuSubContent>
                                                                             {budget.breakdown.capitulos.filter(c => c.nombre !== capitulo.nombre).map(targetChapter => (
-                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(budget.id, capitulo.nombre, pIndex, targetChapter.nombre)}>
+                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(capitulo.nombre, pIndex, targetChapter.nombre)}>
                                                                                     {targetChapter.nombre}
                                                                                 </DropdownMenuItem>
                                                                             ))}
@@ -987,7 +1110,7 @@ function AiBudgetCard({
 
 // --- Componente de la Sección de Presupuestos de IA ---
 export function AiBudgetsSection({ 
-    aiBudgets,
+    aiBudgets: initialAiBudgets,
     onUpdateAiBudget,
     onDeleteAiBudget,
     companies,
@@ -996,7 +1119,7 @@ export function AiBudgetsSection({
     onMovePartida,
 }: { 
     aiBudgets: AiBudgetItem[],
-    onUpdateAiBudget: (budget: any) => void,
+    onUpdateAiBudget: (budget: any, refresh?: boolean) => void,
     onDeleteAiBudget: (id: string) => void,
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
@@ -1007,6 +1130,11 @@ export function AiBudgetsSection({
     const [printingBudget, setPrintingBudget] = useState<{ budget: AiBudgetItem, printOptions: { summaryOnly: boolean } } | null>(null);
     const [mergingBudget, setMergingBudget] = useState<AiBudgetItem | null>(null);
     const [addingToBudget, setAddingToBudget] = useState<AiBudgetItem | null>(null);
+    const [localBudgets, setLocalBudgets] = useState<AiBudgetItem[]>([]);
+    
+    useEffect(() => {
+        setLocalBudgets(JSON.parse(JSON.stringify(initialAiBudgets)));
+    }, [initialAiBudgets]);
 
     useEffect(() => {
         if (printingBudget) {
@@ -1018,28 +1146,18 @@ export function AiBudgetsSection({
         }
     }, [printingBudget]);
 
-    const handleLineTotalChange = (budgetId: string, capitulo: string, partida: string, total: string) => {
-        const budget = aiBudgets.find(b => b.id === budgetId);
-        if(!budget) return;
-        const totalValue = parseFloat(total);
-        const newTotal = isNaN(totalValue) ? 0 : totalValue;
-        const updatedTotals = {
-            ...budget.userLineTotals,
-            [capitulo]: {
-                ...(budget.userLineTotals?.[capitulo] || {}),
-                [partida]: newTotal
-            }
-        };
-        onUpdateAiBudget({ id: budgetId, userLineTotals: updatedTotals });
+    const handleLocalBudgetUpdate = (updatedBudget: AiBudgetItem) => {
+        setLocalBudgets(prev => prev.map(b => b.id === updatedBudget.id ? updatedBudget : b));
     };
-    
-    const handleDetailsChange = (id: string, values: z.infer<typeof budgetDetailsSchema>) => {
-        onUpdateAiBudget({ id, ...values });
+
+    const handleSaveChanges = (budgetToSave: AiBudgetItem) => {
+        onUpdateAiBudget(budgetToSave, false); // false to prevent page reload
+        toast({ title: "Guardado", description: `Los cambios en "${budgetToSave.title}" se han guardado.` });
     };
 
     const handleMergeBudgets = async (sourceId: string, targetId: string) => {
-        const sourceBudget = aiBudgets.find(b => b.id === sourceId);
-        const targetBudget = aiBudgets.find(b => b.id === targetId);
+        const sourceBudget = localBudgets.find(b => b.id === sourceId);
+        const targetBudget = localBudgets.find(b => b.id === targetId);
 
         if (!sourceBudget || !targetBudget) {
             toast({ variant: "destructive", title: "Error", description: "No se encontraron los presupuestos para unir." });
@@ -1065,94 +1183,10 @@ export function AiBudgetsSection({
              Object.assign(mergedTotals[chapterName], partidas);
         }
         
-        onUpdateAiBudget({ id: targetId, breakdown: { capitulos: mergedBreakdown }, userLineTotals: mergedTotals });
+        onUpdateAiBudget({ id: targetId, breakdown: { capitulos: mergedBreakdown }, userLineTotals: mergedTotals }, true);
         onDeleteAiBudget(sourceId);
         
         toast({ title: "Fusión completada", description: `"${sourceBudget.title}" se ha unido con "${targetBudget.title}".` });
-    };
-    
-    const handleChapterNameChange = (budgetId: string, oldName: string, newName: string) => {
-        const budget = aiBudgets.find(b => b.id === budgetId);
-        if (!budget || oldName === newName) return;
-    
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === oldName);
-        if (chapter) {
-            chapter.nombre = newName;
-        }
-    
-        const newUserLineTotals = { ...budget.userLineTotals };
-        if (newUserLineTotals[oldName]) {
-            newUserLineTotals[newName] = newUserLineTotals[oldName];
-            delete newUserLineTotals[oldName];
-        }
-
-        onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown, userLineTotals: newUserLineTotals });
-    };
-
-    const handleAddChapter = (budgetId: string, chapterName: string) => {
-        const budget = aiBudgets.find(b => b.id === budgetId);
-        if (!budget) return;
-        
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        if(newBreakdown.capitulos.some((c:any) => c.nombre === chapterName)) {
-            toast({ variant: "destructive", title: "Capítulo duplicado", description: "Ya existe un capítulo con ese nombre." });
-            return;
-        }
-
-        newBreakdown.capitulos.push({ nombre: chapterName, partidas: [] });
-        onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown });
-    };
-
-    const handleAddLineItem = (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => {
-        const budget = aiBudgets.find(b => b.id === budgetId);
-        if (!budget) return;
-
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
-        if (!chapter) return;
-        
-        chapter.partidas.push({
-            numero: values.numero || "",
-            description: values.description,
-            medicion: values.medicion || "",
-            unidad: values.unidad || "",
-            precioUnitario: "", // Not used for user-added items
-        });
-
-        const newTotal = values.total || 0;
-        const updatedTotals = {
-            ...budget.userLineTotals,
-            [chapterName]: {
-                ...(budget.userLineTotals?.[chapterName] || {}),
-                [values.description]: newTotal,
-            }
-        };
-
-        onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown, userLineTotals: updatedTotals });
-    };
-    
-    const handlePartidaChange = (budgetId: string, chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => {
-        const budget = aiBudgets.find(b => b.id === budgetId);
-        if (!budget) return;
-
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
-        if (!chapter || !chapter.partidas[partidaIndex]) return;
-
-        if (field === 'descripcion') {
-            const oldDescription = chapter.partidas[partidaIndex].descripcion;
-            const newUserLineTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
-
-            if (newUserLineTotals[chapterName] && newUserLineTotals[chapterName][oldDescription] !== undefined) {
-                newUserLineTotals[chapterName][value] = newUserLineTotals[chapterName][oldDescription];
-                delete newUserLineTotals[chapterName][oldDescription];
-                onUpdateAiBudget({id: budgetId, userLineTotals: newUserLineTotals});
-            }
-        }
-
-        chapter.partidas[partidaIndex][field] = value;
-        onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown });
     };
     
     const handlePrint = (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => {
@@ -1164,7 +1198,7 @@ export function AiBudgetsSection({
           {mergingBudget && (
                 <MergeBudgetDialog
                     sourceBudget={mergingBudget}
-                    allBudgets={aiBudgets}
+                    allBudgets={localBudgets}
                     open={!!mergingBudget}
                     onOpenChange={() => setMergingBudget(null)}
                     onMerge={handleMergeBudgets}
@@ -1185,24 +1219,19 @@ export function AiBudgetsSection({
                     printOptions={printingBudget?.printOptions}
                 />
             </div>
-          {aiBudgets.length > 0 ? (
+          {localBudgets.length > 0 ? (
             <Accordion type="single" collapsible className="w-full space-y-4">
-                {aiBudgets.map(budget => (
+                {localBudgets.map(budget => (
                     <AiBudgetCard
                         key={budget.id}
                         budget={budget}
-                        onLineTotalChange={handleLineTotalChange}
-                        onDetailsChange={handleDetailsChange}
+                        onBudgetUpdate={handleLocalBudgetUpdate}
+                        onSaveChanges={handleSaveChanges}
                         onDelete={onDeleteAiBudget}
                         onPrint={handlePrint}
                         onMergeClick={setMergingBudget}
                         onAddToBudgetClick={setAddingToBudget}
-                        onChapterNameChange={handleChapterNameChange}
-                        onAddChapter={handleAddChapter}
-                        onAddLineItem={handleAddLineItem}
-                        onPartidaChange={handlePartidaChange}
                         onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
-                        onMovePartida={onMovePartida}
                     />
                 ))}
             </Accordion>

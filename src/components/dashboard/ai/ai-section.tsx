@@ -34,7 +34,7 @@ export function AiSection({
     forms: any[],
     aiBudgets: AiBudgetItem[],
     onAddAiBudget: (budget: any) => void;
-    onUpdateAiBudget: (budget: any) => void;
+    onUpdateAiBudget: (budget: any, refresh?: boolean) => void;
     onDeleteAiBudget: (id: string) => void;
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: BudgetCategory) => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
@@ -178,5 +178,3 @@ export function AiSection({
         </div>
     );
 }
-
-    
