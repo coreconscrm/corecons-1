@@ -187,6 +187,7 @@ export function DashboardTabs({
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
         <FormsSection 
           forms={data.sheetForms}
+          onUpdateSheetFormStatus={actions.handleUpdateSheetFormStatus}
           contacts={data.contacts}
           onAddContact={(contact: any) => actions.createItem('contacts', {...contact, createdAt: Timestamp.now()})}
           onUpdateContact={(contact: any) => actions.updateItem('contacts', contact)}

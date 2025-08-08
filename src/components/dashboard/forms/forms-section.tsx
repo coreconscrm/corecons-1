@@ -191,12 +191,16 @@ function DynamicTableCard({
   columnConfig, onColumnConfigChange,
   onAddItem, onUpdateItem, onDeleteItem,
   itemActions,
+  isSheetTable = false,
+  onUpdateSheetFormStatus,
   children
 }: {
   title: string, description: string, items: any[],
   columnConfig: ColumnConfig[], onColumnConfigChange: (cols: ColumnConfig[]) => void,
   onAddItem?: (item: any) => void, onUpdateItem?: (item: any) => void, onDeleteItem?: (id: string) => void,
   itemActions: (item: any) => React.ReactNode,
+  isSheetTable?: boolean,
+  onUpdateSheetFormStatus?: (item: any) => void,
   children?: React.ReactNode
 }) {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
@@ -288,8 +292,16 @@ function DynamicTableCard({
                       </TableCell>
                       {visibleHeaders.map(h => {
                         const cellKey = `${item.id}-${h.key}`;
-                        if (h.key === 'called' && onUpdateItem) {
-                            return <TableCell key={cellKey}><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
+                        if (h.key === 'called') {
+                             const updateFn = isSheetTable ? onUpdateSheetFormStatus : onUpdateItem;
+                             return (
+                                 <TableCell key={cellKey}>
+                                     <Checkbox 
+                                         checked={item.called} 
+                                         onCheckedChange={(checked) => updateFn && updateFn({ ...item, called: !!checked })} 
+                                     />
+                                 </TableCell>
+                             );
                         }
                         if (h.key === 'status' && onUpdateItem) {
                             return <TableCell key={cellKey}>
@@ -400,6 +412,7 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 
 export function FormsSection({
   forms,
+  onUpdateSheetFormStatus,
   contacts,
   onAddContact,
   onUpdateContact,
@@ -420,6 +433,7 @@ export function FormsSection({
   onMoveFormContact
 }: {
   forms: Item[],
+  onUpdateSheetFormStatus: (item: any) => void,
   contacts: Item[],
   onAddContact: (item: any) => void,
   onUpdateContact: (item: any) => void,
@@ -509,6 +523,8 @@ export function FormsSection({
                         items={forms}
                         columnConfig={formCols}
                         onColumnConfigChange={onFormColsChange}
+                        isSheetTable={true}
+                        onUpdateSheetFormStatus={onUpdateSheetFormStatus}
                         itemActions={(item) => (
                             <>
                             <DropdownMenuSub>

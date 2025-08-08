@@ -79,7 +79,19 @@ const collectionStateMap: Record<string, string> = {
     company_links: 'companyLinks',
     link_sections: 'linkSections',
     estimaciones: 'estimaciones',
+    sheetFormStatus: 'sheetFormStatus',
 };
+
+// --- Helper Functions ---
+function generateStableId(row: any): string {
+  // Use a combination of fields that are likely to be unique and stable.
+  const timestamp = row['Marca temporal'] || row['Timestamp'] || '';
+  const email = row['Correo electrónico'] || row['Email'] || '';
+  const phone = row['Teléfono'] || row['Telefono'] || '';
+  const name = row['Nombre y apellidos'] || row['Nombre'] || '';
+  return `${timestamp}-${email}-${phone}-${name}`.replace(/[^a-zA-Z0-9-_]/g, '');
+}
+
 
 // Main Page Component
 export default function Page() {
@@ -122,6 +134,7 @@ export default function Page() {
     companyLinks: [],
     linkSections: [],
     estimaciones: [],
+    sheetFormStatus: {},
     sheetUrl: '',
     formCols: [],
     contactCols: [],
@@ -183,7 +196,7 @@ export default function Page() {
 
             // Fetch all collections using getDocs
             for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
-                 if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(collectionName)) continue;
+                 if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems', 'sheetFormStatus'].includes(collectionName)) continue;
                 
                 let q;
                 if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
@@ -201,6 +214,14 @@ export default function Page() {
                 const snapshot = await getDocs(q);
                 newDataState[stateKey] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             }
+            
+            // Fetch sheet form statuses separately
+            const statusSnapshot = await getDocs(collection(db, 'sheetFormStatus'));
+            const statusData: { [key: string]: any } = {};
+            statusSnapshot.forEach(doc => {
+                statusData[doc.id] = doc.data();
+            });
+            newDataState.sheetFormStatus = statusData;
 
             // Fetch settings and other single-document configs
             const settingsDocRef = doc(db, 'config', 'dashboardSettings');
@@ -272,11 +293,23 @@ export default function Page() {
                 skipEmptyLines: true,
                 complete: (results) => {
                     if (results.data) {
-                        const formsWithIds = (results.data as any[]).map((row, index) => ({ ...row, id: `sheet-${index}` }));
-                        const headers = results.meta.fields || [];
+                        const formsWithStableIds = (results.data as any[]).map((row, index) => {
+                            const stableId = generateStableId(row);
+                            return { 
+                                ...row, 
+                                id: stableId, // Use stable ID for the row
+                                called: data.sheetFormStatus[stableId]?.called || false
+                            };
+                        });
+                        
+                        let headers = results.meta.fields || [];
+                        if (!headers.includes('called')) {
+                            headers.unshift('called');
+                        }
+                        
                         setData(prev => ({
                             ...prev,
-                            sheetForms: formsWithIds,
+                            sheetForms: formsWithStableIds,
                             formCols: prev.formCols.length > 0 ? prev.formCols : headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }))
                         }));
                     }
@@ -288,7 +321,7 @@ export default function Page() {
         } else {
              setData(prev => ({...prev, sheetForms: [] })); // Clear sheet data if URL is removed
         }
-    }, [data.sheetUrl, toast]);
+    }, [data.sheetUrl, toast, data.sheetFormStatus]);
     
     // Initialize column configs if they are empty
     useEffect(() => {
@@ -404,6 +437,26 @@ export default function Page() {
     } catch (error) {
         console.error(`Error updating item in ${collectionName}:`, error);
         toast({ variant: 'destructive', title: "Error al actualizar", description: (error as Error).message });
+    }
+  }, [toast]);
+  
+  const handleUpdateSheetFormStatus = useCallback(async (item: any) => {
+    const { id, called } = item;
+    if (!id) return;
+    try {
+      await setDoc(doc(db, 'sheetFormStatus', id), { called }, { merge: true });
+      // No toast for this to avoid spamming
+      // Local state will be updated optimistically for instant feedback
+      setData(prev => ({
+          ...prev,
+          sheetForms: prev.sheetForms.map((f: any) => f.id === id ? { ...f, called } : f),
+          sheetFormStatus: { ...prev.sheetFormStatus, [id]: { called } }
+      }));
+    } catch (error) {
+       console.error(`Error updating sheet form status for ${id}:`, error);
+       toast({ variant: 'destructive', title: "Error al actualizar estado", description: (error as Error).message });
+       // Revert optimistic update on error if needed
+       setData(prev => ({...prev, sheetForms: prev.sheetForms.map((f: any) => f.id === id ? { ...f, called: !called } : f)}));
     }
   }, [toast]);
 
@@ -717,7 +770,10 @@ export default function Page() {
   const formsTotal = data.sheetForms.length;
   const manualAndPriorityTotal = data.contacts.length + data.priorityCalls.length;
   const manualAndPriorityCalled = data.contacts.filter((c:any) => c.called).length + data.priorityCalls.filter((pc:any) => pc.called).length;
-  const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
+  const sheetFormsCalled = data.sheetForms.filter((f: any) => f.called).length;
+  const totalCalled = manualAndPriorityCalled + sheetFormsCalled;
+  const totalPending = (formsTotal + manualAndPriorityTotal) - totalCalled;
+
 
   // Metrics for Seguimiento Overview
   const activeSeguimientos = data.seguimientos.filter((s: any) => !s.archived);
@@ -817,9 +873,9 @@ export default function Page() {
                       sent={budgetsSent}
                   />
                   <FormOverview
-                      total={formsTotal}
-                      called={manualAndPriorityCalled}
-                      pending={manualAndPriorityPending}
+                      total={formsTotal + manualAndPriorityTotal}
+                      called={totalCalled}
+                      pending={totalPending}
                   />
                 </div>
             )}
@@ -852,6 +908,7 @@ export default function Page() {
                 handleMergeAiChapters,
                 handleDeleteAiPartida,
                 handleUpdateAiBudget,
+                handleUpdateSheetFormStatus
               }}
             />
           </div>
