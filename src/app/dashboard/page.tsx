@@ -691,8 +691,34 @@ export default function Page() {
         // Remove source chapter
         newBreakdown.capitulos.splice(sourceChapterIndex, 1);
         
-        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals }, false);
+        setRefreshTrigger(prev => prev + 1); // Refresh local state
         toast({ title: "Capítulos unidos", description: `Se ha unido "${sourceChapterName}" con "${targetChapterName}".` });
+
+    }, [data.aiBudgets, updateItem, toast]);
+    
+    const handleDeleteAiPartida = useCallback(async (budgetId: string, chapterName: string, partidaIndex: number) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+        
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter || !chapter.partidas[partidaIndex]) return;
+
+        const partidaToDelete = chapter.partidas[partidaIndex];
+        
+        // Remove from totals
+        if (newTotals[chapterName] && newTotals[chapterName][partidaToDelete.descripcion] !== undefined) {
+            delete newTotals[chapterName][partidaToDelete.descripcion];
+        }
+
+        // Remove partida
+        chapter.partidas.splice(partidaIndex, 1);
+        
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        toast({ title: "Partida eliminada", description: `La partida ha sido eliminada.` });
 
     }, [data.aiBudgets, updateItem, toast]);
 
@@ -842,6 +868,7 @@ export default function Page() {
                 fetchDiskItems,
                 handleMoveAiPartida,
                 handleMergeAiChapters,
+                handleDeleteAiPartida,
               }}
             />
           </div>

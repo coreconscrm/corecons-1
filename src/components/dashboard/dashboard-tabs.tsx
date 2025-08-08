@@ -150,6 +150,7 @@ export function DashboardTabs({
           onCreateSummaryBudgetFromAi={actions.handleCreateSummaryBudgetFromAi}
           onMoveAiPartida={actions.handleMoveAiPartida}
           onMergeAiChapters={actions.handleMergeAiChapters}
+          onDeleteAiPartida={actions.handleDeleteAiPartida}
         />
       </TabsContent>}
 

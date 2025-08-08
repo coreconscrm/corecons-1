@@ -722,7 +722,8 @@ function AiBudgetCard({
     onAddToBudgetClick,
     onCreateSummaryBudgetFromAi,
     onMergeChapters,
-    onMovePartida
+    onMovePartida,
+    onDeletePartida,
 }: { 
     budget: AiBudgetItem, 
     onBudgetUpdate: (updatedBudget: AiBudgetItem) => void;
@@ -734,6 +735,7 @@ function AiBudgetCard({
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
     onMovePartida: (source: any, destination: any) => void;
+    onDeletePartida: (chapterName: string, partidaIndex: number) => void;
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -839,6 +841,11 @@ function AiBudgetCard({
         onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
         setHasChanges(true);
     };
+    
+    const handleDeletePartida = (chapterName: string, partidaIndex: number) => {
+        onDeletePartida(chapterName, partidaIndex);
+        setHasChanges(true);
+    }
 
     const handleSave = () => {
         onSaveChanges(budget);
@@ -985,148 +992,165 @@ function AiBudgetCard({
                     </div>
                 </CardHeader>
                 <AccordionContent>
-                    <div className="flex-grow space-y-6 px-6 pb-6">
-                        <DragDropContext onDragEnd={handleDragEnd}>
-                            <Accordion type="multiple" className="w-full">
-                                {budget.breakdown.capitulos.map((capitulo, index) => (
-                                    <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
-                                        <div className="flex items-center gap-2">
-                                            <AccordionTrigger className="text-lg font-semibold flex-1">
-                                                {editingChapter?.oldName === capitulo.nombre ? (
-                                                    <Input 
-                                                        value={editingChapter.newName}
-                                                        onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
-                                                        onKeyDown={handleChapterNameKeyDown}
-                                                        onBlur={() => setEditingChapter(null)}
-                                                        autoFocus
-                                                        className="h-8"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                ) : (
-                                                    <span>{capitulo.nombre}</span>
-                                                )}
-                                            </AccordionTrigger>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
-                                                        <Pencil className="mr-2 h-4 w-4" />Renombrar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
-                                                        <Merge className="mr-2 h-4 w-4" />Unir con...
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                        <AccordionContent>
-                                            {/* Header */}
-                                            <div className="flex items-center text-xs font-medium text-muted-foreground px-4 py-2 border-b">
-                                                <div className="w-[40px] shrink-0"></div>
-                                                <div className="w-[80px] shrink-0">Nº Partida</div>
-                                                <div className="flex-1 w-2/5">Partida</div>
-                                                <div className="w-[100px] shrink-0 text-right">Medición</div>
-                                                <div className="w-[100px] shrink-0 text-center">Unidad</div>
-                                                <div className="w-auto shrink-0 text-right">Tu Precio (€/ud)</div>
-                                                <div className="w-[150px] shrink-0 text-right">Total Partida (€)</div>
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                        <div className="flex-grow space-y-6 px-6 pb-6">
+                                <Accordion type="multiple" className="w-full">
+                                    {budget.breakdown.capitulos.map((capitulo, index) => (
+                                        <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
+                                            <div className="flex items-center gap-2">
+                                                <AccordionTrigger className="text-lg font-semibold flex-1">
+                                                    {editingChapter?.oldName === capitulo.nombre ? (
+                                                        <Input 
+                                                            value={editingChapter.newName}
+                                                            onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
+                                                            onKeyDown={handleChapterNameKeyDown}
+                                                            onBlur={() => setEditingChapter(null)}
+                                                            autoFocus
+                                                            className="h-8"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    ) : (
+                                                        <span>{capitulo.nombre}</span>
+                                                    )}
+                                                </AccordionTrigger>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
+                                                            <Pencil className="mr-2 h-4 w-4" />Renombrar
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
+                                                            <Merge className="mr-2 h-4 w-4" />Unir con...
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
-                                            <Droppable droppableId={capitulo.nombre}>
-                                                {(provided) => (
-                                                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                                                        {capitulo.partidas.map((partida, pIndex) => {
-                                                            const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                            const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
-                                                            const draggableId = `${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`;
-                                                            return (
-                                                                <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
-                                                                    {(provided) => (
-                                                                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="flex items-center text-sm px-4 py-2 border-b">
-                                                                            <div className="w-[40px] shrink-0 flex justify-center"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
-                                                                            <div className="w-[80px] shrink-0 pr-2">
-                                                                                <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
+                                            <AccordionContent>
+                                                <div className="flex items-center text-xs font-medium text-muted-foreground px-4 py-2 border-b">
+                                                    <div className="w-[40px] shrink-0"></div>
+                                                    <div className="w-[80px] shrink-0">Nº Partida</div>
+                                                    <div className="flex-1 w-2/5">Partida</div>
+                                                    <div className="w-[100px] shrink-0 text-right">Medición</div>
+                                                    <div className="w-[100px] shrink-0 text-center">Unidad</div>
+                                                    <div className="w-auto shrink-0 text-right">Tu Precio (€/ud)</div>
+                                                    <div className="w-[150px] shrink-0 text-right">Total Partida (€)</div>
+                                                    <div className="w-[50px] shrink-0 text-right"></div>
+                                                </div>
+                                                <Droppable droppableId={capitulo.nombre}>
+                                                    {(provided) => (
+                                                        <div ref={provided.innerRef} {...provided.droppableProps}>
+                                                            {capitulo.partidas.map((partida, pIndex) => {
+                                                                const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                                const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                                                const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                                const draggableId = `${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`;
+                                                                return (
+                                                                    <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
+                                                                        {(provided) => (
+                                                                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="flex items-center text-sm px-4 py-2 border-b">
+                                                                                <div className="w-[40px] shrink-0 flex justify-center"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
+                                                                                <div className="w-[80px] shrink-0 pr-2">
+                                                                                    <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
+                                                                                </div>
+                                                                                <div className="flex-1 w-2/5 pr-2">
+                                                                                    <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
+                                                                                </div>
+                                                                                <div className="w-[100px] shrink-0 pr-2">
+                                                                                    <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
+                                                                                </div>
+                                                                                <div className="w-[100px] shrink-0 pr-2">
+                                                                                    <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
+                                                                                </div>
+                                                                                <div className="w-auto shrink-0 text-right pr-2 font-mono">
+                                                                                    {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                </div>
+                                                                                <div className="w-[150px] shrink-0">
+                                                                                    <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
+                                                                                </div>
+                                                                                <div className="w-[50px] shrink-0 text-right">
+                                                                                    <AlertDialog>
+                                                                                        <AlertDialogTrigger asChild>
+                                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                                                        </AlertDialogTrigger>
+                                                                                        <AlertDialogContent>
+                                                                                            <AlertDialogHeader>
+                                                                                                <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
+                                                                                                <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{partida.descripcion}" permanentemente.</AlertDialogDescription>
+                                                                                            </AlertDialogHeader>
+                                                                                            <AlertDialogFooter>
+                                                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                                                <AlertDialogAction onClick={() => handleDeletePartida(capitulo.nombre, pIndex)}>Eliminar</AlertDialogAction>
+                                                                                            </AlertDialogFooter>
+                                                                                        </AlertDialogContent>
+                                                                                    </AlertDialog>
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="flex-1 w-2/5 pr-2">
-                                                                                <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
-                                                                            </div>
-                                                                            <div className="w-[100px] shrink-0 pr-2">
-                                                                                <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
-                                                                            </div>
-                                                                            <div className="w-[100px] shrink-0 pr-2">
-                                                                                <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
-                                                                            </div>
-                                                                            <div className="w-auto shrink-0 text-right pr-2 font-mono">
-                                                                                {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                            </div>
-                                                                            <div className="w-[150px] shrink-0">
-                                                                                 <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </Draggable>
-                                                            )
-                                                        })}
-                                                        {provided.placeholder}
-                                                    </div>
-                                                )}
-                                            </Droppable>
-                                            <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
-                                                Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="mt-4"
-                                                onClick={() => setAddingLineItemTo(capitulo.nombre)}
-                                            >
-                                                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
-                                            </Button>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        </DragDropContext>
+                                                                        )}
+                                                                    </Draggable>
+                                                                )
+                                                            })}
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
+                                                </Droppable>
+                                                <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
+                                                    Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-4"
+                                                    onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                                >
+                                                    <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                                </Button>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
 
-                        <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
-                        </Button>
+                            <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
+                            </Button>
 
-                        <Accordion type="single" collapsible className="w-full mt-6">
-                            <AccordionItem value="summary">
-                                <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
-                                <AccordionContent>
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Capítulo</TableHead>
-                                                    <TableHead className="text-right">Total</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
-                                                    <TableRow key={nombre}>
-                                                        <TableCell className="font-semibold">{nombre}</TableCell>
-                                                        <TableCell className="text-right font-mono">
-                                                            €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </TableCell>
+                            <Accordion type="single" collapsible className="w-full mt-6">
+                                <AccordionItem value="summary">
+                                    <AccordionTrigger className="text-lg font-semibold">Resumen de Capítulos</AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Capítulo</TableHead>
+                                                        <TableHead className="text-right">Total</TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        className="mt-4"
-                                        onClick={() => onCreateSummaryBudgetFromAi(budget)}
-                                    >
-                                        <Copy className="mr-2 h-4 w-4" /> Mover Resumen a Presupuestos
-                                    </Button>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </div>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {Object.entries(budgetTotals.chapterTotals).map(([nombre, total]) => (
+                                                        <TableRow key={nombre}>
+                                                            <TableCell className="font-semibold">{nombre}</TableCell>
+                                                            <TableCell className="text-right font-mono">
+                                                                €{total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="mt-4"
+                                            onClick={() => onCreateSummaryBudgetFromAi(budget)}
+                                        >
+                                            <Copy className="mr-2 h-4 w-4" /> Mover Resumen a Presupuestos
+                                        </Button>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </div>
+                    </DragDropContext>
                     <CardFooter className="justify-end bg-secondary/80 p-4 mt-auto">
                         <div className="text-xl font-bold">
                             Total Presupuesto (Tus Precios): <span className="font-mono">€{budgetTotals.grandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1148,7 +1172,8 @@ export function AiBudgetsSection({
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
     onMoveAiPartida,
-    onMergeAiChapters
+    onMergeAiChapters,
+    onDeletePartida,
 }: { 
     aiBudgets: AiBudgetItem[],
     onUpdateAiBudget: (budget: any, refresh?: boolean) => void,
@@ -1158,6 +1183,7 @@ export function AiBudgetsSection({
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
     onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
+    onDeletePartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
 }) {
     const { toast } = useToast();
     const [printingBudget, setPrintingBudget] = useState<{ budget: AiBudgetItem, printOptions: { summaryOnly: boolean } } | null>(null);
@@ -1250,6 +1276,28 @@ export function AiBudgetsSection({
         onMergeAiChapters(budgetId, sourceChapterName, targetChapterName);
     };
 
+    const handleDeletePartidaLocal = (budgetId: string, chapterName: string, partidaIndex: number) => {
+        const budgetToUpdate = localBudgets.find(b => b.id === budgetId);
+        if (!budgetToUpdate) return;
+        
+        const newBreakdown = JSON.parse(JSON.stringify(budgetToUpdate.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budgetToUpdate.userLineTotals || {}));
+
+        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
+        if (!chapter || !chapter.partidas[partidaIndex]) return;
+
+        const partidaToDelete = chapter.partidas[partidaIndex];
+        
+        if (newTotals[chapterName] && newTotals[chapterName][partidaToDelete.descripcion] !== undefined) {
+            delete newTotals[chapterName][partidaToDelete.descripcion];
+        }
+
+        chapter.partidas.splice(partidaIndex, 1);
+
+        handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown, userLineTotals: newTotals });
+        onDeletePartida(budgetId, chapterName, partidaIndex);
+    };
+
     return (
       <div className="space-y-6">
           {mergingBudget && (
@@ -1292,6 +1340,7 @@ export function AiBudgetsSection({
                             onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
                             onMergeChapters={(source, target) => handleMergeChaptersLocal(budget.id, source, target)}
                             onMovePartida={(source, dest) => handleMovePartidaLocal(budget.id, source, dest)}
+                            onDeletePartida={(chapterName, partidaIndex) => handleDeletePartidaLocal(budget.id, chapterName, partidaIndex)}
                         />
                     ))}
                 </Accordion>
