@@ -75,6 +75,10 @@ const manualChapterSchema = z.object({
     chapterName: z.string().min(1, "El nombre del capítulo es requerido."),
 });
 
+const mergeChaptersSchema = z.object({
+    targetChapterName: z.string().min(1, "Debes seleccionar un capítulo de destino."),
+});
+
 
 // --- Componente para Generador de Desglose ---
 export function BudgetUploader({ 
@@ -646,6 +650,65 @@ function AddLineItemDialog({ open, onOpenChange, onSave, chapterName }: { open: 
     );
 }
 
+function MergeChaptersDialog({ open, onOpenChange, onMerge, chapters, sourceChapterName }: { open: boolean, onOpenChange: (open: boolean) => void, onMerge: (targetChapterName: string) => void, chapters: any[], sourceChapterName: string }) {
+    const form = useForm<z.infer<typeof mergeChaptersSchema>>({
+        resolver: zodResolver(mergeChaptersSchema),
+    });
+
+    const potentialTargets = chapters.filter(c => c.nombre !== sourceChapterName);
+
+    const handleSubmit = (values: z.infer<typeof mergeChaptersSchema>) => {
+        onMerge(values.targetChapterName);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Unir Capítulo</DialogTitle>
+                    <DialogDescription>
+                        Unir "{sourceChapterName}" con otro capítulo. Las partidas se añadirán al final del capítulo de destino.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="targetChapterName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Unir con el capítulo</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Elige un capítulo..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {potentialTargets.map(c => (
+                                                <SelectItem key={c.nombre} value={c.nombre}>
+                                                    {c.nombre}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Cancelar</Button>
+                            </DialogClose>
+                            <Button type="submit">Confirmar Unión</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 
 // --- Componente para una tarjeta de presupuesto de IA ---
@@ -658,6 +721,8 @@ function AiBudgetCard({
     onMergeClick,
     onAddToBudgetClick,
     onCreateSummaryBudgetFromAi,
+    onMovePartida,
+    onMergeChapters,
 }: { 
     budget: AiBudgetItem, 
     onBudgetUpdate: (updatedBudget: AiBudgetItem) => void;
@@ -667,12 +732,16 @@ function AiBudgetCard({
     onMergeClick: (budget: AiBudgetItem) => void,
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
+    onMovePartida: (sourceChapter: string, sourceIndex: number, destChapter: string, destIndex: number) => void;
+    onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
     const [isAddChapterOpen, setAddChapterOpen] = useState(false);
     const [addingLineItemTo, setAddingLineItemTo] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
+    const [mergingChapter, setMergingChapter] = useState<string | null>(null);
+
 
     const onDetailsChange = (values: z.infer<typeof budgetDetailsSchema>) => {
         onBudgetUpdate({ ...budget, ...values });
@@ -778,23 +847,8 @@ function AiBudgetCard({
     
     const onDragEnd = (result: DropResult) => {
         const { source, destination } = result;
-
-        if (!destination) {
-            return;
-        }
-
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
-        const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
-
-        if (!sourceChapter || !destChapter) {
-            return;
-        }
-
-        const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
-        destChapter.partidas.splice(destination.index, 0, movedItem);
-
-        onBudgetUpdate({ ...budget, breakdown: newBreakdown });
+        if (!destination) return;
+        onMovePartida(source.droppableId, source.index, destination.droppableId, destination.index);
         setHasChanges(true);
     };
 
@@ -851,6 +905,18 @@ function AiBudgetCard({
                     onOpenChange={() => setAddingLineItemTo(null)}
                     chapterName={addingLineItemTo}
                     onSave={(values) => onAddLineItem(addingLineItemTo, values)}
+                />
+            )}
+            {mergingChapter && (
+                 <MergeChaptersDialog
+                    open={!!mergingChapter}
+                    onOpenChange={() => setMergingChapter(null)}
+                    chapters={budget.breakdown.capitulos}
+                    sourceChapterName={mergingChapter}
+                    onMerge={(targetChapterName) => {
+                        onMergeChapters(mergingChapter, targetChapterName);
+                        setHasChanges(true);
+                    }}
                 />
             )}
             <Card key={budget.id} className="flex flex-col">
@@ -940,17 +1006,19 @@ function AiBudgetCard({
                                                     <span>{capitulo.nombre}</span>
                                                 )}
                                             </AccordionTrigger>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-6 w-6 shrink-0" 
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre }); 
-                                                }}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
+                                                        <Pencil className="mr-2 h-4 w-4" />Renombrar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
+                                                        <Merge className="mr-2 h-4 w-4" />Unir con...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                         <AccordionContent>
                                             <Table>
@@ -973,8 +1041,9 @@ function AiBudgetCard({
                                                             const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
                                                             const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
                                                             const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                            const draggableId = `${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`;
                                                             return (
-                                                                <Draggable key={`${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`} draggableId={`${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`} index={pIndex}>
+                                                                <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
                                                                 {(provided) => (
                                                                     <TableRow ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                                                         <TableCell className="w-[40px]"><GripVertical className="h-5 w-5 text-muted-foreground" /></TableCell>
@@ -1024,18 +1093,7 @@ function AiBudgetCard({
                                                                                     <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                                                                                 </DropdownMenuTrigger>
                                                                                 <DropdownMenuContent>
-                                                                                    <DropdownMenuSub>
-                                                                                        <DropdownMenuSubTrigger>
-                                                                                            <Move className="mr-2 h-4 w-4" /> Mover a...
-                                                                                        </DropdownMenuSubTrigger>
-                                                                                        <DropdownMenuSubContent>
-                                                                                            {budget.breakdown.capitulos.filter(c => c.nombre !== capitulo.nombre).map(targetChapter => (
-                                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(capitulo.nombre, pIndex, targetChapter.nombre)}>
-                                                                                                    {targetChapter.nombre}
-                                                                                                </DropdownMenuItem>
-                                                                                            ))}
-                                                                                        </DropdownMenuSubContent>
-                                                                                    </DropdownMenuSub>
+                                                                                    {/* Move action is now implicitly handled by drag and drop */}
                                                                                 </DropdownMenuContent>
                                                                             </DropdownMenu>
                                                                         </TableCell>
@@ -1130,6 +1188,7 @@ export function AiBudgetsSection({
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
     onMovePartida,
+    onMergeChapters
 }: { 
     aiBudgets: AiBudgetItem[],
     onUpdateAiBudget: (budget: any, refresh?: boolean) => void,
@@ -1138,6 +1197,7 @@ export function AiBudgetsSection({
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMovePartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void;
+    onMergeChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
 }) {
     const { toast } = useToast();
     const [printingBudget, setPrintingBudget] = useState<{ budget: AiBudgetItem, printOptions: { summaryOnly: boolean } } | null>(null);
@@ -1206,33 +1266,39 @@ export function AiBudgetsSection({
         setPrintingBudget({ budget, printOptions });
     };
 
-    const handleMovePartidaLocal = (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
+    const handleMovePartidaLocal = (budgetId: string, sourceChapterName: string, sourceIndex: number, destChapterName: string, destIndex: number) => {
         const budgetIndex = localBudgets.findIndex(b => b.id === budgetId);
         if (budgetIndex === -1) return;
+
+        const updatedBudgets = [...localBudgets];
+        const budget = JSON.parse(JSON.stringify(updatedBudgets[budgetIndex]));
         
-        const budget = localBudgets[budgetIndex];
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+        const sourceChapter = budget.breakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
+        const destChapter = budget.breakdown.capitulos.find((c: any) => c.nombre === destChapterName);
 
-        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
-        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
+        if (!sourceChapter || !destChapter) return;
 
-        if (!sourceChapter || !targetChapter) return;
+        const [movedItem] = sourceChapter.partidas.splice(sourceIndex, 1);
+        destChapter.partidas.splice(destIndex, 0, movedItem);
 
-        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
-        targetChapter.partidas.push(partidaToMove);
-        
-        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
-            if (!newTotals[targetChapterName]) {
-                newTotals[targetChapterName] = {};
+        // Move totals if they exist
+        if (budget.userLineTotals?.[sourceChapterName]?.[movedItem.descripcion] !== undefined) {
+            if (!budget.userLineTotals[destChapterName]) {
+                budget.userLineTotals[destChapterName] = {};
             }
-            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
-            delete newTotals[sourceChapterName][partidaToMove.descripcion];
+            budget.userLineTotals[destChapterName][movedItem.descripcion] = budget.userLineTotals[sourceChapterName][movedItem.descripcion];
+            delete budget.userLineTotals[sourceChapterName][movedItem.descripcion];
         }
-        
-        handleLocalBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
-        onMovePartida(budgetId, sourceChapterName, partidaIndex, targetChapterName);
+
+        updatedBudgets[budgetIndex] = budget;
+        setLocalBudgets(updatedBudgets);
+        onMovePartida(budgetId, sourceChapterName, sourceIndex, destChapterName);
     };
+
+     const handleMergeChaptersLocal = (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
+        onMergeChapters(budgetId, sourceChapterName, targetChapterName);
+    };
+
 
     return (
       <div className="space-y-6">
@@ -1273,6 +1339,8 @@ export function AiBudgetsSection({
                         onMergeClick={setMergingBudget}
                         onAddToBudgetClick={setAddingToBudget}
                         onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                        onMovePartida={(srcChap, srcIdx, destChap, destIdx) => handleMovePartidaLocal(budget.id, srcChap, srcIdx, destChap, destIdx)}
+                        onMergeChapters={(source, target) => handleMergeChaptersLocal(budget.id, source, target)}
                     />
                 ))}
             </Accordion>
@@ -1286,4 +1354,3 @@ export function AiBudgetsSection({
       </div>
     );
 }
-

@@ -662,6 +662,42 @@ export default function Page() {
         
     }, [data.aiBudgets, updateItem]);
 
+    const handleMergeAiChapters = useCallback(async (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        const sourceChapterIndex = newBreakdown.capitulos.findIndex((c: any) => c.nombre === sourceChapterName);
+        const targetChapterIndex = newBreakdown.capitulos.findIndex((c: any) => c.nombre === targetChapterName);
+
+        if (sourceChapterIndex === -1 || targetChapterIndex === -1) return;
+
+        const sourceChapter = newBreakdown.capitulos[sourceChapterIndex];
+        const targetChapter = newBreakdown.capitulos[targetChapterIndex];
+
+        // Move partidas
+        targetChapter.partidas.push(...sourceChapter.partidas);
+
+        // Move totals
+        if (newTotals[sourceChapterName]) {
+            if (!newTotals[targetChapterName]) {
+                newTotals[targetChapterName] = {};
+            }
+            Object.assign(newTotals[targetChapterName], newTotals[sourceChapterName]);
+            delete newTotals[sourceChapterName];
+        }
+
+        // Remove source chapter
+        newBreakdown.capitulos.splice(sourceChapterIndex, 1);
+        
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        toast({ title: "Capítulos unidos", description: `Se ha unido "${sourceChapterName}" con "${targetChapterName}".` });
+
+    }, [data.aiBudgets, updateItem, toast]);
+
+
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
   const budgetsAccepted = data.budgets.filter((b:any) => b.status === 'Aceptado').length;
@@ -806,6 +842,7 @@ export default function Page() {
                 handleDiskDeleteItem,
                 fetchDiskItems,
                 handleMoveAiPartida,
+                handleMergeAiChapters,
               }}
             />
           </div>
