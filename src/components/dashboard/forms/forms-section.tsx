@@ -149,7 +149,6 @@ function ItemForm({ item, onSubmit, open, onOpenChange, title, headers }: { item
   const handleSubmit = (values: z.infer<typeof itemSchema>) => {
     onSubmit({ ...item, ...values });
     form.reset();
-    onOpenChange(false);
   };
 
   return (
