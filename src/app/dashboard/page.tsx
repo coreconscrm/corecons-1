@@ -522,22 +522,33 @@ export default function Page() {
   }, [createItem]);
 
   const handleCreateSeguimientoFromContact = useCallback(async (contact: any, from: 'contacts' | 'priority_calls' | 'forms') => {
+      // Helper to find a value by checking multiple possible keys
+      const findValue = (obj: any, keys: string[]) => {
+          for (const key of keys) {
+              if (obj[key]) return obj[key];
+          }
+          return '';
+      };
+      
       const newSeguimiento = {
-          name: contact['Nombre y apellidos'] || contact['Nombre'] || 'Sin nombre',
-          phone: contact['Teléfono'] || contact['Telefono'],
-          email: contact['Email'] || contact['Correo electrónico'],
-          localizacion: contact['Localidad'] || '',
-          informacion: `Contacto desde ${from === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento'}. Detalles: ${JSON.stringify(contact)}`,
+          name: findValue(contact, ['Nombre y apellidos', 'Nombre']),
+          phone: findValue(contact, ['Teléfono', 'Telefono']),
+          email: findValue(contact, ['Email', 'Correo electrónico']),
+          localizacion: findValue(contact, ['Localidad', 'Ciudad']),
+          informacion: `Contacto desde ${from === 'forms' ? 'Formularios Web' : (from === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento')}.
+---
+DATOS ORIGINALES:
+${JSON.stringify(contact, null, 2)}`,
           estado: "Contactado",
           porHacer: "Llamar",
           siguienteLlamada: null,
           category: "General",
       };
+
       const batch = writeBatch(db);
       const segRef = doc(collection(db, 'seguimientos'));
       batch.set(segRef, newSeguimiento);
       
-      // If it's a manually entered contact, delete it from its original list
       if (from !== 'forms') {
         const contactRef = doc(db, from, contact.id);
         batch.delete(contactRef);

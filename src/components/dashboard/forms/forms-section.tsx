@@ -476,6 +476,9 @@ export function FormsSection({
                 complete: (results) => {
                     const formsWithIds = (results.data as any[]).map((row, index) => ({ ...row, id: `csv-${index}` }));
                     const headers = results.meta.fields || [];
+                    if (!headers.includes('called')) {
+                        headers.unshift('called');
+                    }
                     onFormColsChange(headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })));
                     // The main page component will receive this data via a callback in a real scenario
                     // For now, we just toast and assume the parent handles the data
