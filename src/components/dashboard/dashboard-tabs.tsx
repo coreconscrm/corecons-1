@@ -141,7 +141,7 @@ export function DashboardTabs({
       {visibleTabs.ia && <TabsContent value="ia" className="mt-6">
         <AiSection 
           companies={data.companies}
-          forms={[...data.forms, ...data.contacts, ...data.priorityCalls]}
+          forms={[...data.sheetForms, ...data.contacts, ...data.priorityCalls]}
           aiBudgets={data.aiBudgets}
           onAddAiBudget={(b: any) => actions.createItem('ia_budgets', b)}
           onUpdateAiBudget={actions.handleUpdateAiBudget}
@@ -186,8 +186,7 @@ export function DashboardTabs({
       
       {visibleTabs.forms && <TabsContent value="forms" className="mt-6">
         <FormsSection 
-          forms={data.forms}
-          onDeleteForm={(id: string) => actions.deleteItem('forms', id)}
+          forms={data.sheetForms}
           contacts={data.contacts}
           onAddContact={(contact: any) => actions.createItem('contacts', {...contact, createdAt: Timestamp.now()})}
           onUpdateContact={(contact: any) => actions.updateItem('contacts', contact)}
@@ -205,7 +204,6 @@ export function DashboardTabs({
           priorityCols={data.priorityCols}
           onPriorityColsChange={(cols: any) => actions.handleColumnConfigChange('priority_calls', cols)}
           onCreateSeguimientoFromContact={actions.handleCreateSeguimientoFromContact}
-          onLoadForms={actions.handleLoadForms}
           onMoveFormContact={actions.handleMoveFormContact}
         />
       </TabsContent>}

@@ -56,7 +56,7 @@ const collectionStateMap: Record<string, string> = {
     reformistas: 'reformistas',
     inmobiliarias: 'inmobiliarias',
     team: 'team',
-    forms: 'forms',
+    forms: 'forms', // This will now be for manual contacts moved from sheets
     contacts: 'contacts',
     priority_calls: 'priorityCalls',
     seguimientos: 'seguimientos',
@@ -98,7 +98,8 @@ export default function Page() {
     reformistas: [],
     inmobiliarias: [],
     team: [],
-    forms: [],
+    forms: [], // Now for manually moved/created contacts, not from sheet directly
+    sheetForms: [], // New state for forms loaded from Google Sheet
     contacts: [],
     priorityCalls: [],
     seguimientos: [],
@@ -182,17 +183,15 @@ export default function Page() {
 
             // Fetch all collections using getDocs
             for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
-                if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(collectionName)) continue;
+                 if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems'].includes(collectionName)) continue;
                 
                 let q;
                 if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
                   q = query(collection(db, collectionName), orderBy("date", "desc"));
                 } else if (collectionName === 'seguimientos') {
                   q = query(collection(db, collectionName)); 
-                } else if (['contacts', 'priority_calls'].includes(collectionName)) {
+                } else if (['contacts', 'priority_calls', 'forms'].includes(collectionName)) {
                   q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
-                } else if (collectionName === 'forms') {
-                  q = query(collection(db, collectionName), orderBy(documentId())); 
                 } else if (collectionName === 'estimaciones') {
                   q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
                 } else {
@@ -256,71 +255,28 @@ export default function Page() {
 
   }, [fetchAllDiskItems, toast, refreshTrigger]);
 
-  const handleLoadForms = useCallback(async (formData: any[]) => {
-      if (!formData || formData.length === 0) {
-          toast({ variant: 'destructive', title: 'Error', description: 'No se encontraron datos para cargar.' });
-          return;
-      }
-      
-      const createFormIdentifier = (form: any) => {
-          const name = form['Nombre'] || form['nombre'] || '';
-          const phone = form['Teléfono'] || form['telefono'] || '';
-          const email = form['Email'] || form['email'] || '';
-          const projectType = form['¿Que Tipo de Proyecto Necesitas?'] || '';
-          return `${name}-${phone}-${email}-${projectType}`.toLowerCase().replace(/\s+/g, '');
-      };
-
-      const formsCollectionRef = collection(db, "forms");
-      const batch = writeBatch(db);
-      
-      const existingFormsSnapshot = await getDocs(formsCollectionRef);
-      const existingFormsMap = new Map();
-      existingFormsSnapshot.forEach(doc => {
-          const data = doc.data();
-          existingFormsMap.set(createFormIdentifier(data), { id: doc.id, ...data });
-      });
-
-      const incomingFormIdentifiers = new Set();
-      
-      formData.forEach(newItem => {
-          const identifier = createFormIdentifier(newItem);
-          incomingFormIdentifiers.add(identifier);
-          const existingForm = existingFormsMap.get(identifier);
-
-          if (!existingForm) {
-              const docRef = doc(formsCollectionRef);
-              batch.set(docRef, { ...newItem, checked: false });
-          }
-      });
-
-      existingFormsMap.forEach((form, identifier) => {
-          if (!incomingFormIdentifiers.has(identifier)) {
-              batch.delete(doc(db, "forms", form.id));
-          }
-      });
-
-      await batch.commit();
-      toast({ title: 'Datos sincronizados', description: `Se han sincronizado los registros desde la hoja.` });
-      setRefreshTrigger(prev => prev + 1);
-  }, [toast]);
-
-  useEffect(() => {
-    if (data.sheetUrl) {
-        Papa.parse(data.sheetUrl, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                if (results.data) {
-                    handleLoadForms(results.data);
-                }
-            },
-            error: (err) => {
-                toast({ variant: "destructive", title: "Error al leer Google Sheet", description: `No se pudo acceder a la URL. Verifica que esté publicada correctamente. Error: ${(err as Error).message}` });
-            },
-        });
-    }
-  }, [data.sheetUrl, handleLoadForms, toast]);
+   // Fetch and parse Google Sheet data
+    useEffect(() => {
+        if (data.sheetUrl) {
+            Papa.parse(data.sheetUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    if (results.data) {
+                        // Assign a simple temporary ID for rendering purposes
+                        const formsWithIds = (results.data as any[]).map((row, index) => ({ ...row, id: `sheet-${index}` }));
+                        setData(prev => ({...prev, sheetForms: formsWithIds }));
+                    }
+                },
+                error: (err) => {
+                    toast({ variant: "destructive", title: "Error al leer Google Sheet", description: `No se pudo acceder a la URL. Verifica que esté publicada correctamente. Error: ${(err as Error).message}` });
+                },
+            });
+        } else {
+             setData(prev => ({...prev, sheetForms: [] })); // Clear sheet data if URL is removed
+        }
+    }, [data.sheetUrl, toast]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -391,7 +347,7 @@ export default function Page() {
             dataToSave.date = Timestamp.now();
         }
     }
-    if (['contacts', 'priority_calls', 'estimaciones'].includes(collectionName)) {
+    if (['contacts', 'priority_calls', 'forms', 'estimaciones'].includes(collectionName)) {
         if (!dataToSave.createdAt) {
             dataToSave.createdAt = Timestamp.now();
         }
@@ -441,8 +397,8 @@ export default function Page() {
   const handleSaveSheetUrl = useCallback(async (url: string) => {
     try {
       await setDoc(doc(db, 'config', 'googleSheet'), { url });
+      setData(prev => ({...prev, sheetUrl: url}));
       toast({ title: 'URL guardada', description: 'La conexión con Google Sheets se ha actualizado.' });
-       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error al guardar URL', description: (error as Error).message });
     }
@@ -488,7 +444,7 @@ export default function Page() {
       await createItem('seguimientos', newSeguimiento);
   }, [createItem]);
 
-  const handleCreateSeguimientoFromContact = useCallback(async (contact: any, from: 'contacts' | 'priority_calls') => {
+  const handleCreateSeguimientoFromContact = useCallback(async (contact: any, from: 'contacts' | 'priority_calls' | 'forms') => {
       const newSeguimiento = {
           name: contact['Nombre y apellidos'] || contact['Nombre'] || 'Sin nombre',
           phone: contact['Teléfono'] || contact['Telefono'],
@@ -503,8 +459,13 @@ export default function Page() {
       const batch = writeBatch(db);
       const segRef = doc(collection(db, 'seguimientos'));
       batch.set(segRef, newSeguimiento);
-      const contactRef = doc(db, from, contact.id);
-      batch.delete(contactRef);
+      
+      // If it's a manually entered contact, delete it from its original list
+      if (from !== 'forms') {
+        const contactRef = doc(db, from, contact.id);
+        batch.delete(contactRef);
+      }
+      
       await batch.commit();
       toast({ title: 'Movido a Seguimiento', description: `${newSeguimiento.name} ahora está en la lista de seguimiento.` });
       setRefreshTrigger(prev => prev + 1);
@@ -512,21 +473,9 @@ export default function Page() {
   
     const handleMoveFormContact = useCallback(async (formItem: any, destination: 'contacts' | 'priority_calls') => {
         const { id, ...data } = formItem;
-        if (!id) {
-            toast({ variant: 'destructive', title: 'Error', description: 'El elemento del formulario no tiene ID.' });
-            return;
-        }
-
-        const batch = writeBatch(db);
-
-        const newDocRef = doc(collection(db, destination));
-        batch.set(newDocRef, { ...data, createdAt: Timestamp.now() });
-
-        const oldDocRef = doc(db, 'forms', id);
-        batch.delete(oldDocRef);
-
+        
         try {
-            await batch.commit();
+            await addDoc(collection(db, destination), {...data, createdAt: Timestamp.now()});
             const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento';
             toast({ title: 'Contacto movido', description: `El contacto ha sido movido a ${destinationName}.` });
             setRefreshTrigger(prev => prev + 1);
@@ -741,7 +690,7 @@ export default function Page() {
   const budgetsSent = data.budgets.filter((b:any) => b.status === 'Enviados').length;
 
   // Metrics for Form Overview
-  const formsTotal = data.forms.length;
+  const formsTotal = data.sheetForms.length;
   const manualAndPriorityTotal = data.contacts.length + data.priorityCalls.length;
   const manualAndPriorityCalled = data.contacts.filter((c:any) => c.called).length + data.priorityCalls.filter((pc:any) => pc.called).length;
   const manualAndPriorityPending = manualAndPriorityTotal - manualAndPriorityCalled;
@@ -870,7 +819,6 @@ export default function Page() {
                 handleClientCategoriesChange,
                 handleCreateBudgetFromAi,
                 handleCreateSummaryBudgetFromAi,
-                handleLoadForms,
                 handleMoveFormContact,
                 handleDiskUpload,
                 handleDiskCreateFolder,

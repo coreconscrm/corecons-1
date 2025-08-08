@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
@@ -195,7 +196,7 @@ function DynamicTableCard({
 }: {
   title: string, description: string, items: any[],
   columnConfig: ColumnConfig[], onColumnConfigChange: (cols: ColumnConfig[]) => void,
-  onAddItem: (item: any) => void, onUpdateItem: (item: any) => void, onDeleteItem: (id: string) => void,
+  onAddItem?: (item: any) => void, onUpdateItem?: (item: any) => void, onDeleteItem?: (id: string) => void,
   itemActions: (item: any) => React.ReactNode,
   children?: React.ReactNode
 }) {
@@ -213,9 +214,9 @@ function DynamicTableCard({
   };
   
   const handleSubmit = (values: any) => {
-    if(editingItem) {
+    if(editingItem && onUpdateItem) {
       onUpdateItem(values);
-    } else {
+    } else if (onAddItem) {
       onAddItem(values);
     }
   }
@@ -231,14 +232,17 @@ function DynamicTableCard({
         </DialogContent>
       </Dialog>
      
-      <ItemForm 
-        item={editingItem} 
-        onSubmit={handleSubmit} 
-        open={isAddDialogOpen} 
-        onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
-        title={title}
-        headers={allHeaders.filter(h => h !== 'called' && h !== 'status' && h !== 'createdAt')}
-      />
+     {onAddItem && (
+        <ItemForm 
+            item={editingItem} 
+            onSubmit={handleSubmit} 
+            open={isAddDialogOpen} 
+            onOpenChange={(open) => { if(!open) setEditingItem(undefined); setAddDialogOpen(open); }}
+            title={title}
+            headers={allHeaders.filter(h => h !== 'called' && h !== 'status' && h !== 'createdAt')}
+        />
+     )}
+
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -251,7 +255,7 @@ function DynamicTableCard({
               <Settings className="h-4 w-4"/>
               <span className="sr-only">Configurar columnas</span>
             </Button>
-            <Button onClick={() => setAddDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Añadir</Button>
+            {onAddItem && <Button onClick={() => setAddDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Añadir</Button>}
           </div>
         </div>
       </CardHeader>
@@ -273,22 +277,22 @@ function DynamicTableCard({
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent>
                               {itemActions(item)}
-                              <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>
-                              <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                              {onUpdateItem && <DropdownMenuItem onSelect={() => handleEdit(item)}><Pencil className="mr-2"/>Editar</DropdownMenuItem>}
+                              {onDeleteItem && <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Eliminar</DropdownMenuItem></AlertDialogTrigger>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                           <AlertDialogContent>
                               <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al contacto.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
+                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteItem && onDeleteItem(item.id)}>Eliminar</AlertDialogAction></AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       </TableCell>
                       {visibleHeaders.map(h => {
                         const cellKey = `${item.id}-${h.key}`;
-                        if (h.key === 'called') {
+                        if (h.key === 'called' && onUpdateItem) {
                             return <TableCell key={cellKey}><Checkbox checked={item.called} onCheckedChange={(checked) => onUpdateItem({ ...item, called: !!checked })} /></TableCell>
                         }
-                        if (h.key === 'status') {
+                        if (h.key === 'status' && onUpdateItem) {
                             return <TableCell key={cellKey}>
                                 <Select value={item.status} onValueChange={(status) => onUpdateItem({ ...item, status })}>
                                     <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
@@ -397,7 +401,6 @@ function GoogleSheetDialog({ open, onOpenChange, currentUrl, onSave }: { open: b
 
 export function FormsSection({
   forms,
-  onDeleteForm,
   contacts,
   onAddContact,
   onUpdateContact,
@@ -415,11 +418,9 @@ export function FormsSection({
   priorityCols,
   onPriorityColsChange,
   onCreateSeguimientoFromContact,
-  onLoadForms,
   onMoveFormContact
 }: {
   forms: Item[],
-  onDeleteForm: (id: string) => void,
   contacts: Item[],
   onAddContact: (item: any) => void,
   onUpdateContact: (item: any) => void,
@@ -436,8 +437,7 @@ export function FormsSection({
   onContactColsChange: (cols: ColumnConfig[]) => void,
   priorityCols: ColumnConfig[],
   onPriorityColsChange: (cols: ColumnConfig[]) => void,
-  onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls') => void,
-  onLoadForms: (data: any[]) => void,
+  onCreateSeguimientoFromContact: (contact: Item, from: 'contacts' | 'priority_calls' | 'forms') => void,
   onMoveFormContact: (formItem: any, destination: 'contacts' | 'priority_calls') => void,
 }) {
     const [isSheetDialogOpen, setSheetDialogOpen] = useState(false);
@@ -458,7 +458,8 @@ export function FormsSection({
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    onLoadForms(results.data);
+                    // This is now handled in the main page component
+                    toast({title: "Cargado con éxito", description: "El CSV ha sido procesado."})
                 },
                 error: (err) => {
                     toast({ variant: "destructive", title: "Error al leer CSV", description: (err as Error).message });
@@ -505,10 +506,8 @@ export function FormsSection({
                         items={forms}
                         columnConfig={formCols}
                         onColumnConfigChange={onFormColsChange}
-                        onAddItem={() => {}} // No se pueden añadir manualmente
-                        onUpdateItem={() => {}} // No se pueden editar
-                        onDeleteItem={onDeleteForm}
                         itemActions={(item) => (
+                            <>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>
                                     <Forward className="mr-2 h-4 w-4" /> Mover a...
@@ -522,10 +521,14 @@ export function FormsSection({
                                     </DropdownMenuItem>
                                 </DropdownMenuSubContent>
                             </DropdownMenuSub>
+                            <DropdownMenuItem onSelect={() => onCreateSeguimientoFromContact(item, 'forms')}>
+                                <Forward className="mr-2 h-4 w-4" /> Mover a Seguimiento Directo
+                            </DropdownMenuItem>
+                            </>
                         )}
                     >
                         <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Subir CSV</Button>
-                        <Button variant="outline" onClick={() => setSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4" />Conectar Sheet</Button>
+                        <Button variant="outline" onClick={() => setSheetDialogOpen(true)}><Link className="mr-2 h-4 w-4" />{sheetUrl ? "Sheet Conectada" : "Conectar Sheet"}</Button>
                     </DynamicTableCard>
                 )}
                  {activeTab === 'contacts' && (
