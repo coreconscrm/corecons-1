@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
-import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus } from "lucide-react";
+import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createProjectBreakdown } from "@/ai/flows/create-project-breakdown";
@@ -659,6 +660,7 @@ function AiBudgetCard({
     onAddLineItem,
     onPartidaChange,
     onCreateSummaryBudgetFromAi,
+    onMovePartida,
 }: { 
     budget: AiBudgetItem, 
     onLineTotalChange: (budgetId: string, capitulo: string, partida: string, total: string) => void,
@@ -672,6 +674,7 @@ function AiBudgetCard({
     onAddLineItem: (budgetId: string, chapterName: string, values: z.infer<typeof addLineItemSchema>) => void,
     onPartidaChange: (budgetId: string, chapterName: string, partidaIndex: number, field: 'numero' | 'descripcion' | 'medicion' | 'unidad', value: string) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void,
+    onMovePartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void,
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -835,6 +838,7 @@ function AiBudgetCard({
                                                     <TableHead className="text-center">Unidad</TableHead>
                                                     <TableHead className="text-right">Tu Precio (€/ud)</TableHead>
                                                     <TableHead className="text-right">Total Partida (€)</TableHead>
+                                                    <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -884,12 +888,33 @@ function AiBudgetCard({
                                                                 onBlur={(e) => onLineTotalChange(budget.id, capitulo.nombre, partida.descripcion, e.target.value)}
                                                             />
                                                         </TableCell>
+                                                        <TableCell>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent>
+                                                                    <DropdownMenuSub>
+                                                                        <DropdownMenuSubTrigger>
+                                                                            <Move className="mr-2 h-4 w-4" /> Mover a...
+                                                                        </DropdownMenuSubTrigger>
+                                                                        <DropdownMenuSubContent>
+                                                                            {budget.breakdown.capitulos.filter(c => c.nombre !== capitulo.nombre).map(targetChapter => (
+                                                                                <DropdownMenuItem key={targetChapter.nombre} onSelect={() => onMovePartida(budget.id, capitulo.nombre, pIndex, targetChapter.nombre)}>
+                                                                                    {targetChapter.nombre}
+                                                                                </DropdownMenuItem>
+                                                                            ))}
+                                                                        </DropdownMenuSubContent>
+                                                                    </DropdownMenuSub>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
                                                     </TableRow>
                                                 )})}
                                             </TableBody>
                                             <UiTableFooter>
                                                 <TableRow className="bg-secondary/50 hover:bg-secondary">
-                                                    <TableCell colSpan={5} className="text-right font-bold">Total Capítulo</TableCell>
+                                                    <TableCell colSpan={6} className="text-right font-bold">Total Capítulo</TableCell>
                                                     <TableCell className="text-right font-bold font-mono">
                                                         €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>
@@ -968,6 +993,7 @@ export function AiBudgetsSection({
     companies,
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
+    onMovePartida,
 }: { 
     aiBudgets: AiBudgetItem[],
     onUpdateAiBudget: (budget: any) => void,
@@ -975,6 +1001,7 @@ export function AiBudgetsSection({
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
+    onMovePartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void;
 }) {
     const { toast } = useToast();
     const [printingBudget, setPrintingBudget] = useState<{ budget: AiBudgetItem, printOptions: { summaryOnly: boolean } } | null>(null);
@@ -1175,6 +1202,7 @@ export function AiBudgetsSection({
                         onAddLineItem={handleAddLineItem}
                         onPartidaChange={handlePartidaChange}
                         onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                        onMovePartida={onMovePartida}
                     />
                 ))}
             </Accordion>

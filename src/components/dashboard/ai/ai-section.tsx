@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -27,6 +28,7 @@ export function AiSection({
     onDeleteAiBudget,
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
+    onMoveAiPartida,
 }: {
     companies: Company[],
     forms: any[],
@@ -36,6 +38,7 @@ export function AiSection({
     onDeleteAiBudget: (id: string) => void;
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: BudgetCategory) => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
+    onMoveAiPartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void;
 }) {
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
@@ -147,6 +150,7 @@ export function AiSection({
                                 companies={companies} 
                                 onCreateBudgetFromAi={onCreateBudgetFromAi}
                                 onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                                onMovePartida={onMoveAiPartida}
                             />
                          )}
                     </div>

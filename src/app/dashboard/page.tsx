@@ -633,6 +633,32 @@ export default function Page() {
         setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
+    const handleMoveAiPartida = useCallback(async (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
+        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
+
+        if (!sourceChapter || !targetChapter) return;
+
+        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
+        targetChapter.partidas.push(partidaToMove);
+        
+        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
+            if (!newTotals[targetChapterName]) {
+                newTotals[targetChapterName] = {};
+            }
+            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
+            delete newTotals[sourceChapterName][partidaToMove.descripcion];
+        }
+        
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        
+    }, [data.aiBudgets, updateItem]);
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -776,7 +802,8 @@ export default function Page() {
                 handleDiskUpload,
                 handleDiskCreateFolder,
                 handleDiskDeleteItem,
-                fetchDiskItems
+                fetchDiskItems,
+                handleMoveAiPartida,
               }}
             />
           </div>
