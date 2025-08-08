@@ -640,21 +640,27 @@ export default function Page() {
         if (!budget) return;
 
         const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
         
         const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
         const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
         if (!sourceChapter || !destChapter) return;
 
+        // Remove item from source
         const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
+        
+        // Add item to destination
         destChapter.partidas.splice(destination.index, 0, movedItem);
         
-        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
-        if (newTotals[sourceChapter.nombre] && newTotals[sourceChapter.nombre][movedItem.descripcion] !== undefined) {
-            if (!newTotals[destChapter.nombre]) {
-                newTotals[destChapter.nombre] = {};
+        // Move totals if moving between chapters
+        if (source.droppableId !== destination.droppableId) {
+            if (newTotals[sourceChapter.nombre] && newTotals[sourceChapter.nombre][movedItem.descripcion] !== undefined) {
+                if (!newTotals[destChapter.nombre]) {
+                    newTotals[destChapter.nombre] = {};
+                }
+                newTotals[destChapter.nombre][movedItem.descripcion] = newTotals[sourceChapter.nombre][movedItem.descripcion];
+                delete newTotals[sourceChapter.nombre][movedItem.descripcion];
             }
-            newTotals[destChapter.nombre][movedItem.descripcion] = newTotals[sourceChapter.nombre][movedItem.descripcion];
-            delete newTotals[sourceChapter.nombre][movedItem.descripcion];
         }
         
         await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
