@@ -418,8 +418,8 @@ export default function Page() {
         const itemRef = doc(db, collectionName, id);
         await updateDoc(itemRef, data);
         if (refresh) {
-            toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
             setRefreshTrigger(prev => prev + 1);
+            toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
         }
     } catch (error) {
         console.error(`Error updating item in ${collectionName}:`, error);

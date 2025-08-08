@@ -7,7 +7,6 @@ import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as UiTableFooter } from "@/components/ui/table";
 import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
@@ -28,6 +27,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 // --- Tipos de Datos ---
@@ -733,7 +733,7 @@ function AiBudgetCard({
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
-    onMovePartida: (budgetId: string, source: any, destination: any) => void;
+    onMovePartida: (source: any, destination: any) => void;
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -848,7 +848,7 @@ function AiBudgetCard({
     const handleDragEnd = (result: DropResult) => {
         const { source, destination } = result;
         if (!destination) return;
-        onMovePartida(budget.id, source, destination);
+        onMovePartida(source, destination);
         setHasChanges(true);
     };
     
@@ -1231,6 +1231,22 @@ export function AiBudgetsSection({
     };
 
      const handleMergeChaptersLocal = (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
+        const budgetToUpdate = localBudgets.find(b => b.id === budgetId);
+        if (!budgetToUpdate) return;
+        
+        const newBreakdown = JSON.parse(JSON.stringify(budgetToUpdate.breakdown));
+        const sourceChapterIndex = newBreakdown.capitulos.findIndex((c:any) => c.nombre === sourceChapterName);
+        const targetChapterIndex = newBreakdown.capitulos.findIndex((c:any) => c.nombre === targetChapterName);
+        
+        if (sourceChapterIndex === -1 || targetChapterIndex === -1) return;
+        
+        const sourceChapter = newBreakdown.capitulos[sourceChapterIndex];
+        const targetChapter = newBreakdown.capitulos[targetChapterIndex];
+        
+        targetChapter.partidas.push(...sourceChapter.partidas);
+        newBreakdown.capitulos.splice(sourceChapterIndex, 1);
+        
+        handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown });
         onMergeAiChapters(budgetId, sourceChapterName, targetChapterName);
     };
 
@@ -1275,7 +1291,7 @@ export function AiBudgetsSection({
                             onAddToBudgetClick={setAddingToBudget}
                             onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
                             onMergeChapters={(source, target) => handleMergeChaptersLocal(budget.id, source, target)}
-                            onMovePartida={handleMovePartidaLocal}
+                            onMovePartida={(source, dest) => handleMovePartidaLocal(budget.id, source, dest)}
                         />
                     ))}
                 </Accordion>
