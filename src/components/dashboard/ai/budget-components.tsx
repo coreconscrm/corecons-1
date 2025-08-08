@@ -21,8 +21,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
-import { AiBudgetPrintLayout } from "../budget-print-layout";
-import type { Company } from "../company/company-section";
+import { AiBudgetPrintLayout } from "@/components/dashboard/budget-print-layout";
+import type { Company } from "@/components/dashboard/company/company-section";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
@@ -722,6 +722,7 @@ function AiBudgetCard({
     onAddToBudgetClick,
     onCreateSummaryBudgetFromAi,
     onMergeChapters,
+    onMovePartida
 }: { 
     budget: AiBudgetItem, 
     onBudgetUpdate: (updatedBudget: AiBudgetItem) => void;
@@ -732,6 +733,7 @@ function AiBudgetCard({
     onAddToBudgetClick: (budget: AiBudgetItem) => void,
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
+    onMovePartida: (budgetId: string, source: any, destination: any) => void;
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -842,6 +844,13 @@ function AiBudgetCard({
         onSaveChanges(budget);
         setHasChanges(false);
     }
+
+    const handleDragEnd = (result: DropResult) => {
+        const { source, destination } = result;
+        if (!destination) return;
+        onMovePartida(budget.id, source, destination);
+        setHasChanges(true);
+    };
     
 
     const budgetTotals = useMemo(() => {
@@ -977,145 +986,107 @@ function AiBudgetCard({
                 </CardHeader>
                 <AccordionContent>
                     <div className="flex-grow space-y-6 px-6 pb-6">
-                        <Accordion type="multiple" className="w-full">
-                            {budget.breakdown.capitulos.map((capitulo, index) => (
-                                <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
-                                    <div className="flex items-center gap-2">
-                                        <AccordionTrigger className="text-lg font-semibold flex-1">
-                                            {editingChapter?.oldName === capitulo.nombre ? (
-                                                <Input 
-                                                    value={editingChapter.newName}
-                                                    onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
-                                                    onKeyDown={handleChapterNameKeyDown}
-                                                    onBlur={() => setEditingChapter(null)}
-                                                    autoFocus
-                                                    className="h-8"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <span>{capitulo.nombre}</span>
-                                            )}
-                                        </AccordionTrigger>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
-                                                    <Pencil className="mr-2 h-4 w-4" />Renombrar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
-                                                    <Merge className="mr-2 h-4 w-4" />Unir con...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                    <AccordionContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[40px]"></TableHead>
-                                                    <TableHead className="w-[80px]">Nº Partida</TableHead>
-                                                    <TableHead className="w-2/5">Partida</TableHead>
-                                                    <TableHead className="text-right">Medición</TableHead>
-                                                    <TableHead className="text-center">Unidad</TableHead>
-                                                    <TableHead className="text-right">Tu Precio (€/ud)</TableHead>
-                                                    <TableHead className="text-right">Total Partida (€)</TableHead>
-                                                    <TableHead className="w-[50px]"></TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <Droppable droppableId={`${budget.id}|${capitulo.nombre}`}>
-                                            {(provided) => (
-                                                <TableBody ref={provided.innerRef} {...provided.droppableProps}>
-                                                    {capitulo.partidas.map((partida, pIndex) => {
-                                                        const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                                        const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                        const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
-                                                        const draggableId = `${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`;
-                                                        return (
-                                                            <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
-                                                            {(provided) => (
-                                                                <TableRow ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                                    <TableCell className="w-[40px]"><GripVertical className="h-5 w-5 text-muted-foreground" /></TableCell>
-                                                                    <TableCell className="w-[80px]">
-                                                                        <Input
-                                                                            defaultValue={partida.numero || ''}
-                                                                            className="text-left h-8"
-                                                                            onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)}
-                                                                        />
-                                                                    </TableCell>
-                                                                    <TableCell className="w-2/5">
-                                                                        <Textarea
-                                                                            defaultValue={partida.descripcion}
-                                                                            className="w-full h-auto"
-                                                                            onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)}
-                                                                        />
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right w-[100px]">
-                                                                        <Input
-                                                                            defaultValue={partida.medicion || ''}
-                                                                            className="text-right h-8"
-                                                                            onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)}
-                                                                        />
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center w-[100px]">
-                                                                        <Input
-                                                                            defaultValue={partida.unidad || ''}
-                                                                            className="text-center h-8"
-                                                                            onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)}
-                                                                        />
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right font-mono">
-                                                                      {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right w-[150px]">
-                                                                         <Input
-                                                                            type="number"
-                                                                            className="text-right"
-                                                                            placeholder="0.00"
-                                                                            defaultValue={lineTotal || ''}
-                                                                            onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)}
-                                                                        />
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <DropdownMenu>
-                                                                            <DropdownMenuTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                                                                            </DropdownMenuTrigger>
-                                                                            <DropdownMenuContent>
-                                                                                {/* Move action is now implicitly handled by drag and drop */}
-                                                                            </DropdownMenuContent>
-                                                                        </DropdownMenu>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            )}
-                                                            </Draggable>
-                                                    )})}
-                                                    {provided.placeholder}
-                                                </TableBody>
-                                            )}
+                        <DragDropContext onDragEnd={handleDragEnd}>
+                            <Accordion type="multiple" className="w-full">
+                                {budget.breakdown.capitulos.map((capitulo, index) => (
+                                    <AccordionItem value={`item-${index}`} key={`${budget.id}-${capitulo.nombre}-${index}`}>
+                                        <div className="flex items-center gap-2">
+                                            <AccordionTrigger className="text-lg font-semibold flex-1">
+                                                {editingChapter?.oldName === capitulo.nombre ? (
+                                                    <Input 
+                                                        value={editingChapter.newName}
+                                                        onChange={(e) => setEditingChapter({ ...editingChapter, newName: e.target.value })}
+                                                        onKeyDown={handleChapterNameKeyDown}
+                                                        onBlur={() => setEditingChapter(null)}
+                                                        autoFocus
+                                                        className="h-8"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <span>{capitulo.nombre}</span>
+                                                )}
+                                            </AccordionTrigger>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
+                                                        <Pencil className="mr-2 h-4 w-4" />Renombrar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
+                                                        <Merge className="mr-2 h-4 w-4" />Unir con...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                        <AccordionContent>
+                                            {/* Header */}
+                                            <div className="flex items-center text-xs font-medium text-muted-foreground px-4 py-2 border-b">
+                                                <div className="w-[40px] shrink-0"></div>
+                                                <div className="w-[80px] shrink-0">Nº Partida</div>
+                                                <div className="flex-1 w-2/5">Partida</div>
+                                                <div className="w-[100px] shrink-0 text-right">Medición</div>
+                                                <div className="w-[100px] shrink-0 text-center">Unidad</div>
+                                                <div className="w-auto shrink-0 text-right">Tu Precio (€/ud)</div>
+                                                <div className="w-[150px] shrink-0 text-right">Total Partida (€)</div>
+                                            </div>
+                                            <Droppable droppableId={capitulo.nombre}>
+                                                {(provided) => (
+                                                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                                                        {capitulo.partidas.map((partida, pIndex) => {
+                                                            const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                                            const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                            const draggableId = `${budget.id}-${capitulo.nombre}-${partida.descripcion}-${pIndex}`;
+                                                            return (
+                                                                <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
+                                                                    {(provided) => (
+                                                                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="flex items-center text-sm px-4 py-2 border-b">
+                                                                            <div className="w-[40px] shrink-0 flex justify-center"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
+                                                                            <div className="w-[80px] shrink-0 pr-2">
+                                                                                <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
+                                                                            </div>
+                                                                            <div className="flex-1 w-2/5 pr-2">
+                                                                                <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
+                                                                            </div>
+                                                                            <div className="w-[100px] shrink-0 pr-2">
+                                                                                <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
+                                                                            </div>
+                                                                            <div className="w-[100px] shrink-0 pr-2">
+                                                                                <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
+                                                                            </div>
+                                                                            <div className="w-auto shrink-0 text-right pr-2 font-mono">
+                                                                                {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </div>
+                                                                            <div className="w-[150px] shrink-0">
+                                                                                 <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </Draggable>
+                                                            )
+                                                        })}
+                                                        {provided.placeholder}
+                                                    </div>
+                                                )}
                                             </Droppable>
-                                            <UiTableFooter>
-                                                <TableRow className="bg-secondary/50 hover:bg-secondary">
-                                                    <TableCell colSpan={7} className="text-right font-bold">Total Capítulo</TableCell>
-                                                    <TableCell className="text-right font-bold font-mono">
-                                                        €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </TableCell>
-                                                </TableRow>
-                                            </UiTableFooter>
-                                        </Table>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="mt-4"
-                                            onClick={() => setAddingLineItemTo(capitulo.nombre)}
-                                        >
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
-                                        </Button>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
+                                            <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
+                                                Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="mt-4"
+                                                onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                            >
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                            </Button>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        </DragDropContext>
 
                         <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
@@ -1185,7 +1156,7 @@ export function AiBudgetsSection({
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
-    onMoveAiPartida: (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => void;
+    onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
     onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
 }) {
     const { toast } = useToast();
@@ -1255,51 +1226,13 @@ export function AiBudgetsSection({
         setPrintingBudget({ budget, printOptions });
     };
 
-    const handleMovePartidaLocal = (budgetId: string, sourceChapterName: string, sourceIndex: number, destChapterName: string, destIndex: number) => {
-        const budgetIndex = localBudgets.findIndex(b => b.id === budgetId);
-        if (budgetIndex === -1) return;
-
-        const updatedBudgets = [...localBudgets];
-        const budget = JSON.parse(JSON.stringify(updatedBudgets[budgetIndex]));
-        
-        const sourceChapter = budget.breakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
-        const destChapter = budget.breakdown.capitulos.find((c: any) => c.nombre === destChapterName);
-
-        if (!sourceChapter || !destChapter) return;
-
-        const [movedItem] = sourceChapter.partidas.splice(sourceIndex, 1);
-        destChapter.partidas.splice(destIndex, 0, movedItem);
-
-        // Move totals if they exist
-        if (budget.userLineTotals?.[sourceChapterName]?.[movedItem.descripcion] !== undefined) {
-            if (!budget.userLineTotals[destChapterName]) {
-                budget.userLineTotals[destChapterName] = {};
-            }
-            budget.userLineTotals[destChapterName][movedItem.descripcion] = budget.userLineTotals[sourceChapterName][movedItem.descripcion];
-            delete budget.userLineTotals[sourceChapterName][movedItem.descripcion];
-        }
-
-        updatedBudgets[budgetIndex] = budget;
-        setLocalBudgets(updatedBudgets);
-        onMoveAiPartida(budgetId, sourceChapterName, sourceIndex, destChapterName);
+    const handleMovePartidaLocal = (budgetId: string, source: any, destination: any) => {
+        onMoveAiPartida(budgetId, source, destination);
     };
 
      const handleMergeChaptersLocal = (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
-        onMergeChapters(budgetId, sourceChapterName, targetChapterName);
+        onMergeAiChapters(budgetId, sourceChapterName, targetChapterName);
     };
-
-    const handleDragEnd = (result: DropResult) => {
-        const { source, destination } = result;
-        if (!destination) return;
-        
-        const [sourceBudgetId, sourceChapterName] = source.droppableId.split('|');
-        const [destBudgetId, destChapterName] = destination.droppableId.split('|');
-        
-        if (sourceBudgetId !== destBudgetId) return; // For now, only allow moves within the same budget card
-        
-        handleMovePartidaLocal(sourceBudgetId, sourceChapterName, source.index, destChapterName, destination.index);
-    };
-
 
     return (
       <div className="space-y-6">
@@ -1328,7 +1261,7 @@ export function AiBudgetsSection({
                 />
             </div>
           {localBudgets.length > 0 ? (
-            <DragDropContext onDragEnd={handleDragEnd}>
+            
                 <Accordion type="single" collapsible className="w-full space-y-4">
                     {localBudgets.map(budget => (
                         <AiBudgetCard
@@ -1342,10 +1275,11 @@ export function AiBudgetsSection({
                             onAddToBudgetClick={setAddingToBudget}
                             onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
                             onMergeChapters={(source, target) => handleMergeChaptersLocal(budget.id, source, target)}
+                            onMovePartida={handleMovePartidaLocal}
                         />
                     ))}
                 </Accordion>
-            </DragDropContext>
+            
           ) : (
              <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
                 <p className="mt-1 text-sm text-muted-foreground">

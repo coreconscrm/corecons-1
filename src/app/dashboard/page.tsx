@@ -635,27 +635,26 @@ export default function Page() {
         setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
-    const handleMoveAiPartida = useCallback(async (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
+    const handleMoveAiPartida = useCallback(async (budgetId: string, source: any, destination: any) => {
         const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
         if (!budget) return;
 
         const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
-
-        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
-        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
-
-        if (!sourceChapter || !targetChapter) return;
-
-        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
-        targetChapter.partidas.push(partidaToMove);
         
-        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
-            if (!newTotals[targetChapterName]) {
-                newTotals[targetChapterName] = {};
+        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
+        const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
+        if (!sourceChapter || !destChapter) return;
+
+        const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
+        destChapter.partidas.splice(destination.index, 0, movedItem);
+        
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+        if (newTotals[sourceChapter.nombre] && newTotals[sourceChapter.nombre][movedItem.descripcion] !== undefined) {
+            if (!newTotals[destChapter.nombre]) {
+                newTotals[destChapter.nombre] = {};
             }
-            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
-            delete newTotals[sourceChapterName][partidaToMove.descripcion];
+            newTotals[destChapter.nombre][movedItem.descripcion] = newTotals[sourceChapter.nombre][movedItem.descripcion];
+            delete newTotals[sourceChapter.nombre][movedItem.descripcion];
         }
         
         await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
