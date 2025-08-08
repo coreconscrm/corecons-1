@@ -724,6 +724,7 @@ function AiBudgetCard({
     onMergeChapters,
     onMovePartida,
     onDeletePartida,
+    onAddChapterAtIndex,
 }: { 
     budget: AiBudgetItem, 
     onBudgetUpdate: (updatedBudget: AiBudgetItem) => void;
@@ -736,6 +737,7 @@ function AiBudgetCard({
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
     onMovePartida: (source: any, destination: any) => void;
     onDeletePartida: (chapterName: string, partidaIndex: number) => void;
+    onAddChapterAtIndex: (chapterName: string, index: number) => void;
 }) {
     const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<{ oldName: string; newName: string } | null>(null);
@@ -743,6 +745,7 @@ function AiBudgetCard({
     const [addingLineItemTo, setAddingLineItemTo] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [mergingChapter, setMergingChapter] = useState<string | null>(null);
+    const [addChapterState, setAddChapterState] = useState<{ open: boolean; index?: number }>({ open: false });
 
 
     const onDetailsChange = (values: z.infer<typeof budgetDetailsSchema>) => {
@@ -783,14 +786,12 @@ function AiBudgetCard({
         setHasChanges(true);
     };
     
-    const onAddChapter = (chapterName: string) => {
+    const handleAddNewChapter = (chapterName: string) => {
         if (budget.breakdown.capitulos.some((c: any) => c.nombre === chapterName)) {
             // Toast logic could be added here if needed
             return;
         }
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        newBreakdown.capitulos.push({ nombre: chapterName, partidas: [] });
-        onBudgetUpdate({ ...budget, breakdown: newBreakdown });
+        onAddChapterAtIndex(chapterName, addChapterState.index ?? budget.breakdown.capitulos.length);
         setHasChanges(true);
     };
     
@@ -899,11 +900,11 @@ function AiBudgetCard({
                     onSave={onDetailsChange}
                 />
             )}
-             {isAddChapterOpen && (
+             {addChapterState.open && (
                 <AddChapterDialog
-                    open={isAddChapterOpen}
-                    onOpenChange={setAddChapterOpen}
-                    onSave={(name) => onAddChapter(name)}
+                    open={addChapterState.open}
+                    onOpenChange={(open) => setAddChapterState({ open })}
+                    onSave={handleAddNewChapter}
                 />
             )}
             {addingLineItemTo && (
@@ -1098,20 +1099,28 @@ function AiBudgetCard({
                                                 <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
                                                     Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </div>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="mt-4"
-                                                    onClick={() => setAddingLineItemTo(capitulo.nombre)}
-                                                >
-                                                    <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
-                                                </Button>
+                                                <div className="flex items-center gap-2 mt-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setAddingLineItemTo(capitulo.nombre)}
+                                                    >
+                                                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partida
+                                                    </Button>
+                                                     <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setAddChapterState({ open: true, index: index + 1 })}
+                                                    >
+                                                        <FolderPlus className="mr-2 h-4 w-4" /> Añadir Capítulo Aquí
+                                                    </Button>
+                                                </div>
                                             </AccordionContent>
                                         </AccordionItem>
                                     ))}
                                 </Accordion>
 
-                            <Button variant="outline" className="mt-4" onClick={() => setAddChapterOpen(true)}>
+                            <Button variant="outline" className="mt-4" onClick={() => setAddChapterState({ open: true })}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Capítulo
                             </Button>
 
@@ -1171,8 +1180,8 @@ export function AiBudgetsSection({
     companies,
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
-    onMoveAiPartida,
-    onMergeAiChapters,
+    onMovePartida,
+    onMergeChapters,
     onDeletePartida,
 }: { 
     aiBudgets: AiBudgetItem[],
@@ -1181,8 +1190,8 @@ export function AiBudgetsSection({
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
-    onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
-    onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
+    onMovePartida: (budgetId: string, source: any, destination: any) => void;
+    onMergeChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeletePartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
 }) {
     const { toast } = useToast();
@@ -1253,49 +1262,26 @@ export function AiBudgetsSection({
     };
 
     const handleMovePartidaLocal = (budgetId: string, source: any, destination: any) => {
-        onMoveAiPartida(budgetId, source, destination);
+        onMovePartida(budgetId, source, destination);
     };
 
-     const handleMergeChaptersLocal = (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
-        const budgetToUpdate = localBudgets.find(b => b.id === budgetId);
-        if (!budgetToUpdate) return;
-        
-        const newBreakdown = JSON.parse(JSON.stringify(budgetToUpdate.breakdown));
-        const sourceChapterIndex = newBreakdown.capitulos.findIndex((c:any) => c.nombre === sourceChapterName);
-        const targetChapterIndex = newBreakdown.capitulos.findIndex((c:any) => c.nombre === targetChapterName);
-        
-        if (sourceChapterIndex === -1 || targetChapterIndex === -1) return;
-        
-        const sourceChapter = newBreakdown.capitulos[sourceChapterIndex];
-        const targetChapter = newBreakdown.capitulos[targetChapterIndex];
-        
-        targetChapter.partidas.push(...sourceChapter.partidas);
-        newBreakdown.capitulos.splice(sourceChapterIndex, 1);
-        
-        handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown });
-        onMergeAiChapters(budgetId, sourceChapterName, targetChapterName);
+    const handleMergeChaptersLocal = (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
+        onMergeChapters(budgetId, sourceChapterName, targetChapterName);
     };
 
     const handleDeletePartidaLocal = (budgetId: string, chapterName: string, partidaIndex: number) => {
+        onDeletePartida(budgetId, chapterName, partidaIndex);
+    };
+    
+    const handleAddChapterLocal = (budgetId: string, chapterName: string, index: number) => {
         const budgetToUpdate = localBudgets.find(b => b.id === budgetId);
         if (!budgetToUpdate) return;
         
         const newBreakdown = JSON.parse(JSON.stringify(budgetToUpdate.breakdown));
-        const newTotals = JSON.parse(JSON.stringify(budgetToUpdate.userLineTotals || {}));
-
-        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
-        if (!chapter || !chapter.partidas[partidaIndex]) return;
-
-        const partidaToDelete = chapter.partidas[partidaIndex];
+        newBreakdown.capitulos.splice(index, 0, { nombre: chapterName, partidas: [] });
         
-        if (newTotals[chapterName] && newTotals[chapterName][partidaToDelete.descripcion] !== undefined) {
-            delete newTotals[chapterName][partidaToDelete.descripcion];
-        }
-
-        chapter.partidas.splice(partidaIndex, 1);
-
-        handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown, userLineTotals: newTotals });
-        onDeletePartida(budgetId, chapterName, partidaIndex);
+        handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown });
+        onUpdateAiBudget({ id: budgetId, breakdown: newBreakdown }, false);
     };
 
     return (
@@ -1341,6 +1327,7 @@ export function AiBudgetsSection({
                             onMergeChapters={(source, target) => handleMergeChaptersLocal(budget.id, source, target)}
                             onMovePartida={(source, dest) => handleMovePartidaLocal(budget.id, source, dest)}
                             onDeletePartida={(chapterName, partidaIndex) => handleDeletePartidaLocal(budget.id, chapterName, partidaIndex)}
+                            onAddChapterAtIndex={(chapterName, index) => handleAddChapterLocal(budget.id, chapterName, index)}
                         />
                     ))}
                 </Accordion>

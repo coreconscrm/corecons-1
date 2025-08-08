@@ -144,7 +144,7 @@ export function DashboardTabs({
           forms={[...data.forms, ...data.contacts, ...data.priorityCalls]}
           aiBudgets={data.aiBudgets}
           onAddAiBudget={(b: any) => actions.createItem('ia_budgets', b)}
-          onUpdateAiBudget={(b: any, refresh?: boolean) => actions.updateItem('ia_budgets', b, refresh)}
+          onUpdateAiBudget={actions.handleUpdateAiBudget}
           onDeleteAiBudget={(id: string) => actions.deleteItem('ia_budgets', id)}
           onCreateBudgetFromAi={actions.handleCreateBudgetFromAi}
           onCreateSummaryBudgetFromAi={actions.handleCreateSummaryBudgetFromAi}

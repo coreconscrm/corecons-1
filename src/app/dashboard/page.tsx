@@ -722,6 +722,10 @@ export default function Page() {
 
     }, [data.aiBudgets, updateItem, toast]);
 
+    const handleUpdateAiBudget = useCallback(async (budget: AiBudgetItem, refresh: boolean = true) => {
+        await updateItem('ia_budgets', budget, refresh);
+    }, [updateItem]);
+
 
   // Metrics for Budget Overview
   const budgetsPending = data.budgets.filter((b:any) => b.status === 'Pendiente').length;
@@ -869,6 +873,7 @@ export default function Page() {
                 handleMoveAiPartida,
                 handleMergeAiChapters,
                 handleDeleteAiPartida,
+                handleUpdateAiBudget,
               }}
             />
           </div>
