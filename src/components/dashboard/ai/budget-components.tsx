@@ -771,52 +771,28 @@ function AiBudgetCard({
         setHasChanges(true);
     };
 
-    const onMovePartida = (sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
-
-        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
-        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
-
-        if (!sourceChapter || !targetChapter) return;
-
-        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
-        targetChapter.partidas.push(partidaToMove);
-        
-        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
-            if (!newTotals[targetChapterName]) {
-                newTotals[targetChapterName] = {};
-            }
-            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
-            delete newTotals[sourceChapterName][partidaToMove.descripcion];
-        }
-        
-        onBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
-        setHasChanges(true);
-    };
-    
     const handleSave = () => {
         onSaveChanges(budget);
         setHasChanges(false);
     }
     
     const onDragEnd = (result: DropResult) => {
-        const { source, destination, draggableId } = result;
+        const { source, destination } = result;
 
         if (!destination) {
             return;
         }
-        
-        const chapterName = destination.droppableId;
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const chapter = newBreakdown.capitulos.find((c: any) => c.nombre === chapterName);
 
-        if (!chapter || source.index === destination.index) {
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
+        const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
+
+        if (!sourceChapter || !destChapter) {
             return;
         }
 
-        const [reorderedItem] = chapter.partidas.splice(source.index, 1);
-        chapter.partidas.splice(destination.index, 0, reorderedItem);
+        const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
+        destChapter.partidas.splice(destination.index, 0, movedItem);
 
         onBudgetUpdate({ ...budget, breakdown: newBreakdown });
         setHasChanges(true);
@@ -1228,6 +1204,34 @@ export function AiBudgetsSection({
     
     const handlePrint = (budget: AiBudgetItem, printOptions: { summaryOnly: boolean }) => {
         setPrintingBudget({ budget, printOptions });
+    };
+
+    const handleMovePartidaLocal = (budgetId: string, sourceChapterName: string, partidaIndex: number, targetChapterName: string) => {
+        const budgetIndex = localBudgets.findIndex(b => b.id === budgetId);
+        if (budgetIndex === -1) return;
+        
+        const budget = localBudgets[budgetIndex];
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === sourceChapterName);
+        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
+
+        if (!sourceChapter || !targetChapter) return;
+
+        const [partidaToMove] = sourceChapter.partidas.splice(partidaIndex, 1);
+        targetChapter.partidas.push(partidaToMove);
+        
+        if (newTotals[sourceChapterName] && newTotals[sourceChapterName][partidaToMove.descripcion] !== undefined) {
+            if (!newTotals[targetChapterName]) {
+                newTotals[targetChapterName] = {};
+            }
+            newTotals[targetChapterName][partidaToMove.descripcion] = newTotals[sourceChapterName][partidaToMove.descripcion];
+            delete newTotals[sourceChapterName][partidaToMove.descripcion];
+        }
+        
+        handleLocalBudgetUpdate({ ...budget, breakdown: newBreakdown, userLineTotals: newTotals });
+        onMovePartida(budgetId, sourceChapterName, partidaIndex, targetChapterName);
     };
 
     return (
