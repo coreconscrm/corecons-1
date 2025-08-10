@@ -31,6 +31,8 @@ export function AiSection({
     onMoveAiPartida,
     onMergeAiChapters,
     onDeleteAiPartida,
+    onBulkDeleteAiPartidas,
+    onBulkMoveAiPartidas,
 }: {
     companies: Company[],
     forms: any[],
@@ -43,6 +45,8 @@ export function AiSection({
     onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
     onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeleteAiPartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
+    onBulkDeleteAiPartidas: (budgetId: string, partidaIds: string[]) => void;
+    onBulkMoveAiPartidas: (budgetId: string, partidaIds: string[], targetChapterName: string) => void;
 }) {
     const { toast } = useToast();
     const [latestReport, setLatestReport] = useState<FormsReport | null>(null);
@@ -157,6 +161,8 @@ export function AiSection({
                                 onMovePartida={onMoveAiPartida}
                                 onMergeChapters={onMergeAiChapters}
                                 onDeletePartida={onDeleteAiPartida}
+                                onBulkDeletePartidas={onBulkDeleteAiPartidas}
+                                onBulkMovePartidas={onBulkMoveAiPartidas}
                             />
                          )}
                     </div>

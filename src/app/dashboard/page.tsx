@@ -680,17 +680,16 @@ ${JSON.stringify(contact, null, 2)}`,
         const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
         
         const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
-        const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
-        if (!sourceChapter || !destChapter) return;
-
-        // Remove item from source
+        if (!sourceChapter) return;
         const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
-        
-        // Add item to destination
-        destChapter.partidas.splice(destination.index, 0, movedItem);
-        
-        // Move totals if moving between chapters
+
+        // If moving to a different chapter
         if (source.droppableId !== destination.droppableId) {
+            const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
+            if (!destChapter) return;
+            destChapter.partidas.splice(destination.index, 0, movedItem);
+
+            // Move totals
             if (newTotals[sourceChapter.nombre] && newTotals[sourceChapter.nombre][movedItem.descripcion] !== undefined) {
                 if (!newTotals[destChapter.nombre]) {
                     newTotals[destChapter.nombre] = {};
@@ -698,6 +697,8 @@ ${JSON.stringify(contact, null, 2)}`,
                 newTotals[destChapter.nombre][movedItem.descripcion] = newTotals[sourceChapter.nombre][movedItem.descripcion];
                 delete newTotals[sourceChapter.nombre][movedItem.descripcion];
             }
+        } else { // Moving within the same chapter
+            sourceChapter.partidas.splice(destination.index, 0, movedItem);
         }
         
         await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
@@ -768,6 +769,79 @@ ${JSON.stringify(contact, null, 2)}`,
     const handleUpdateAiBudget = useCallback(async (budget: AiBudgetItem, refresh: boolean = true) => {
         await updateItem('ia_budgets', budget, refresh);
     }, [updateItem]);
+
+
+    const handleBulkDeleteAiPartidas = useCallback(async (budgetId: string, partidaIds: string[]) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        const partidaKeysToDelete = new Set(partidaIds);
+
+        newBreakdown.capitulos.forEach((chapter: any) => {
+            const originalPartidas = chapter.partidas;
+            chapter.partidas = [];
+            
+            originalPartidas.forEach((partida: any, index: number) => {
+                const partidaId = `${chapter.nombre}---${partida.descripcion}---${index}`;
+                if (partidaKeysToDelete.has(partidaId)) {
+                    // This one is being deleted, remove its total
+                    if (newTotals[chapter.nombre]?.[partida.descripcion] !== undefined) {
+                        delete newTotals[chapter.nombre][partida.descripcion];
+                    }
+                } else {
+                    // This one is kept
+                    chapter.partidas.push(partida);
+                }
+            });
+        });
+        
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        toast({ title: "Partidas eliminadas", description: `${partidaIds.length} partidas han sido eliminadas.` });
+
+    }, [data.aiBudgets, updateItem, toast]);
+    
+    const handleBulkMoveAiPartidas = useCallback(async (budgetId: string, partidaIds: string[], targetChapterName: string) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+        
+        const targetChapter = newBreakdown.capitulos.find((c: any) => c.nombre === targetChapterName);
+        if (!targetChapter) return;
+        
+        const partidasToMove: any[] = [];
+        const partidaKeysToDelete = new Set(partidaIds);
+
+        newBreakdown.capitulos.forEach((chapter: any) => {
+            const originalPartidas = chapter.partidas;
+            chapter.partidas = [];
+            
+            originalPartidas.forEach((partida: any, index: number) => {
+                const partidaId = `${chapter.nombre}---${partida.descripcion}---${index}`;
+                if (partidaKeysToDelete.has(partidaId)) {
+                    partidasToMove.push(partida);
+                    // Move total
+                    if (newTotals[chapter.nombre]?.[partida.descripcion] !== undefined) {
+                        if (!newTotals[targetChapter.nombre]) newTotals[targetChapter.nombre] = {};
+                        newTotals[targetChapter.nombre][partida.descripcion] = newTotals[chapter.nombre][partida.descripcion];
+                        delete newTotals[chapter.nombre][partida.descripcion];
+                    }
+                } else {
+                    chapter.partidas.push(partida);
+                }
+            });
+        });
+        
+        targetChapter.partidas.push(...partidasToMove);
+
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        toast({ title: "Partidas movidas", description: `${partidaIds.length} partidas movidas a "${targetChapterName}".` });
+
+    }, [data.aiBudgets, updateItem, toast]);
 
 
   // Metrics for Budget Overview
@@ -919,7 +993,9 @@ ${JSON.stringify(contact, null, 2)}`,
                 handleMergeAiChapters,
                 handleDeleteAiPartida,
                 handleUpdateAiBudget,
-                handleUpdateSheetFormStatus
+                handleUpdateSheetFormStatus,
+                handleBulkDeleteAiPartidas,
+                handleBulkMoveAiPartidas,
               }}
             />
           </div>
