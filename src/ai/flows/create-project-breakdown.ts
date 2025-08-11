@@ -11,12 +11,11 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-// Input Schema: A PDF file provided as a data URI
+// Input Schema: One or more PDF files provided as data URIs
 const ProjectBreakdownInputSchema = z.object({
-  pdfDataUri: z
-    .string()
+  pdfDataUris: z.array(z.string())
     .describe(
-      "A PDF file of a construction quality specification (memoria de calidades), as a data URI. Expected format: 'data:application/pdf;base64,<encoded_data>'."
+      "An array of PDF files of a construction quality specification (memoria de calidades), as data URIs. Expected format: 'data:application/pdf;base64,<encoded_data>'."
     ),
   chapterName: z.string().optional().describe("An optional chapter name to assign to all extracted line items. If provided, the AI will not look for chapters in the document.")
 });
@@ -46,7 +45,7 @@ const projectBreakdownPrompt = ai.definePrompt({
   output: { schema: ProjectBreakdownSchema },
   prompt: `
     Eres un jefe de obra experto en construcción con más de 20 años de experiencia en España.
-    Tu tarea es analizar la siguiente memoria de calidades o presupuesto, que está en formato PDF, y desglosarla.
+    Tu tarea es analizar la siguiente memoria de calidades o presupuesto, que está en formato PDF, y desglosarla. El contenido puede estar dividido en varios archivos PDF. Debes tratarlos como un único documento.
 
     Instrucciones Generales:
     1.  Lee atentamente el documento PDF adjunto.
@@ -67,8 +66,10 @@ const projectBreakdownPrompt = ai.definePrompt({
     -   Para cada capítulo, extrae las partidas de obra específicas mencionadas.
     {{/if}}
 
-    Documento a analizar:
-    {{media url=pdfDataUri}}
+    Documento(s) a analizar:
+    {{#each pdfDataUris}}
+    {{media url=this}}
+    {{/each}}
   `,
 });
 

@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,12 +91,14 @@ export function BudgetUploader({
 }: { 
     onAnalysisComplete: (breakdown: ProjectBreakdown, fileName: string) => Promise<void>;
 }) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [breakdown, setBreakdown] = useState<ProjectBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isManualChapterDialogOpen, setManualChapterDialogOpen] = useState(false);
   const { toast } = useToast();
+  const multipleFilesInputRef = useRef<HTMLInputElement>(null);
+
 
   const manualChapterForm = useForm<z.infer<typeof manualChapterSchema>>({
     resolver: zodResolver(manualChapterSchema),
@@ -106,7 +108,7 @@ export function BudgetUploader({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
+      setFiles([acceptedFiles[0]]);
       setBreakdown(null); // Reset breakdown when new file is selected
     }
   }, []);
@@ -117,9 +119,9 @@ export function BudgetUploader({
     multiple: false,
   });
   
-  const processFileAndAnalyze = async (chapterName?: string) => {
-     if (!file) {
-      toast({ variant: "destructive", title: "Error", description: "Por favor, selecciona un archivo PDF." });
+  const processFilesAndAnalyze = async (filesToProcess: File[], chapterName?: string) => {
+     if (filesToProcess.length === 0) {
+      toast({ variant: "destructive", title: "Error", description: "Por favor, selecciona al menos un archivo PDF." });
       return;
     }
 
@@ -127,12 +129,17 @@ export function BudgetUploader({
     setBreakdown(null);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const dataUri = reader.result as string;
+      const dataUris = await Promise.all(filesToProcess.map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
+        });
+      }));
+
         try {
-          const result = await createProjectBreakdown({ pdfDataUri: dataUri, chapterName });
+          const result = await createProjectBreakdown({ pdfDataUris: dataUris, chapterName });
           setBreakdown(result);
           toast({ title: "Desglose generado", description: "El proyecto ha sido desglosado exitosamente. Ahora puedes guardarlo." });
         } catch (error) {
@@ -141,44 +148,50 @@ export function BudgetUploader({
         } finally {
             setIsLoading(false);
         }
-      };
-      reader.onerror = (error) => {
-        console.error("Error reading file:", error);
-        toast({ variant: "destructive", title: "Error de archivo", description: "No se pudo leer el archivo seleccionado." });
-        setIsLoading(false);
-      }
     } catch (e) {
       console.error("Error setting up file reader:", e);
-      toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado.` });
+      toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado al leer los archivos.` });
       setIsLoading(false);
     }
   }
 
   const handleGenerate = () => {
-    processFileAndAnalyze();
+    processFilesAndAnalyze(files);
   };
   
   const handleManualChapterSubmit = (values: z.infer<typeof manualChapterSchema>) => {
     setManualChapterDialogOpen(false);
-    processFileAndAnalyze(values.chapterName);
+    processFilesAndAnalyze(files, values.chapterName);
     manualChapterForm.reset();
   };
 
   const handleSaveClick = async () => {
-    if (!breakdown || !file) {
+    if (!breakdown || files.length === 0) {
        toast({ variant: "destructive", title: "Error", description: "No hay desglose para guardar." });
        return;
     }
     setIsSaving(true);
     try {
-        await onAnalysisComplete(breakdown, file.name);
+        await onAnalysisComplete(breakdown, files.map(f => f.name).join(', '));
         setBreakdown(null);
-        setFile(null);
+        setFiles([]);
     } catch (error) {
         // Error toast is handled in parent
     } finally {
         setIsSaving(false);
     }
+  };
+
+  const handleMultipleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length > 0) {
+        setFiles(selectedFiles);
+        setBreakdown(null);
+    }
+  };
+
+  const handleAnalyzeMultiple = () => {
+    processFilesAndAnalyze(files);
   };
 
 
@@ -213,6 +226,14 @@ export function BudgetUploader({
             </Form>
         </DialogContent>
       </Dialog>
+      <input 
+        type="file" 
+        multiple 
+        ref={multipleFilesInputRef} 
+        className="hidden" 
+        onChange={handleMultipleFileChange}
+        accept="application/pdf"
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -230,30 +251,40 @@ export function BudgetUploader({
               <UploadCloud className="w-12 h-12 text-muted-foreground" />
               <p className="mt-4 text-sm text-center">
                 {isDragActive
-                  ? "Suelta el archivo aquí..."
+                  ? "Suelta un PDF aquí..."
                   : "Arrastra y suelta un PDF aquí, o haz clic para seleccionar"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF</p>
+              <p className="text-xs text-muted-foreground mt-1">Solo un archivo PDF</p>
             </div>
-            {file && (
+            {files.length > 0 && (
               <div className="p-3 border rounded-lg text-sm flex items-center justify-between">
                 <p className="truncate font-medium flex items-center gap-2">
-                  <FileText size={16} /> {file.name}
+                  <FileText size={16} /> {files.length > 1 ? `${files.length} archivos seleccionados` : files[0].name}
                 </p>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFile(null); setBreakdown(null); }}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFiles([]); setBreakdown(null); }}>
                   <X size={16} />
                 </Button>
               </div>
             )}
           </CardContent>
           <CardFooter className="flex-wrap gap-2">
-            <Button onClick={handleGenerate} disabled={!file || isLoading}>
+            <Button onClick={handleGenerate} disabled={files.length !== 1 || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Analizando..." : "Analizar con IA"}
+              {isLoading ? "Analizando..." : "Analizar con IA (1 archivo)"}
             </Button>
-            <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={!file || isLoading}>
+            <Button variant="outline" onClick={() => multipleFilesInputRef.current?.click()} disabled={isLoading}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir con IA
+              Seleccionar Múltiples PDFs
+            </Button>
+            {files.length > 1 && (
+                 <Button onClick={handleAnalyzeMultiple} disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isLoading ? "Analizando..." : `Analizar ${files.length} Archivos`}
+                </Button>
+            )}
+            <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={files.length !== 1 || isLoading}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir a Capítulo
             </Button>
           </CardFooter>
         </Card>
@@ -1032,8 +1063,8 @@ function AiBudgetCard({
               />
             )}
             
-            <CardHeader className="flex flex-row items-center justify-between p-4">
-                <div>
+            <CardHeader className="flex flex-row items-start justify-between p-4">
+                 <div>
                     <h3 className={cn("font-semibold text-lg", hasChanges && "font-bold")}>{budget.title || budget.fileName} {hasChanges && '*'}</h3>
                     <CardDescription className="mt-1">
                         {budget.clientName && <span className="font-semibold">{budget.clientName}</span>}
@@ -1042,9 +1073,9 @@ function AiBudgetCard({
                         {!budget.clientName && !budget.description && `Analizado el: ${budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Fecha desconocida'}`}
                     </CardDescription>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                      {selectedPartidaIds.length > 0 && (
-                        <>
+                        <div className="flex items-center gap-2">
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Eliminar ({selectedPartidaIds.length})</Button>
@@ -1061,7 +1092,7 @@ function AiBudgetCard({
                             </AlertDialogContent>
                         </AlertDialog>
                         <Button size="sm" onClick={() => setBulkMoveOpen(true)}><Move className="mr-2 h-4 w-4" /> Mover ({selectedPartidaIds.length})</Button>
-                       </>
+                       </div>
                      )}
                     <Button onClick={handleSave} disabled={!hasChanges} size="sm">
                         <Save className="mr-2 h-4 w-4" /> Guardar
