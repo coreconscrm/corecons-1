@@ -25,6 +25,7 @@ import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings,
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const seguimientoSchema = z.object({
   name: z.string().optional(),
@@ -359,7 +360,7 @@ export function SeguimientoListCard({
 
         seguimientos.forEach(s => {
             const category = s.category || 'General';
-            if (groups[category]) {
+            if (groups[category] !== undefined) { // Only include suivis from visible categories
                 groups[category].push(s);
             }
         });
@@ -452,90 +453,94 @@ export function SeguimientoListCard({
                 </div>
             </CardHeader>
             <CardContent>
-              <div className="w-full overflow-x-auto rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Acciones</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Por Hacer</TableHead>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Teléfono</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Localización</TableHead>
-                            <TableHead>Información</TableHead>
-                            <TableHead>Próxima Llamada</TableHead>
-                        </TableRow>
-                    </TableHeader>
+                <Accordion type="multiple" className="w-full space-y-4">
                     {Object.entries(groupedSeguimientos).map(([category, seguimientosInCategory]) => (
-                        <tbody key={category}>
-                            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                                <TableCell colSpan={9} className="font-semibold text-lg">
-                                    <div className="flex items-center gap-2">
-                                        <FolderOpen className="h-5 w-5" />
-                                        {category} ({seguimientosInCategory.length})
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                            {seguimientosInCategory.length > 0 ? seguimientosInCategory.map((s) => (
-                                <TableRow key={s.id}>
-                                    <TableCell>
-                                        <AlertDialog>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => handleEdit(s)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
-                                                    <DropdownMenuSub>
-                                                        <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
-                                                        <DropdownMenuSubContent>
-                                                          {categories.map(cat => (
-                                                            <DropdownMenuItem key={cat.name} onSelect={() => onUpdateSeguimiento({ ...s, category: cat.name })}>
-                                                                {cat.name}
-                                                            </DropdownMenuItem>
-                                                          ))}
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuSub>
-                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el seguimiento.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteSeguimiento(s.id)}>Eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </TableCell>
-                                    <TableCell className="capitalize">{s.estado}</TableCell>
-                                    <TableCell className="capitalize">{s.porHacer}</TableCell>
-                                    <TableCell className="font-medium">{s.name}</TableCell>
-                                    <TableCell>{s.phone}</TableCell>
-                                    <TableCell>{s.email}</TableCell>
-                                    <TableCell>{s.localizacion}</TableCell>
-                                    <TableCell>
-                                        {s.informacion && (
-                                            <p 
-                                              className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
-                                              onClick={() => setViewingInfo(s.informacion || null)}
-                                            >
-                                              {s.informacion}
-                                            </p>
+                        <AccordionItem value={category} key={category} className="border rounded-md">
+                            <AccordionTrigger className="px-4 py-2 hover:no-underline">
+                                 <div className="flex items-center gap-2 font-semibold text-lg">
+                                    <FolderOpen className="h-5 w-5" />
+                                    {category} ({seguimientosInCategory.length})
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className="w-full overflow-x-auto border-t">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Acciones</TableHead>
+                                                <TableHead>Estado</TableHead>
+                                                <TableHead>Por Hacer</TableHead>
+                                                <TableHead>Nombre</TableHead>
+                                                <TableHead>Teléfono</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead>Localización</TableHead>
+                                                <TableHead>Información</TableHead>
+                                                <TableHead>Próxima Llamada</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {seguimientosInCategory.length > 0 ? seguimientosInCategory.map((s) => (
+                                            <TableRow key={s.id}>
+                                                <TableCell>
+                                                    <AlertDialog>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                            <DropdownMenuContent>
+                                                                <DropdownMenuItem onSelect={() => handleEdit(s)}><Pencil className="mr-2" />Editar</DropdownMenuItem>
+                                                                <DropdownMenuSub>
+                                                                    <DropdownMenuSubTrigger><Move className="mr-2 h-4 w-4" /> Mover a Subsección</DropdownMenuSubTrigger>
+                                                                    <DropdownMenuSubContent>
+                                                                    {categories.map(cat => (
+                                                                        <DropdownMenuItem key={cat.name} onSelect={() => onUpdateSeguimiento({ ...s, category: cat.name })}>
+                                                                            {cat.name}
+                                                                        </DropdownMenuItem>
+                                                                    ))}
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuSub>
+                                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2" />Eliminar</DropdownMenuItem></AlertDialogTrigger>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader><AlertDialogTitle>¿Estás seguro?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente el seguimiento.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => onDeleteSeguimiento(s.id)}>Eliminar</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </TableCell>
+                                                <TableCell className="capitalize">{s.estado}</TableCell>
+                                                <TableCell className="capitalize">{s.porHacer}</TableCell>
+                                                <TableCell className="font-medium">{s.name}</TableCell>
+                                                <TableCell>{s.phone}</TableCell>
+                                                <TableCell>{s.email}</TableCell>
+                                                <TableCell>{s.localizacion}</TableCell>
+                                                <TableCell>
+                                                    {s.informacion && (
+                                                        <p 
+                                                        className="text-sm text-muted-foreground cursor-pointer hover:text-foreground max-w-xs truncate"
+                                                        onClick={() => setViewingInfo(s.informacion || null)}
+                                                        >
+                                                        {s.informacion}
+                                                        </p>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow>
+                                                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                                                    No hay seguimientos en esta subsección.
+                                                </TableCell>
+                                            </TableRow>
                                         )}
-                                    </TableCell>
-                                    <TableCell>{formatDisplayDate(s.siguienteLlamada)}</TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={9} className="h-16 text-center text-muted-foreground">
-                                        No hay seguimientos en esta subsección.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </tbody>
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
                     ))}
-                </Table>
-              </div>
+                </Accordion>
             </CardContent>
         </Card>
     );
