@@ -31,6 +31,7 @@ export function AiSection({
     onMoveAiPartida,
     onMergeAiChapters,
     onDeleteAiPartida,
+    onDeleteAiChapter,
     onBulkDeleteAiPartidas,
     onBulkMoveAiPartidas,
 }: {
@@ -45,6 +46,7 @@ export function AiSection({
     onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
     onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeleteAiPartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
+    onDeleteAiChapter: (budgetId: string, chapterName: string) => void;
     onBulkDeleteAiPartidas: (budgetId: string, partidaIds: string[]) => void;
     onBulkMoveAiPartidas: (budgetId: string, partidaIds: string[], targetChapterName: string) => void;
 }) {
@@ -161,6 +163,7 @@ export function AiSection({
                                 onMovePartida={onMoveAiPartida}
                                 onMergeChapters={onMergeAiChapters}
                                 onDeletePartida={onDeleteAiPartida}
+                                onDeleteChapter={onDeleteAiChapter}
                                 onBulkDeletePartidas={onBulkDeleteAiPartidas}
                                 onBulkMovePartidas={onBulkMoveAiPartidas}
                             />

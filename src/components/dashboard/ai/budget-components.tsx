@@ -783,6 +783,7 @@ function AiBudgetCard({
     onCreateSummaryBudgetFromAi,
     onMergeChapters,
     onDeletePartida,
+    onDeleteChapter,
     onAddChapterAtIndex,
     onBulkDelete,
     onBulkMove,
@@ -797,6 +798,7 @@ function AiBudgetCard({
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
     onMergeChapters: (sourceChapterName: string, targetChapterName: string) => void;
     onDeletePartida: (chapterName: string, partidaIndex: number) => void;
+    onDeleteChapter: (chapterName: string) => void;
     onAddChapterAtIndex: (chapterName: string, index: number) => void;
     onBulkDelete: (partidaIds: string[]) => void;
     onBulkMove: (partidaIds: string[], targetChapterName: string) => void;
@@ -908,6 +910,11 @@ function AiBudgetCard({
     
     const handleDeletePartida = (chapterName: string, partidaIndex: number) => {
         onDeletePartida(chapterName, partidaIndex);
+        setHasChanges(true);
+    }
+    
+    const handleDeleteChapter = (chapterName: string) => {
+        onDeleteChapter(chapterName);
         setHasChanges(true);
     }
 
@@ -1135,19 +1142,36 @@ function AiBudgetCard({
                                         ) : (
                                             <h4 className="text-lg font-semibold flex-1 cursor-pointer"  onClick={() => toggleChapter(capitulo.nombre)}>{capitulo.nombre}</h4>
                                         )}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
-                                                    <Pencil className="mr-2 h-4 w-4" />Renombrar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
-                                                    <Merge className="mr-2 h-4 w-4" />Unir con...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => setEditingChapter({ oldName: capitulo.nombre, newName: capitulo.nombre })}>
+                                                        <Pencil className="mr-2 h-4 w-4" />Renombrar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setMergingChapter(capitulo.nombre)}>
+                                                        <Merge className="mr-2 h-4 w-4" />Unir con...
+                                                    </DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" />Eliminar Capítulo
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Eliminar capítulo "{capitulo.nombre}"?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará el capítulo y todas sus partidas.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteChapter(capitulo.nombre)}>Sí, eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
 
                                     {isChapterOpen && (
@@ -1169,7 +1193,7 @@ function AiBudgetCard({
                                             <div className="w-[150px] shrink-0 text-right">Total Partida (€)</div>
                                             <div className="w-[50px] shrink-0 text-right"></div>
                                         </div>
-                                        <Droppable droppableId={capitulo.nombre}>
+                                        <Droppable droppableId={capitulo.nombre} isDropDisabled={false}>
                                             {(provided) => (
                                                 <div ref={provided.innerRef} {...provided.droppableProps}>
                                                     {capitulo.partidas.map((partida, pIndex) => {
@@ -1320,6 +1344,7 @@ export function AiBudgetsSection({
     onMovePartida,
     onMergeChapters,
     onDeletePartida,
+    onDeleteChapter,
     onBulkDeletePartidas,
     onBulkMovePartidas,
 }: { 
@@ -1332,6 +1357,7 @@ export function AiBudgetsSection({
     onMovePartida: (budgetId: string, source: any, destination: any) => void;
     onMergeChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeletePartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
+    onDeleteChapter: (budgetId: string, chapterName: string) => void;
     onBulkDeletePartidas: (budgetId: string, partidaIds: string[]) => void;
     onBulkMovePartidas: (budgetId: string, partidaIds: string[], targetChapterName: string) => void;
 }) {
@@ -1472,6 +1498,7 @@ export function AiBudgetsSection({
                                         onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
                                         onMergeChapters={(source, target) => onMergeChapters(budget.id, source, target)}
                                         onDeletePartida={(chapterName, partidaIndex) => onDeletePartida(budget.id, chapterName, partidaIndex)}
+                                        onDeleteChapter={(chapterName) => onDeleteChapter(budget.id, chapterName)}
                                         onAddChapterAtIndex={(chapterName, index) => handleAddChapterLocal(budget.id, chapterName, index)}
                                         onBulkDelete={(partidaIds) => onBulkDeletePartidas(budget.id, partidaIds)}
                                         onBulkMove={(partidaIds, targetChapter) => onBulkMovePartidas(budget.id, partidaIds, targetChapter)}

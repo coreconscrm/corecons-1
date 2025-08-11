@@ -151,6 +151,7 @@ export function DashboardTabs({
           onMoveAiPartida={actions.handleMoveAiPartida}
           onMergeAiChapters={actions.handleMergeAiChapters}
           onDeleteAiPartida={actions.handleDeleteAiPartida}
+          onDeleteAiChapter={actions.handleDeleteAiChapter}
           onBulkDeleteAiPartidas={actions.handleBulkDeleteAiPartidas}
           onBulkMoveAiPartidas={actions.handleBulkMoveAiPartidas}
         />

@@ -769,6 +769,27 @@ ${JSON.stringify(contact, null, 2)}`,
 
     }, [data.aiBudgets, updateItem, toast]);
 
+    const handleDeleteAiChapter = useCallback(async (budgetId: string, chapterName: string) => {
+        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
+        if (!budget) return;
+
+        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
+
+        // Filter out the chapter to delete
+        newBreakdown.capitulos = newBreakdown.capitulos.filter((c: any) => c.nombre !== chapterName);
+
+        // Delete totals for that chapter
+        if (newTotals[chapterName]) {
+            delete newTotals[chapterName];
+        }
+        
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
+        toast({ title: "Capítulo eliminado", description: `El capítulo "${chapterName}" y todas sus partidas han sido eliminados.` });
+
+    }, [data.aiBudgets, updateItem, toast]);
+
+
     const handleUpdateAiBudget = useCallback(async (budget: AiBudgetItem, refresh: boolean = true) => {
         await updateItem('ia_budgets', budget, refresh);
     }, [updateItem]);
@@ -995,6 +1016,7 @@ ${JSON.stringify(contact, null, 2)}`,
                 handleMoveAiPartida,
                 handleMergeAiChapters,
                 handleDeleteAiPartida,
+                handleDeleteAiChapter,
                 handleUpdateAiBudget,
                 handleUpdateSheetFormStatus,
                 handleBulkDeleteAiPartidas,
