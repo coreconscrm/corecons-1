@@ -42,7 +42,7 @@ export function DashboardTabs({
         {visibleTabs.ia && <TabsTrigger value="ia">IA</TabsTrigger>}
         {(visibleTabs.providers || visibleTabs.collaborators || visibleTabs.interioristas || visibleTabs.constructoras || visibleTabs.reformistas || visibleTabs.prices) && <TabsTrigger value="providers">Proveedores</TabsTrigger>}
         {visibleTabs.forms && <TabsTrigger value="forms">Formularios</TabsTrigger>}
-        {(visibleTabs.companies || visibleTabs.team || visibleTabs.estimaciones) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
+        {(visibleTabs.companies || visibleTabs.team || visibleTabs.estimaciones || visibleTabs.protocols) && <TabsTrigger value="companies">Empresa</TabsTrigger>}
         <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
       
@@ -236,6 +236,7 @@ export function DashboardTabs({
           onUpdateItem={actions.updateItem}
           onDeleteLinkItem={actions.deleteItem}
           estimaciones={data.estimaciones}
+          protocols={data.protocols}
         />
       </TabsContent>}
 

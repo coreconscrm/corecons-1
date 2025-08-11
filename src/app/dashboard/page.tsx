@@ -41,6 +41,7 @@ const defaultVisibleTabs = {
     ia: true,
     oficina: true,
     estimaciones: true,
+    protocols: true,
 };
 
 const defaultSeguimientoCategories = [{ name: 'General', visible: true }];
@@ -80,6 +81,7 @@ const collectionStateMap: Record<string, string> = {
     link_sections: 'linkSections',
     estimaciones: 'estimaciones',
     sheetFormStatus: 'sheetFormStatus',
+    protocols: 'protocols',
 };
 
 // --- Helper Functions ---
@@ -135,6 +137,7 @@ export default function Page() {
     linkSections: [],
     estimaciones: [],
     sheetFormStatus: {},
+    protocols: [],
     sheetUrl: '',
     formCols: [],
     contactCols: [],
@@ -199,7 +202,7 @@ export default function Page() {
                  if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems', 'sheetFormStatus'].includes(collectionName)) continue;
                 
                 let q;
-                if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
+                if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections', 'protocols'].includes(collectionName)) {
                   q = query(collection(db, collectionName), orderBy("date", "desc"));
                 } else if (collectionName === 'seguimientos') {
                   q = query(collection(db, collectionName)); 
@@ -399,7 +402,7 @@ export default function Page() {
 
   const createItem = useCallback(async (collectionName: string, itemData: any) => {
     const dataToSave = { ...itemData };
-    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections'].includes(collectionName)) {
+    if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections', 'protocols'].includes(collectionName)) {
         if (!dataToSave.date) {
             dataToSave.date = Timestamp.now();
         }

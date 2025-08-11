@@ -8,6 +8,7 @@ import { CompanyProfilesCard, type Company } from "../company-card";
 import { DiskSection } from "./disk-section";
 import { LinksSection } from "./links-section";
 import { EstimationsCard, type Estimation } from "./estimations-card";
+import { ProtocolsCard, type Protocol } from "./protocols-card";
 import { Button } from "@/components/ui/button";
 
 export function CompanySection({
@@ -17,7 +18,8 @@ export function CompanySection({
     diskItems, onUploadFile, onCreateFolder, onDeleteItem, fetchDiskItems,
     visibleTabs,
     links, linkSections, onAddItem, onUpdateItem, onDeleteLinkItem,
-    estimaciones
+    estimaciones,
+    protocols
 }: {
     companies: Company[], onAddCompany: (c: any) => Promise<void>, onUpdateCompany: (c: any) => Promise<void>, onDeleteCompany: (id: string) => Promise<void>,
     documents: Document[], onAddDocument: (d: any) => void, onDeleteDocument: (id: string) => void,
@@ -26,10 +28,12 @@ export function CompanySection({
     visibleTabs: any,
     links: any[], linkSections: any[], onAddItem: (collection: string, item: any) => Promise<void>, onUpdateItem: (collection: string, item: any) => Promise<void>, onDeleteLinkItem: (collection: string, id: string) => Promise<void>,
     estimaciones: Estimation[],
+    protocols: Protocol[],
 }) {
     const tabs = [
         { value: "profiles", label: "Perfiles de Empresa", visible: visibleTabs.companies },
         { value: "estimations", label: "Estimaciones", visible: visibleTabs.estimaciones },
+        { value: "protocols", label: "Protocolos", visible: visibleTabs.protocols },
         { value: "disk", label: "Disco", visible: visibleTabs.companies },
         { value: "links", label: "Enlaces", visible: visibleTabs.companies },
         { value: "documents", label: "Documentos Generales", visible: visibleTabs.companies },
@@ -55,7 +59,7 @@ export function CompanySection({
 
     return (
         <div className="w-full space-y-6">
-             <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+             <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
                 {tabs.map(tab => (
                     <Button
                         key={tab.value}
@@ -83,6 +87,14 @@ export function CompanySection({
                         onAddEstimation={(item: any) => onAddItem('estimaciones', item)}
                         onUpdateEstimation={(item: any) => onUpdateItem('estimaciones', item)}
                         onDeleteEstimation={(id: string) => onDeleteLinkItem('estimaciones', id)}
+                    />
+                )}
+                {activeTab === 'protocols' && visibleTabs.protocols && (
+                    <ProtocolsCard
+                        protocols={protocols}
+                        onAddProtocol={(item: any) => onAddItem('protocols', item)}
+                        onUpdateProtocol={(item: any) => onUpdateItem('protocols', item)}
+                        onDeleteProtocol={(id: string) => onDeleteLinkItem('protocols', id)}
                     />
                 )}
                 {activeTab === 'disk' && visibleTabs.companies && (
