@@ -7,7 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical, ChevronDown } from "lucide-react";
+import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical, ChevronDown, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createProjectBreakdown } from "@/ai/flows/create-project-breakdown";
@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 
 
 // --- Tipos de Datos ---
@@ -98,6 +99,7 @@ export function BudgetUploader({
   const [isManualChapterDialogOpen, setManualChapterDialogOpen] = useState(false);
   const { toast } = useToast();
   const multipleFilesInputRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState(0);
 
 
   const manualChapterForm = useForm<z.infer<typeof manualChapterSchema>>({
@@ -127,25 +129,41 @@ export function BudgetUploader({
 
     setIsLoading(true);
     setBreakdown(null);
+    setProgress(0);
 
     try {
-      const dataUris = await Promise.all(filesToProcess.map(file => {
+       const dataUris = await Promise.all(filesToProcess.map((file, fileIndex) => {
         return new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result as string);
+          reader.onload = () => {
+             // Update progress after each file is read (up to 50%)
+             setProgress(Math.round(((fileIndex + 1) / filesToProcess.length) * 50));
+             resolve(reader.result as string);
+          };
           reader.onerror = error => reject(error);
         });
       }));
 
+      // Simulate AI processing progress
+      let aiProgress = 51;
+      const interval = setInterval(() => {
+          if (aiProgress < 95) {
+              aiProgress += 2;
+              setProgress(aiProgress);
+          }
+      }, 200);
+
         try {
           const result = await createProjectBreakdown({ pdfDataUris: dataUris, chapterName });
           setBreakdown(result);
+          setProgress(100);
           toast({ title: "Desglose generado", description: "El proyecto ha sido desglosado exitosamente. Ahora puedes guardarlo." });
         } catch (error) {
             console.error("Error generating breakdown:", error);
             toast({ variant: "destructive", title: "Error de IA", description: `No se pudo generar el desglose. ${(error as Error).message}` });
         } finally {
+            clearInterval(interval);
             setIsLoading(false);
         }
     } catch (e) {
@@ -266,11 +284,17 @@ export function BudgetUploader({
                 </Button>
               </div>
             )}
+             {isLoading && (
+              <div className="space-y-2">
+                  <Progress value={progress} />
+                  <p className="text-xs text-center text-muted-foreground">Analizando... {progress}%</p>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex-wrap gap-2">
             <Button onClick={handleGenerate} disabled={files.length !== 1 || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Analizando..." : "Analizar con IA (1 archivo)"}
+              {isLoading ? `Analizando (${progress}%)` : "Analizar con IA (1 archivo)"}
             </Button>
             <Button variant="outline" onClick={() => multipleFilesInputRef.current?.click()} disabled={isLoading}>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -279,7 +303,7 @@ export function BudgetUploader({
             {files.length > 1 && (
                  <Button onClick={handleAnalyzeMultiple} disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isLoading ? "Analizando..." : `Analizar ${files.length} Archivos`}
+                    {isLoading ? `Analizando (${progress}%)` : `Analizar ${files.length} Archivos`}
                 </Button>
             )}
             <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={files.length !== 1 || isLoading}>
@@ -295,7 +319,7 @@ export function BudgetUploader({
             <CardDescription>Aquí aparecerán los capítulos y partidas generados por la IA.</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading && (
+            {isLoading && !breakdown && (
               <div className="flex flex-col items-center justify-center h-60">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="mt-4 text-muted-foreground">Analizando documento y generando desglose...</p>
@@ -1549,3 +1573,4 @@ export function AiBudgetsSection({
       </div>
     );
 }
+
