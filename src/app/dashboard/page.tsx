@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -203,40 +202,49 @@ export default function Page() {
   // Fetch all data from Firestore
   useEffect(() => {
     if (!user) return; // Don't fetch data if not logged in
-    const fetchAllDataOnce = async () => {
-        setIsLoading(true);
+    
+    setIsLoading(true);
+    const unsubscribers: (() => void)[] = [];
+
+    // Set up real-time listeners for all collections
+    for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
+      if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems', 'sheetFormStatus'].includes(collectionName)) continue;
+
+      let q;
+      if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections', 'protocols'].includes(collectionName)) {
+        q = query(collection(db, collectionName), orderBy("date", "desc"));
+      } else if (collectionName === 'seguimientos') {
+        q = query(collection(db, collectionName)); 
+      } else if (['contacts', 'priority_calls', 'forms'].includes(collectionName)) {
+        q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+      } else if (collectionName === 'estimaciones') {
+        q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
+      } else {
+        q = query(collection(db, collectionName));
+      }
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+          const collectionData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+          setData(prevData => ({ ...prevData, [stateKey]: collectionData }));
+      }, (error) => {
+          console.error(`Error fetching ${collectionName}:`, error);
+          toast({ variant: 'destructive', title: `Error de Conexión (${collectionName})`, description: "No se pudieron cargar los datos en tiempo real."});
+      });
+      unsubscribers.push(unsubscribe);
+    }
+    
+    // Listener for sheet form statuses
+    const statusUnsubscribe = onSnapshot(collection(db, 'sheetFormStatus'), (snapshot) => {
+        const statusData: { [key: string]: any } = {};
+        snapshot.forEach(doc => {
+            statusData[doc.id] = doc.data();
+        });
+        setData(prevData => ({ ...prevData, sheetFormStatus: statusData }));
+    });
+    unsubscribers.push(statusUnsubscribe);
+
+    const fetchConfigs = async () => {
         try {
-            const newDataState: { [key: string]: any } = {};
-
-            // Fetch all collections using getDocs
-            for (const [collectionName, stateKey] of Object.entries(collectionStateMap)) {
-                 if (['seguimientoCategories', 'seguimientoEstadoOptions', 'seguimientoPorHacerOptions', 'clientCategories', 'diskItems', 'sheetFormStatus'].includes(collectionName)) continue;
-                
-                let q;
-                if (['chat_messages', 'dani_priorities', 'sandra_notes', 'juanfran_notes', 'julian_notes', 'jordan_checklists', 'a_presentar', 'company_links', 'link_sections', 'protocols'].includes(collectionName)) {
-                  q = query(collection(db, collectionName), orderBy("date", "desc"));
-                } else if (collectionName === 'seguimientos') {
-                  q = query(collection(db, collectionName)); 
-                } else if (['contacts', 'priority_calls', 'forms'].includes(collectionName)) {
-                  q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
-                } else if (collectionName === 'estimaciones') {
-                  q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-                } else {
-                  q = query(collection(db, collectionName));
-                }
-                
-                const snapshot = await getDocs(q);
-                newDataState[stateKey] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            }
-            
-            // Fetch sheet form statuses separately
-            const statusSnapshot = await getDocs(collection(db, 'sheetFormStatus'));
-            const statusData: { [key: string]: any } = {};
-            statusSnapshot.forEach(doc => {
-                statusData[doc.id] = doc.data();
-            });
-            newDataState.sheetFormStatus = statusData;
-
             // Fetch settings and other single-document configs
             const settingsDocRef = doc(db, 'config', 'dashboardSettings');
             const settingsDocSnap = await getDoc(settingsDocRef);
@@ -255,46 +263,49 @@ export default function Page() {
                 if (!standardizedCategories.some((cat: any) => cat.name === 'General')) {
                     standardizedCategories.unshift({ name: 'General', visible: true });
                 }
-                newDataState.seguimientoEstadoOptions = optionsData.estadoOptions || [];
-                newDataState.seguimientoPorHacerOptions = optionsData.porHacerOptions || [];
-                newDataState.seguimientoCategories = standardizedCategories;
+                setData(prev => ({
+                    ...prev,
+                    seguimientoEstadoOptions: optionsData.estadoOptions || [],
+                    seguimientoPorHacerOptions: optionsData.porHacerOptions || [],
+                    seguimientoCategories: standardizedCategories
+                }));
             } else {
-                newDataState.seguimientoCategories = defaultSeguimientoCategories;
+                 setData(prev => ({...prev, seguimientoCategories: defaultSeguimientoCategories }));
             }
 
             const clientCategoriesDocRef = doc(db, 'config', 'clientCategories');
             const clientCategoriesDocSnap = await getDoc(clientCategoriesDocRef);
             if (clientCategoriesDocSnap.exists()) {
-                newDataState.clientCategories = clientCategoriesDocSnap.data().categories || ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado'];
+                setData(prev => ({...prev, clientCategories: clientCategoriesDocSnap.data().categories || ['En Contacto', 'Ayudando', 'Presupuestando', 'Firmado', 'Construyendo', 'Finalizado']}))
             }
             
             const sheetConfigDocRef = doc(db, 'config', 'googleSheet');
             const sheetConfigDocSnap = await getDoc(sheetConfigDocRef);
-            newDataState.sheetUrl = sheetConfigDocSnap.exists() ? sheetConfigDocSnap.data().url : '';
+            setData(prev => ({...prev, sheetUrl: sheetConfigDocSnap.exists() ? sheetConfigDocSnap.data().url : ''}));
             
             // Fetch column configurations
             const formColsDoc = await getDoc(doc(db, 'config', 'formsColumns'));
-            if (formColsDoc.exists()) newDataState.formCols = formColsDoc.data().columns;
+            if (formColsDoc.exists()) setData(prev => ({...prev, formCols: formColsDoc.data().columns}));
             const contactColsDoc = await getDoc(doc(db, 'config', 'contactsColumns'));
-            if (contactColsDoc.exists()) newDataState.contactCols = contactColsDoc.data().columns;
+            if (contactColsDoc.exists()) setData(prev => ({...prev, contactCols: contactColsDoc.data().columns}));
             const priorityColsDoc = await getDoc(doc(db, 'config', 'priority_callsColumns'));
-            if (priorityColsDoc.exists()) newDataState.priorityCols = priorityColsDoc.data().columns;
+            if (priorityColsDoc.exists()) setData(prev => ({...prev, priorityCols: priorityColsDoc.data().columns}));
             
-            // Set all data at once
-            setData(prevData => ({ ...prevData, ...newDataState }));
-
-            // Fetch storage items last
             await fetchAllDiskItems();
-
         } catch (error) {
-            console.error("Failed to fetch data from Firebase:", error);
-            toast({ variant: 'destructive', title: "Error de Conexión", description: "No se pudieron cargar los datos."});
+             console.error("Failed to fetch configs from Firebase:", error);
+             toast({ variant: 'destructive', title: "Error de Configuración", description: "No se pudieron cargar las configuraciones."});
         } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
     
-    fetchAllDataOnce();
+    fetchConfigs();
+
+    // Cleanup listeners on component unmount
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
 
   }, [fetchAllDiskItems, toast, refreshTrigger, user]);
 
@@ -429,7 +440,6 @@ export default function Page() {
     try {
         await addDoc(collection(db, collectionName), dataToSave);
         toast({ title: "Elemento añadido", description: "El nuevo elemento se ha guardado correctamente." });
-        setRefreshTrigger(prev => prev + 1);
     } catch (error) {
         console.error(`Error adding item to ${collectionName}:`, error);
         toast({ variant: 'destructive', title: "Error al añadir", description: (error as Error).message });
@@ -447,7 +457,6 @@ export default function Page() {
         const itemRef = doc(db, collectionName, id);
         await updateDoc(itemRef, data);
         if (refresh) {
-            setRefreshTrigger(prev => prev + 1);
             toast({ title: "Elemento actualizado", description: "Los cambios se han guardado correctamente." });
         }
     } catch (error) {
@@ -461,18 +470,9 @@ export default function Page() {
     if (!id) return;
     try {
       await setDoc(doc(db, 'sheetFormStatus', id), { called }, { merge: true });
-      // No toast for this to avoid spamming
-      // Local state will be updated optimistically for instant feedback
-      setData(prev => ({
-          ...prev,
-          sheetForms: prev.sheetForms.map((f: any) => f.id === id ? { ...f, called } : f),
-          sheetFormStatus: { ...prev.sheetFormStatus, [id]: { called } }
-      }));
     } catch (error) {
        console.error(`Error updating sheet form status for ${id}:`, error);
        toast({ variant: 'destructive', title: "Error al actualizar estado", description: (error as Error).message });
-       // Revert optimistic update on error if needed
-       setData(prev => ({...prev, sheetForms: prev.sheetForms.map((f: any) => f.id === id ? { ...f, called: !called } : f)}));
     }
   }, [toast]);
 
@@ -480,7 +480,6 @@ export default function Page() {
     try {
       await deleteDoc(doc(db, collectionName, id));
       toast({ title: "Elemento eliminado", description: "El elemento ha sido borrado." });
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error(`Error deleting item ${id} from ${collectionName}:`, error);
       toast({ variant: 'destructive', title: "Error al eliminar", description: (error as Error).message });
@@ -490,7 +489,6 @@ export default function Page() {
   const handleSaveSheetUrl = useCallback(async (url: string) => {
     try {
       await setDoc(doc(db, 'config', 'googleSheet'), { url });
-      setData(prev => ({...prev, sheetUrl: url}));
       toast({ title: 'URL guardada', description: 'La conexión con Google Sheets se ha actualizado.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error al guardar URL', description: (error as Error).message });
@@ -502,7 +500,6 @@ export default function Page() {
       try {
           await setDoc(doc(db, 'config', docId), { columns });
           toast({ title: 'Configuración guardada', description: 'La vista de la tabla ha sido actualizada.' });
-           setRefreshTrigger(prev => prev + 1);
       } catch(error) {
           toast({ variant: 'destructive', title: 'Error al guardar', description: (error as Error).message });
       }
@@ -572,7 +569,6 @@ ${JSON.stringify(contact, null, 2)}`,
       
       await batch.commit();
       toast({ title: 'Movido a Seguimiento', description: `${newSeguimiento.name} ahora está en la lista de seguimiento.` });
-      setRefreshTrigger(prev => prev + 1);
   }, [toast]);
   
     const handleMoveFormContact = useCallback(async (formItem: any, destination: 'contacts' | 'priority_calls') => {
@@ -582,7 +578,6 @@ ${JSON.stringify(contact, null, 2)}`,
             await addDoc(collection(db, destination), {...data, createdAt: Timestamp.now()});
             const destinationName = destination === 'contacts' ? 'Contactos Manuales' : 'Añadidos a seguimiento';
             toast({ title: 'Contacto movido', description: `El contacto ha sido movido a ${destinationName}.` });
-            setRefreshTrigger(prev => prev + 1);
         } catch (error) {
             console.error(`Error moving contact from forms:`, error);
             toast({ variant: 'destructive', title: "Error al mover", description: (error as Error).message });
@@ -657,7 +652,6 @@ ${JSON.stringify(contact, null, 2)}`,
         await uploadBytes(fileRef, file);
         await fetchAllDiskItems(); 
         toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
-        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
 
     const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
@@ -666,7 +660,6 @@ ${JSON.stringify(contact, null, 2)}`,
         await uploadBytes(placeholderRef, new Blob([], { type: 'application/octet-stream' }));
         await fetchAllDiskItems();
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
-        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
     const deleteFolderContents = async (folderPath: string) => {
@@ -685,7 +678,6 @@ ${JSON.stringify(contact, null, 2)}`,
         }
         await fetchAllDiskItems();
         toast({ title: 'Elemento Eliminado' });
-        setRefreshTrigger(prev => prev + 1);
     }, [fetchAllDiskItems, toast]);
     
     const handleMoveAiPartida = useCallback(async (budgetId: string, source: any, destination: any) => {
@@ -751,8 +743,7 @@ ${JSON.stringify(contact, null, 2)}`,
         // Remove source chapter
         newBreakdown.capitulos.splice(sourceChapterIndex, 1);
         
-        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals }, false);
-        setRefreshTrigger(prev => prev + 1); // Refresh local state
+        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals }, true);
         toast({ title: "Capítulos unidos", description: `Se ha unido "${sourceChapterName}" con "${targetChapterName}".` });
 
     }, [data.aiBudgets, updateItem, toast]);
@@ -940,7 +931,7 @@ ${JSON.stringify(contact, null, 2)}`,
   const daniPending = data.daniPriorities.filter((p:any) => !p.completed).length;
   const unreadChats = data.chatMessages.filter((m:any) => !m.read).length;
   
-  if (authLoading || !user) {
+  if (authLoading || (!user && !isLoading)) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -1051,3 +1042,5 @@ ${JSON.stringify(contact, null, 2)}`,
     </div>
   );
 }
+
+    
