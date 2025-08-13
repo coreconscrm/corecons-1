@@ -3,6 +3,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { db, storage } from '@/lib/firebase';
 import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, Timestamp, writeBatch, documentId, getDocs } from "firebase/firestore";
 import { ref, listAll, getDownloadURL, uploadBytes, deleteObject, getMetadata, getBytes } from "firebase/storage";
@@ -97,6 +99,8 @@ function generateStableId(row: any): string {
 
 // Main Page Component
 export default function Page() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -152,6 +156,12 @@ export default function Page() {
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login');
+    }
+  }, [user, authLoading, router]);
+
   const fetchDiskItems = useCallback(async (path: string = 'disco/') => {
     try {
         const diskRef = ref(storage, path);
@@ -192,6 +202,7 @@ export default function Page() {
 
   // Fetch all data from Firestore
   useEffect(() => {
+    if (!user) return; // Don't fetch data if not logged in
     const fetchAllDataOnce = async () => {
         setIsLoading(true);
         try {
@@ -285,10 +296,11 @@ export default function Page() {
     
     fetchAllDataOnce();
 
-  }, [fetchAllDiskItems, toast, refreshTrigger]);
+  }, [fetchAllDiskItems, toast, refreshTrigger, user]);
 
    // Fetch and parse Google Sheet data
     useEffect(() => {
+        if (!user) return;
         if (data.sheetUrl) {
             Papa.parse(data.sheetUrl, {
                 download: true,
@@ -324,10 +336,11 @@ export default function Page() {
         } else {
              setData(prev => ({...prev, sheetForms: [] })); // Clear sheet data if URL is removed
         }
-    }, [data.sheetUrl, toast, data.sheetFormStatus]);
+    }, [data.sheetUrl, toast, data.sheetFormStatus, user]);
     
     // Initialize column configs if they are empty
     useEffect(() => {
+        if (!user) return;
         if (data.contacts.length > 0 && data.contactCols.length === 0) {
             const headers = Object.keys(data.contacts[0]).filter(k => k !== 'id');
             setData(prev => ({ ...prev, contactCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
@@ -336,7 +349,7 @@ export default function Page() {
             const headers = Object.keys(data.priorityCalls[0]).filter(k => k !== 'id');
             setData(prev => ({ ...prev, priorityCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
         }
-    }, [data.contacts, data.priorityCalls, data.contactCols, data.priorityCols]);
+    }, [data.contacts, data.priorityCalls, data.contactCols, data.priorityCols, user]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -926,6 +939,14 @@ ${JSON.stringify(contact, null, 2)}`,
   const jordanPending = countPending(data.jordanChecklists);
   const daniPending = data.daniPriorities.filter((p:any) => !p.completed).length;
   const unreadChats = data.chatMessages.filter((m:any) => !m.read).length;
+  
+  if (authLoading || !user) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
