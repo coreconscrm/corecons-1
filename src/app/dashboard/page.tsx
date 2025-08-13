@@ -189,15 +189,10 @@ export default function Page() {
         return [...folders, ...files].filter(item => !item.name.endsWith('.placeholder'));
     } catch (error) {
         console.error("Error fetching disk items:", error);
+        toast({ variant: 'destructive', title: "Error al cargar archivos", description: `No se pudieron cargar los elementos del disco. Error: ${(error as Error).message}` });
         return [];
     }
-  }, []);
-
-  const fetchAllDiskItems = useCallback(async () => {
-    const rootItems = await fetchDiskItems();
-    setData(prev => ({...prev, diskItems: rootItems}));
-  }, [fetchDiskItems]);
-
+  }, [toast]);
 
   // Fetch all data from Firestore
   useEffect(() => {
@@ -291,7 +286,6 @@ export default function Page() {
             const priorityColsDoc = await getDoc(doc(db, 'config', 'priority_callsColumns'));
             if (priorityColsDoc.exists()) setData(prev => ({...prev, priorityCols: priorityColsDoc.data().columns}));
             
-            await fetchAllDiskItems();
         } catch (error) {
              console.error("Failed to fetch configs from Firebase:", error);
              toast({ variant: 'destructive', title: "Error de Configuración", description: "No se pudieron cargar las configuraciones."});
@@ -307,7 +301,7 @@ export default function Page() {
       unsubscribers.forEach(unsub => unsub());
     };
 
-  }, [fetchAllDiskItems, toast, refreshTrigger, user]);
+  }, [toast, refreshTrigger, user]);
 
    // Fetch and parse Google Sheet data
     useEffect(() => {
@@ -650,17 +644,17 @@ ${JSON.stringify(contact, null, 2)}`,
         const fullPath = `${path}${file.name}`;
         const fileRef = ref(storage, fullPath);
         await uploadBytes(fileRef, file);
-        await fetchAllDiskItems(); 
         toast({ title: 'Archivo Subido', description: `Se ha subido ${file.name}.` });
-    }, [fetchAllDiskItems, toast]);
+        // The disk section will handle its own refresh
+    }, [toast]);
 
     const handleDiskCreateFolder = useCallback(async (path: string, folderName: string) => {
         const placeholderPath = `${path}${folderName}/.placeholder`;
         const placeholderRef = ref(storage, placeholderPath);
         await uploadBytes(placeholderRef, new Blob([], { type: 'application/octet-stream' }));
-        await fetchAllDiskItems();
         toast({ title: 'Carpeta Creada', description: `Se ha creado la carpeta ${folderName}.` });
-    }, [fetchAllDiskItems, toast]);
+        // The disk section will handle its own refresh
+    }, [toast]);
     
     const deleteFolderContents = async (folderPath: string) => {
         const folderRef = ref(storage, folderPath);
@@ -676,9 +670,9 @@ ${JSON.stringify(contact, null, 2)}`,
         } else { // folder
             await deleteFolderContents(path);
         }
-        await fetchAllDiskItems();
         toast({ title: 'Elemento Eliminado' });
-    }, [fetchAllDiskItems, toast]);
+         // The disk section will handle its own refresh
+    }, [toast]);
     
     const handleMoveAiPartida = useCallback(async (budgetId: string, source: any, destination: any) => {
         const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
@@ -1042,5 +1036,3 @@ ${JSON.stringify(contact, null, 2)}`,
     </div>
   );
 }
-
-    

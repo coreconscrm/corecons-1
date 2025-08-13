@@ -63,8 +63,11 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
     }, [fetchItems]);
     
      useEffect(() => {
-        loadItems(currentPath);
-    }, [currentPath, loadItems]);
+        // Only load initial items if currentPath is the root
+        if(currentPath === 'disco/') {
+            loadItems(currentPath);
+        }
+    }, []);
 
     const breadcrumbs = useMemo(() => {
         const parts = currentPath.split('/').filter(p => p && p !== 'disco');
@@ -83,6 +86,7 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
         setIsLoading(true);
         try {
             await onUploadFile(currentPath, file);
+            await loadItems(currentPath); // Refresh
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: `No se pudo subir el archivo. ${(error as Error).message}` });
         } finally {
@@ -95,6 +99,7 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
         setIsLoading(true);
         try {
             await onCreateFolder(currentPath, name);
+            await loadItems(currentPath); // Refresh
         } catch (error) {
              toast({ variant: "destructive", title: "Error", description: `No se pudo crear la carpeta. ${(error as Error).message}` });
         } finally {
@@ -106,6 +111,7 @@ export function DiskSection({ initialItems, onUploadFile, onCreateFolder, onDele
         setIsLoading(true);
         try {
             await onDeleteItem(item.path, item.type);
+            await loadItems(currentPath); // Refresh
         } catch (error) {
              toast({ variant: "destructive", title: "Error", description: `No se pudo eliminar el elemento. ${(error as Error).message}` });
         } finally {
