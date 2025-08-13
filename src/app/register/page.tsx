@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -33,6 +33,12 @@ export default function RegisterPage() {
     },
   });
 
+   useEffect(() => {
+      if (user) {
+          router.replace('/dashboard');
+      }
+  }, [user, router]);
+
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     try {
@@ -51,7 +57,6 @@ export default function RegisterPage() {
   };
 
   if (user) {
-    router.replace('/dashboard');
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
