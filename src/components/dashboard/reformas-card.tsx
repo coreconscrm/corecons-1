@@ -23,6 +23,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { BudgetCategory } from "./budgets-card";
+import { Progress } from "@/components/ui/progress";
 
 const reformaSchema = z.object({
   name: z.string().optional(),
@@ -36,56 +37,64 @@ const reformaSchema = z.object({
   infoAdicional: z.string().optional(),
   memoria: z.string().url().optional().or(z.literal('')),
   planos: z.string().url().optional().or(z.literal('')),
+  memoriaFile: z.any().optional(),
+  planosFile: z.any().optional(),
   priority: z.number().nullable().optional(),
   category: z.string().optional(),
 });
 
 type Reforma = z.infer<typeof reformaSchema> & { id: string };
 
-function FileUploader({ form, fieldName, reformaId, label }: { form: any, fieldName: 'memoria' | 'planos', reformaId: string | undefined, label: string }) {
-    const [isUploading, setIsUploading] = useState(false);
-    const { toast } = useToast();
-    const currentFileUrl = form.watch(fieldName);
+function FileUploader({ form, fieldName, currentUrl, label, disabled, onFileSelect }: { form: any, fieldName: 'memoriaFile' | 'planosFile', currentUrl?: string, label: string, disabled: boolean, onFileSelect: (file: File | null) => void }) {
+    const [preview, setPreview] = useState<string | undefined>(currentUrl);
+    
+    useEffect(() => {
+        setPreview(currentUrl);
+    }, [currentUrl]);
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileRef = form.register(fieldName);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !reformaId) return;
-
-        setIsUploading(true);
-        const storageRef = ref(storage, `reformas/${reformaId}/${fieldName}/${file.name}`);
-        try {
-            const snapshot = await uploadBytesResumable(storageRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            form.setValue(fieldName, downloadURL, { shouldValidate: true });
-            toast({ title: `${label} subido`, description: "El archivo se ha guardado." });
-        } catch (error) {
-            toast({ variant: 'destructive', title: `Error al subir ${label}`, description: (error as Error).message });
-        } finally {
-            setIsUploading(false);
+        if (file) {
+            setPreview(URL.createObjectURL(file));
+            onFileSelect(file);
+        } else {
+            onFileSelect(null);
         }
     };
-
+    
     return (
         <FormItem>
             <FormLabel>{label}</FormLabel>
             <div className="flex items-center gap-4">
                 <FormControl>
-                    <Input type="file" onChange={handleFileUpload} disabled={isUploading || !reformaId} className="flex-1" />
+                    <Input
+                        type="file"
+                        {...fileRef}
+                        onChange={handleFileChange}
+                        disabled={disabled}
+                        className="flex-1"
+                    />
                 </FormControl>
-                {isUploading && <Loader2 className="h-5 w-5 animate-spin" />}
-                {currentFileUrl && (
+                {preview && (
                     <Button variant="outline" size="icon" asChild>
-                        <a href={currentFileUrl} target="_blank" rel="noopener noreferrer"><FileText className="h-5 w-5" /></a>
+                        <a href={preview} target="_blank" rel="noopener noreferrer"><FileText className="h-5 w-5" /></a>
                     </Button>
                 )}
             </div>
-            {!reformaId && <p className="text-xs text-muted-foreground">Guarda la reforma para poder subir archivos.</p>}
             <FormMessage />
         </FormItem>
     );
 }
 
-function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categories }: { reforma?: Reforma, onSubmit: (values: any) => void, open: boolean, onOpenChange: (open: boolean) => void, providers: any[], categories: string[] }) {
+function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categories }: { reforma?: Reforma, onSubmit: (values: any) => Promise<void>, open: boolean, onOpenChange: (open: boolean) => void, providers: any[], categories: string[] }) {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [memoriaFile, setMemoriaFile] = useState<File | null>(null);
+  const [planosFile, setPlanosFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ memoria: number, planos: number }>({ memoria: 0, planos: 0 });
+  
   const form = useForm<z.infer<typeof reformaSchema>>({
     resolver: zodResolver(reformaSchema),
     defaultValues: { name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" },
@@ -112,13 +121,66 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categor
       } else {
         form.reset({ name: "", contact: "", email: "", phone: "", localizacion: "", arquitecto: "", providerId: "", obtenido: "", infoAdicional: "", memoria: "", planos: "", priority: null, category: "General" });
       }
+      setMemoriaFile(null);
+      setPlanosFile(null);
+      setIsSaving(false);
+      setUploadProgress({ memoria: 0, planos: 0 });
     }
   }, [reforma, open, form]);
 
-  const handleSubmit = (values: z.infer<typeof reformaSchema>) => {
-    onSubmit({ ...reforma, ...values, obtenido: values.obtenido || '' });
-    form.reset();
-    onOpenChange(false);
+  const uploadFile = (file: File, path: string, onProgress: (progress: number) => void): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const storageRef = ref(storage, path);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                onProgress(Math.round(progress));
+            },
+            (error) => {
+                console.error("Upload failed:", error);
+                reject(error);
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadURL);
+            }
+        );
+    });
+  };
+  
+  const handleSubmit = async (values: z.infer<typeof reformaSchema>) => {
+    setIsSaving(true);
+    const reformaId = reforma?.id || `reforma-${Date.now()}`;
+    let submissionData: any = { ...values, id: reformaId };
+
+    try {
+        if (memoriaFile) {
+            submissionData.memoria = await uploadFile(
+                memoriaFile, 
+                `reformas/${reformaId}/memoria/${memoriaFile.name}`,
+                (p) => setUploadProgress(prog => ({...prog, memoria: p}))
+            );
+        }
+        if (planosFile) {
+            submissionData.planos = await uploadFile(
+                planosFile,
+                `reformas/${reformaId}/planos/${planosFile.name}`,
+                (p) => setUploadProgress(prog => ({...prog, planos: p}))
+            );
+        }
+
+        delete submissionData.memoriaFile;
+        delete submissionData.planosFile;
+        
+        await onSubmit(submissionData);
+        onOpenChange(false);
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error al subir archivo", description: (error as Error).message });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -194,13 +256,23 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categor
             )} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FileUploader form={form} fieldName="memoria" reformaId={reforma?.id} label="Memoria" />
-                <FileUploader form={form} fieldName="planos" reformaId={reforma?.id} label="Planos" />
+                <FileUploader form={form} fieldName="memoriaFile" currentUrl={reforma?.memoria} label="Memoria" disabled={isSaving} onFileSelect={setMemoriaFile} />
+                <FileUploader form={form} fieldName="planosFile" currentUrl={reforma?.planos} label="Planos" disabled={isSaving} onFileSelect={setPlanosFile} />
             </div>
+            {(uploadProgress.memoria > 0 || uploadProgress.planos > 0) && (
+                <div className="space-y-2">
+                    {uploadProgress.memoria > 0 && <div><Label>Subiendo memoria...</Label><Progress value={uploadProgress.memoria} /></div>}
+                    {uploadProgress.planos > 0 && <div><Label>Subiendo planos...</Label><Progress value={uploadProgress.planos} /></div>}
+                </div>
+            )}
+
 
             <DialogFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-              <Button type="submit">{reforma ? "Guardar Cambios" : "Guardar Reforma"}</Button>
+              <Button type="submit" disabled={isSaving}>
+                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                 {reforma ? "Guardar Cambios" : "Guardar Reforma"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -209,7 +281,7 @@ function ReformaForm({ reforma, onSubmit, onOpenChange, open, providers, categor
   );
 }
 
-export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient, categories }: { reformas: Reforma[], onAddReforma: (reforma: any) => void, onUpdateReforma: (reforma: any) => void, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void, categories: string[] }) {
+export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDeleteReforma, providers, onCreateBudgetFromClient, onCreateSeguimientoFromClient, categories }: { reformas: Reforma[], onAddReforma: (reforma: any) => Promise<void>, onUpdateReforma: (reforma: any) => Promise<void>, onDeleteReforma: (id: string) => void, providers: any[], onCreateBudgetFromClient: (client: any, category: BudgetCategory) => void, onCreateSeguimientoFromClient: (client: any) => void, categories: string[] }) {
   const [isFormOpen, setFormOpen] = useState(false);
   const [activeReforma, setActiveReforma] = useState<Reforma | undefined>(undefined);
   const [viewingInfo, setViewingInfo] = useState<string | null>(null);
@@ -231,11 +303,11 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
     onUpdateReforma({ ...reforma, priority: newPriority });
   };
   
-  const handleSubmit = (values: any) => {
+  const handleSubmit = async (values: any) => {
     if (activeReforma) {
-      onUpdateReforma(values);
+      await onUpdateReforma(values);
     } else {
-      onAddReforma(values);
+      await onAddReforma(values);
     }
   };
 
@@ -461,5 +533,3 @@ export function ReformaListCard({ reformas, onAddReforma, onUpdateReforma, onDel
     </Card>
   );
 }
-
-    
