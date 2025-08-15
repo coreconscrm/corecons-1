@@ -198,7 +198,7 @@ export function BudgetUploader({
   };
 
   const handleSaveClick = async () => {
-    if (!breakdown || files.length === 0) {
+    if (!breakdown || !breakdown.capitulos || breakdown.capitulos.length === 0) {
        toast({ variant: "destructive", title: "Error", description: "No hay desglose para guardar." });
        return;
     }
@@ -1568,3 +1568,4 @@ export function AiBudgetsSection({
     );
 }
 
+    
