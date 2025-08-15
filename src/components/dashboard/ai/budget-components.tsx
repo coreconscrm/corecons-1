@@ -7,7 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical, ChevronDown, CheckSquare } from "lucide-react";
+import { UploadCloud, FileText, X, Loader2, Save, Trash2, PlusCircle, Copy, Pencil, Printer, Merge, FolderPlus, MoreHorizontal, Move, GripVertical, ChevronDown, CheckSquare, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectBreakdown } from "@/ai/flows/create-project-breakdown";
 import { createProjectBreakdown } from "@/ai/flows/create-project-breakdown";
@@ -98,7 +98,6 @@ export function BudgetUploader({
   const [isSaving, setIsSaving] = useState(false);
   const [isManualChapterDialogOpen, setManualChapterDialogOpen] = useState(false);
   const { toast } = useToast();
-  const multipleFilesInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
 
 
@@ -110,8 +109,7 @@ export function BudgetUploader({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFiles(acceptedFiles); // Allow multiple files
-      setBreakdown(null);
+      setFiles(acceptedFiles);
     }
   }, []);
 
@@ -128,7 +126,6 @@ export function BudgetUploader({
     }
 
     setIsLoading(true);
-    setBreakdown(null);
     setProgress(0);
 
     try {
@@ -137,7 +134,6 @@ export function BudgetUploader({
           const reader = new FileReader();
           reader.readAsDataURL(file);
           reader.onload = () => {
-             // Update progress after each file is read (up to 50%)
              setProgress(Math.round(((fileIndex + 1) / filesToProcess.length) * 50));
              resolve(reader.result as string);
           };
@@ -145,7 +141,6 @@ export function BudgetUploader({
         });
       }));
 
-      // Simulate AI processing progress
       let aiProgress = 51;
       const interval = setInterval(() => {
           if (aiProgress < 95) {
@@ -154,18 +149,37 @@ export function BudgetUploader({
           }
       }, 200);
 
-        try {
-          const result = await createProjectBreakdown({ pdfDataUris: dataUris, chapterName });
-          setBreakdown(result);
-          setProgress(100);
-          toast({ title: "Desglose generado", description: "El proyecto ha sido desglosado exitosamente. Ahora puedes guardarlo." });
-        } catch (error) {
-            console.error("Error generating breakdown:", error);
-            toast({ variant: "destructive", title: "Error de IA", description: `No se pudo generar el desglose. ${(error as Error).message}` });
-        } finally {
-            clearInterval(interval);
-            setIsLoading(false);
-        }
+      try {
+        const result = await createProjectBreakdown({ pdfDataUris: dataUris, chapterName });
+        
+        setBreakdown(prevBreakdown => {
+            if (!prevBreakdown) return result; // First analysis
+
+            // Merge new result with the previous one
+            const mergedBreakdown = JSON.parse(JSON.stringify(prevBreakdown));
+
+            result.capitulos.forEach(newCapitulo => {
+                const existingCapitulo = mergedBreakdown.capitulos.find((c: any) => c.nombre === newCapitulo.nombre);
+                if (existingCapitulo) {
+                    existingCapitulo.partidas.push(...newCapitulo.partidas);
+                } else {
+                    mergedBreakdown.capitulos.push(newCapitulo);
+                }
+            });
+
+            return mergedBreakdown;
+        });
+
+        setProgress(100);
+        toast({ title: "Análisis completado", description: "El resultado se ha añadido al desglose actual." });
+        setFiles([]); // Clear selection after analysis
+      } catch (error) {
+        console.error("Error generating breakdown:", error);
+        toast({ variant: "destructive", title: "Error de IA", description: `No se pudo generar el desglose. ${(error as Error).message}` });
+      } finally {
+        clearInterval(interval);
+        setIsLoading(false);
+      }
     } catch (e) {
       console.error("Error setting up file reader:", e);
       toast({ variant: "destructive", title: "Error", description: `Ocurrió un error inesperado al leer los archivos.` });
@@ -190,9 +204,10 @@ export function BudgetUploader({
     }
     setIsSaving(true);
     try {
-        await onAnalysisComplete(breakdown, files.map(f => f.name).join(', '));
-        setBreakdown(null);
-        setFiles([]);
+        // Use a more generic name as multiple files could have been processed.
+        const fileName = breakdown.capitulos[0]?.nombre || `Presupuesto ${new Date().toLocaleDateString()}`;
+        await onAnalysisComplete(breakdown, fileName);
+        handleClearAnalysis();
     } catch (error) {
         // Error toast is handled in parent
     } finally {
@@ -200,18 +215,11 @@ export function BudgetUploader({
     }
   };
 
-  const handleMultipleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    if (selectedFiles.length > 0) {
-        setFiles(selectedFiles);
-        setBreakdown(null);
-    }
-  };
-
-  const handleAnalyzeMultiple = () => {
-    processFilesAndAnalyze(files);
-  };
-
+  const handleClearAnalysis = () => {
+    setBreakdown(null);
+    setFiles([]);
+    toast({ title: "Análisis limpiado", description: "Puedes empezar un nuevo desglose." });
+  }
 
   return (
     <>
@@ -244,19 +252,12 @@ export function BudgetUploader({
             </Form>
         </DialogContent>
       </Dialog>
-      <input 
-        type="file" 
-        multiple 
-        ref={multipleFilesInputRef} 
-        className="hidden" 
-        onChange={handleMultipleFileChange}
-        accept="application/pdf"
-      />
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Subir para Presupuestos IA</CardTitle>
-            <CardDescription>Sube uno o varios PDFs para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'.</CardDescription>
+            <CardDescription>Arrastra o selecciona uno o varios PDFs. Analízalos y se irán acumulando en el "Resultado del Análisis" para que los guardes cuando termines.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div
@@ -278,7 +279,7 @@ export function BudgetUploader({
                 <p className="truncate font-medium flex items-center gap-2">
                   <FileText size={16} /> {files.length > 1 ? `${files.length} archivos seleccionados` : files[0].name}
                 </p>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFiles([]); setBreakdown(null); }}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setFiles([]); }}>
                   <X size={16} />
                 </Button>
               </div>
@@ -305,7 +306,7 @@ export function BudgetUploader({
         <Card>
           <CardHeader>
             <CardTitle>Resultado del Análisis</CardTitle>
-            <CardDescription>Aquí aparecerán los capítulos y partidas generados por la IA.</CardDescription>
+            <CardDescription>Aquí se acumularán los capítulos y partidas generados. Cuando termines, guárdalo.</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading && !breakdown && (
@@ -355,11 +356,15 @@ export function BudgetUploader({
             )}
           </CardContent>
           {breakdown && breakdown.capitulos.length > 0 && (
-            <CardFooter>
+            <CardFooter className="justify-between">
               <Button onClick={handleSaveClick} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 Guardar Presupuesto
+              </Button>
+               <Button variant="destructive" onClick={handleClearAnalysis} disabled={isSaving}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Limpiar Análisis
               </Button>
             </CardFooter>
           )}
@@ -1562,3 +1567,4 @@ export function AiBudgetsSection({
       </div>
     );
 }
+
