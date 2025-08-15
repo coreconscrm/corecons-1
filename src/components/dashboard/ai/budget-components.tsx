@@ -110,15 +110,15 @@ export function BudgetUploader({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFiles([acceptedFiles[0]]);
-      setBreakdown(null); // Reset breakdown when new file is selected
+      setFiles(acceptedFiles); // Allow multiple files
+      setBreakdown(null);
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
-    multiple: false,
+    multiple: true,
   });
   
   const processFilesAndAnalyze = async (filesToProcess: File[], chapterName?: string) => {
@@ -256,7 +256,7 @@ export function BudgetUploader({
         <Card>
           <CardHeader>
             <CardTitle>Subir para Presupuestos IA</CardTitle>
-            <CardDescription>Sube un PDF para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'.</CardDescription>
+            <CardDescription>Sube uno o varios PDFs para crear una nueva tarjeta de presupuesto editable en la sección 'Presupuestos IA'.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div
@@ -269,10 +269,9 @@ export function BudgetUploader({
               <UploadCloud className="w-12 h-12 text-muted-foreground" />
               <p className="mt-4 text-sm text-center">
                 {isDragActive
-                  ? "Suelta un PDF aquí..."
-                  : "Arrastra y suelta un PDF aquí, o haz clic para seleccionar"}
+                  ? "Suelta los PDF aquí..."
+                  : "Arrastra y suelta PDFs aquí, o haz clic para seleccionar"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Solo un archivo PDF</p>
             </div>
             {files.length > 0 && (
               <div className="p-3 border rounded-lg text-sm flex items-center justify-between">
@@ -292,21 +291,11 @@ export function BudgetUploader({
             )}
           </CardContent>
           <CardFooter className="flex-wrap gap-2">
-            <Button onClick={handleGenerate} disabled={files.length !== 1 || isLoading}>
+            <Button onClick={handleGenerate} disabled={files.length === 0 || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? `Analizando (${progress}%)` : "Analizar con IA (1 archivo)"}
+              {isLoading ? `Analizando (${progress}%)` : `Analizar ${files.length} Archivo(s)`}
             </Button>
-            <Button variant="outline" onClick={() => multipleFilesInputRef.current?.click()} disabled={isLoading}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Seleccionar Múltiples PDFs
-            </Button>
-            {files.length > 1 && (
-                 <Button onClick={handleAnalyzeMultiple} disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isLoading ? `Analizando (${progress}%)` : `Analizar ${files.length} Archivos`}
-                </Button>
-            )}
-            <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={files.length !== 1 || isLoading}>
+            <Button variant="outline" onClick={() => setManualChapterDialogOpen(true)} disabled={files.length === 0 || isLoading}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Añadir a Capítulo
             </Button>
@@ -1573,4 +1562,3 @@ export function AiBudgetsSection({
       </div>
     );
 }
-
