@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -221,6 +220,14 @@ export function BudgetUploader({
     toast({ title: "Análisis limpiado", description: "Puedes empezar un nuevo desglose." });
   }
 
+  const handleDeleteChapter = (chapterIndex: number) => {
+    if (!breakdown) return;
+    const newBreakdown = JSON.parse(JSON.stringify(breakdown));
+    newBreakdown.capitulos.splice(chapterIndex, 1);
+    setBreakdown(newBreakdown);
+    toast({title: "Capítulo eliminado", description: "El capítulo ha sido eliminado del análisis actual."});
+  }
+
   return (
     <>
       <Dialog open={isManualChapterDialogOpen} onOpenChange={setManualChapterDialogOpen}>
@@ -319,7 +326,26 @@ export function BudgetUploader({
               <Accordion type="multiple" className="w-full">
                 {breakdown.capitulos.map((capitulo, index) => (
                   <AccordionItem value={`item-${index}`} key={index}>
-                    <AccordionTrigger className="text-lg font-semibold">{capitulo.nombre}</AccordionTrigger>
+                    <div className="flex items-center group w-full">
+                        <AccordionTrigger className="text-lg font-semibold flex-1">{capitulo.nombre}</AccordionTrigger>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar capítulo "{capitulo.nombre}"?</AlertDialogTitle>
+                                    <AlertDialogDescription>Esta acción no se puede deshacer. El capítulo y todas sus partidas se borrarán de este análisis temporal.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteChapter(index)}>Sí, eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <AccordionContent>
                       <Table>
                         <TableHeader>
@@ -1036,7 +1062,7 @@ function AiBudgetCard({
     };
 
     return (
-        <Card key={budget.id} className="flex flex-col">
+        <Card>
             {isDetailsDialogOpen && (
                 <BudgetDetailsDialog
                     budget={budget}
@@ -1567,5 +1593,3 @@ export function AiBudgetsSection({
       </div>
     );
 }
-
-    
