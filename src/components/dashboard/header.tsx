@@ -5,13 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Bell, Settings, LogOut } from "lucide-react";
+import { Bell, Settings, LogOut, SquarePen } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from "@/hooks/use-auth";
 import logo from '@/logo.png';
 
-export function Header() {
+export function Header({ onPriceAssistantClick }: { onPriceAssistantClick: () => void }) {
   const { toast } = useToast();
   const { logout } = useAuth();
   const router = useRouter();
@@ -35,6 +35,10 @@ export function Header() {
         </h1>
       </Link>
       <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPriceAssistantClick}>
+          <SquarePen className="h-4 w-4" />
+          <span className="sr-only">Asistente de Precios</span>
+        </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Bell className="h-4 w-4" />
           <span className="sr-only">Notificaciones</span>
