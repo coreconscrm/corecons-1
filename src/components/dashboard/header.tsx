@@ -5,13 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Bell, Settings, LogOut, SquarePen } from "lucide-react";
+import { Bell, Settings, LogOut, SquarePen, Calculator } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from "@/hooks/use-auth";
 import logo from '@/logo.png';
 
-export function Header({ onPriceAssistantClick }: { onPriceAssistantClick: () => void }) {
+export function Header({ onPriceAssistantClick, onCalculatorClick }: { onPriceAssistantClick: () => void, onCalculatorClick: () => void }) {
   const { toast } = useToast();
   const { logout } = useAuth();
   const router = useRouter();
@@ -38,6 +38,10 @@ export function Header({ onPriceAssistantClick }: { onPriceAssistantClick: () =>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPriceAssistantClick}>
           <SquarePen className="h-4 w-4" />
           <span className="sr-only">Asistente de Precios</span>
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCalculatorClick}>
+          <Calculator className="h-4 w-4" />
+          <span className="sr-only">Calculadora</span>
         </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Bell className="h-4 w-4" />

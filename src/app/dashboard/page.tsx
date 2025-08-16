@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, StickyNote, SquarePen } from 'lucide-react';
 import { NotepadSheet } from '@/components/dashboard/notepad-sheet';
 import { PriceAssistantSheet } from '@/components/dashboard/price-assistant-sheet';
+import { CalculatorSheet } from '@/components/dashboard/calculator-sheet';
 import { Button } from "@/components/ui/button";
 import { SeguimientoOverview, BudgetOverview, FormOverview, OficinaOverview } from "@/components/dashboard/welcome-banner";
 import { isWithinInterval, parse, startOfWeek, endOfWeek, isValid, isToday } from 'date-fns';
@@ -154,6 +155,7 @@ export default function Page() {
   const [isNotepadOpen, setNotepadOpen] = useState(false);
   const [notepadContent, setNotepadContent] = useState("");
   const [isPriceAssistantOpen, setPriceAssistantOpen] = useState(false);
+  const [isCalculatorOpen, setCalculatorOpen] = useState(false);
   const [showOverviewPanels, setShowOverviewPanels] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
@@ -904,9 +906,10 @@ ${JSON.stringify(contact, null, 2)}`,
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onPriceAssistantClick={() => setPriceAssistantOpen(true)} />
+      <Header onPriceAssistantClick={() => setPriceAssistantOpen(true)} onCalculatorClick={() => setCalculatorOpen(true)} />
       <NotepadSheet open={isNotepadOpen} onOpenChange={setNotepadOpen} content={notepadContent} onContentChange={setNotepadContent} />
       <PriceAssistantSheet open={isPriceAssistantOpen} onOpenChange={setPriceAssistantOpen} />
+      <CalculatorSheet open={isCalculatorOpen} onOpenChange={setCalculatorOpen} />
       
       <Button
         variant="default"
