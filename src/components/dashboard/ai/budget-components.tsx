@@ -1062,7 +1062,7 @@ function AiBudgetCard({
     };
 
     return (
-        <Card>
+        <>
             {isDetailsDialogOpen && (
                 <BudgetDetailsDialog
                     budget={budget}
@@ -1251,87 +1251,91 @@ function AiBudgetCard({
 
                                     {isChapterOpen && (
                                     <div>
-                                        {/* Header */}
-                                        <div className="flex items-center text-xs font-medium text-muted-foreground px-4 py-2 border-b">
-                                            <div className="w-[40px] shrink-0 flex justify-center">
-                                                <Checkbox 
-                                                    checked={areAllSelected}
-                                                    onCheckedChange={(checked) => handleSelectChapterPartidas(capitulo.nombre, !!checked)}
-                                                />
-                                            </div>
-                                            <div className="w-[40px] shrink-0"></div>
-                                            <div className="w-[80px] shrink-0">Nº Partida</div>
-                                            <div className="flex-1 w-2/5">Partida</div>
-                                            <div className="w-[100px] shrink-0 text-right">Medición</div>
-                                            <div className="w-[100px] shrink-0 text-center">Unidad</div>
-                                            <div className="w-auto shrink-0 text-right">Tu Precio (€/ud)</div>
-                                            <div className="w-[150px] shrink-0 text-right">Total Partida (€)</div>
-                                            <div className="w-[50px] shrink-0 text-right"></div>
-                                        </div>
-                                        <Droppable droppableId={capitulo.nombre} isDropDisabled={false}>
-                                            {(provided) => (
-                                                <div ref={provided.innerRef} {...provided.droppableProps}>
-                                                    {capitulo.partidas.map((partida, pIndex) => {
-                                                        const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                                        const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                        const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
-                                                        const partidaId = `${capitulo.nombre}---${partida.descripcion}---${pIndex}`;
-                                                        const draggableId = `${budget.id}---${partidaId}`;
-                                                        return (
-                                                            <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
-                                                                {(provided) => (
-                                                                    <div ref={provided.innerRef} {...provided.draggableProps} className="flex items-center text-sm px-4 py-2 border-b">
-                                                                          <div className="w-[40px] shrink-0 flex justify-center">
-                                                                            <Checkbox 
-                                                                                checked={!!selectedPartidas[partidaId]}
-                                                                                onCheckedChange={(checked) => handleSelectPartida(partidaId, !!checked)}
-                                                                            />
-                                                                        </div>
-                                                                        <div {...provided.dragHandleProps} className="w-[40px] shrink-0 flex justify-center cursor-grab"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
-                                                                        <div className="w-[80px] shrink-0 pr-2">
-                                                                            <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
-                                                                        </div>
-                                                                        <div className="flex-1 w-2/5 pr-2">
-                                                                            <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
-                                                                        </div>
-                                                                        <div className="w-[100px] shrink-0 pr-2">
-                                                                            <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
-                                                                        </div>
-                                                                        <div className="w-[100px] shrink-0 pr-2">
-                                                                            <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
-                                                                        </div>
-                                                                        <div className="w-auto shrink-0 text-right pr-2 font-mono">
-                                                                            {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                        </div>
-                                                                        <div className="w-[150px] shrink-0">
-                                                                            <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
-                                                                        </div>
-                                                                        <div className="w-[50px] shrink-0 text-right">
-                                                                            <AlertDialog>
-                                                                                <AlertDialogTrigger asChild>
-                                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                                                </AlertDialogTrigger>
-                                                                                <AlertDialogContent>
-                                                                                    <AlertDialogHeader>
-                                                                                        <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
-                                                                                        <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{partida.descripcion}" permanentemente.</AlertDialogDescription>
-                                                                                    </AlertDialogHeader>
-                                                                                    <AlertDialogFooter>
-                                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                                        <AlertDialogAction onClick={() => handleDeletePartida(capitulo.nombre, pIndex)}>Eliminar</AlertDialogAction>
-                                                                                    </AlertDialogFooter>
-                                                                                </AlertDialogContent>
-                                                                            </AlertDialog>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </Draggable>
-                                                        )
-                                                    })}
-                                                    {provided.placeholder}
-                                                </div>
-                                            )}
-                                        </Droppable>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[40px] shrink-0 flex justify-center">
+                                                        <Checkbox 
+                                                            checked={areAllSelected}
+                                                            onCheckedChange={(checked) => handleSelectChapterPartidas(capitulo.nombre, !!checked)}
+                                                        />
+                                                    </TableHead>
+                                                    <TableHead className="w-[40px] shrink-0"></TableHead>
+                                                    <TableHead className="w-[80px] shrink-0">Nº Partida</TableHead>
+                                                    <TableHead className="flex-1 w-2/5">Partida</TableHead>
+                                                    <TableHead className="w-[100px] shrink-0 text-right">Medición</TableHead>
+                                                    <TableHead className="w-[100px] shrink-0 text-center">Unidad</TableHead>
+                                                    <TableHead className="w-auto shrink-0 text-right">Tu Precio (€/ud)</TableHead>
+                                                    <TableHead className="w-[150px] shrink-0 text-right">Total Partida (€)</TableHead>
+                                                    <TableHead className="w-[50px] shrink-0 text-right"></TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                        
+                                            <Droppable droppableId={capitulo.nombre}>
+                                                {(provided) => (
+                                                    <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                                                        {capitulo.partidas.map((partida, pIndex) => {
+                                                            const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                                            const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                            const partidaId = `${capitulo.nombre}---${partida.descripcion}---${pIndex}`;
+                                                            const draggableId = `${budget.id}---${partidaId}`;
+                                                            return (
+                                                                <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
+                                                                    {(provided) => (
+                                                                        <TableRow ref={provided.innerRef} {...provided.draggableProps}>
+                                                                            <TableCell>
+                                                                                <Checkbox 
+                                                                                    checked={!!selectedPartidas[partidaId]}
+                                                                                    onCheckedChange={(checked) => handleSelectPartida(partidaId, !!checked)}
+                                                                                />
+                                                                            </TableCell>
+                                                                            <TableCell {...provided.dragHandleProps} className="w-[40px] shrink-0 flex justify-center cursor-grab"><GripVertical className="h-5 w-5 text-muted-foreground" /></TableCell>
+                                                                            <TableCell>
+                                                                                <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
+                                                                            </TableCell>
+                                                                            <TableCell className="w-auto shrink-0 text-right pr-2 font-mono">
+                                                                                {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <AlertDialog>
+                                                                                    <AlertDialogTrigger asChild>
+                                                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                                                    </AlertDialogTrigger>
+                                                                                    <AlertDialogContent>
+                                                                                        <AlertDialogHeader>
+                                                                                            <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
+                                                                                            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{partida.descripcion}" permanentemente.</AlertDialogDescription>
+                                                                                        </AlertDialogHeader>
+                                                                                        <AlertDialogFooter>
+                                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                                            <AlertDialogAction onClick={() => handleDeletePartida(capitulo.nombre, pIndex)}>Eliminar</AlertDialogAction>
+                                                                                        </AlertDialogFooter>
+                                                                                    </AlertDialogContent>
+                                                                                </AlertDialog>
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    )}
+                                                                </Draggable>
+                                                            )
+                                                        })}
+                                                        {provided.placeholder}
+                                                    </TableBody>
+                                                )}
+                                            </Droppable>
+                                        </Table>
                                         <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
                                             Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </div>
@@ -1403,7 +1407,7 @@ function AiBudgetCard({
                     </div>
                 </CardFooter>
             </CardContent>
-        </Card>
+        </>
     );
 }
 
