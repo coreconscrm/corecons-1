@@ -28,7 +28,6 @@ export function AiSection({
     onDeleteAiBudget,
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
-    onMoveAiPartida,
     onMergeAiChapters,
     onDeleteAiPartida,
     onDeleteAiChapter,
@@ -43,7 +42,6 @@ export function AiSection({
     onDeleteAiBudget: (id: string) => void;
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: BudgetCategory) => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
-    onMoveAiPartida: (budgetId: string, source: any, destination: any) => void;
     onMergeAiChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeleteAiPartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
     onDeleteAiChapter: (budgetId: string, chapterName: string) => void;
@@ -160,7 +158,6 @@ export function AiSection({
                                 companies={companies} 
                                 onCreateBudgetFromAi={onCreateBudgetFromAi}
                                 onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
-                                onMovePartida={onMoveAiPartida}
                                 onMergeChapters={onMergeAiChapters}
                                 onDeletePartida={onDeleteAiPartida}
                                 onDeleteChapter={onDeleteAiChapter}

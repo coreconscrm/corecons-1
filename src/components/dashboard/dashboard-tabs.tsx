@@ -148,7 +148,6 @@ export function DashboardTabs({
           onDeleteAiBudget={(id: string) => actions.deleteItem('ia_budgets', id)}
           onCreateBudgetFromAi={actions.handleCreateBudgetFromAi}
           onCreateSummaryBudgetFromAi={actions.handleCreateSummaryBudgetFromAi}
-          onMoveAiPartida={actions.handleMoveAiPartida}
           onMergeAiChapters={actions.handleMergeAiChapters}
           onDeleteAiPartida={actions.handleDeleteAiPartida}
           onDeleteAiChapter={actions.handleDeleteAiChapter}

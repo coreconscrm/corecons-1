@@ -676,39 +676,6 @@ ${JSON.stringify(contact, null, 2)}`,
          // The disk section will handle its own refresh
     }, [toast]);
     
-    const handleMoveAiPartida = useCallback(async (budgetId: string, source: any, destination: any) => {
-        const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
-        if (!budget) return;
-
-        const newBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
-        const newTotals = JSON.parse(JSON.stringify(budget.userLineTotals || {}));
-        
-        const sourceChapter = newBreakdown.capitulos.find((c: any) => c.nombre === source.droppableId);
-        if (!sourceChapter) return;
-        const [movedItem] = sourceChapter.partidas.splice(source.index, 1);
-
-        // If moving to a different chapter
-        if (source.droppableId !== destination.droppableId) {
-            const destChapter = newBreakdown.capitulos.find((c: any) => c.nombre === destination.droppableId);
-            if (!destChapter) return;
-            destChapter.partidas.splice(destination.index, 0, movedItem);
-
-            // Move totals
-            if (newTotals[sourceChapter.nombre] && newTotals[sourceChapter.nombre][movedItem.descripcion] !== undefined) {
-                if (!newTotals[destChapter.nombre]) {
-                    newTotals[destChapter.nombre] = {};
-                }
-                newTotals[destChapter.nombre][movedItem.descripcion] = newTotals[sourceChapter.nombre][movedItem.descripcion];
-                delete newTotals[sourceChapter.nombre][movedItem.descripcion];
-            }
-        } else { // Moving within the same chapter
-            sourceChapter.partidas.splice(destination.index, 0, movedItem);
-        }
-        
-        await updateItem('ia_budgets', { id: budgetId, breakdown: newBreakdown, userLineTotals: newTotals });
-        
-    }, [data.aiBudgets, updateItem]);
-
     const handleMergeAiChapters = useCallback(async (budgetId: string, sourceChapterName: string, targetChapterName: string) => {
         const budget = data.aiBudgets.find((b: AiBudgetItem) => b.id === budgetId);
         if (!budget) return;
@@ -1022,7 +989,6 @@ ${JSON.stringify(contact, null, 2)}`,
                 handleDiskCreateFolder,
                 handleDiskDeleteItem,
                 fetchDiskItems,
-                handleMoveAiPartida,
                 handleMergeAiChapters,
                 handleDeleteAiPartida,
                 handleDeleteAiChapter,

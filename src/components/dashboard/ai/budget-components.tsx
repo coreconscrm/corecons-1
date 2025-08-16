@@ -25,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -1260,7 +1259,6 @@ function AiBudgetCard({
                                                             onCheckedChange={(checked) => handleSelectChapterPartidas(capitulo.nombre, !!checked)}
                                                         />
                                                     </TableHead>
-                                                    <TableHead className="w-[40px] shrink-0"></TableHead>
                                                     <TableHead className="w-[80px] shrink-0">Nº Partida</TableHead>
                                                     <TableHead className="flex-1 w-2/5">Partida</TableHead>
                                                     <TableHead className="w-[100px] shrink-0 text-right">Medición</TableHead>
@@ -1271,70 +1269,59 @@ function AiBudgetCard({
                                                 </TableRow>
                                             </TableHeader>
                                         
-                                            <Droppable droppableId={capitulo.nombre}>
-                                                {(provided) => (
-                                                    <TableBody ref={provided.innerRef} {...provided.droppableProps}>
-                                                        {capitulo.partidas.map((partida, pIndex) => {
-                                                            const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
-                                                            const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
-                                                            const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
-                                                            const partidaId = `${capitulo.nombre}---${partida.descripcion}---${pIndex}`;
-                                                            const draggableId = `${budget.id}---${partidaId}`;
-                                                            return (
-                                                                <Draggable key={draggableId} draggableId={draggableId} index={pIndex}>
-                                                                    {(provided) => (
-                                                                        <TableRow ref={provided.innerRef} {...provided.draggableProps}>
-                                                                            <TableCell>
-                                                                                <Checkbox 
-                                                                                    checked={!!selectedPartidas[partidaId]}
-                                                                                    onCheckedChange={(checked) => handleSelectPartida(partidaId, !!checked)}
-                                                                                />
-                                                                            </TableCell>
-                                                                            <TableCell {...provided.dragHandleProps} className="w-[40px] shrink-0 flex justify-center cursor-grab"><GripVertical className="h-5 w-5 text-muted-foreground" /></TableCell>
-                                                                            <TableCell>
-                                                                                <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
-                                                                            </TableCell>
-                                                                            <TableCell className="w-auto shrink-0 text-right pr-2 font-mono">
-                                                                                {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                <AlertDialog>
-                                                                                    <AlertDialogTrigger asChild>
-                                                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                                                    </AlertDialogTrigger>
-                                                                                    <AlertDialogContent>
-                                                                                        <AlertDialogHeader>
-                                                                                            <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
-                                                                                            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{partida.descripcion}" permanentemente.</AlertDialogDescription>
-                                                                                        </AlertDialogHeader>
-                                                                                        <AlertDialogFooter>
-                                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                                            <AlertDialogAction onClick={() => handleDeletePartida(capitulo.nombre, pIndex)}>Eliminar</AlertDialogAction>
-                                                                                        </AlertDialogFooter>
-                                                                                    </AlertDialogContent>
-                                                                                </AlertDialog>
-                                                                            </TableCell>
-                                                                        </TableRow>
-                                                                    )}
-                                                                </Draggable>
-                                                            )
-                                                        })}
-                                                        {provided.placeholder}
-                                                    </TableBody>
-                                                )}
-                                            </Droppable>
+                                            <TableBody>
+                                                {capitulo.partidas.map((partida, pIndex) => {
+                                                    const lineTotal = budget.userLineTotals?.[capitulo.nombre]?.[partida.descripcion] || 0;
+                                                    const quantity = parseFloat(String(partida.medicion).replace(',', '.')) || 1;
+                                                    const userPrice = quantity !== 0 ? lineTotal / quantity : 0;
+                                                    const partidaId = `${capitulo.nombre}---${partida.descripcion}---${pIndex}`;
+                                                    return (
+                                                        <TableRow key={partidaId}>
+                                                            <TableCell>
+                                                                <Checkbox 
+                                                                    checked={!!selectedPartidas[partidaId]}
+                                                                    onCheckedChange={(checked) => handleSelectPartida(partidaId, !!checked)}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input defaultValue={partida.numero || ''} className="text-left h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'numero', e.target.value)} />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Textarea defaultValue={partida.descripcion} className="w-full h-auto" onBlur={(e) => onPartidaChange( capitulo.nombre, pIndex, 'descripcion', e.target.value)} />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input defaultValue={partida.medicion || ''} className="text-right h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'medicion', e.target.value)} />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input defaultValue={partida.unidad || ''} className="text-center h-8" onBlur={(e) => onPartidaChange(capitulo.nombre, pIndex, 'unidad', e.target.value)} />
+                                                            </TableCell>
+                                                            <TableCell className="w-auto shrink-0 text-right pr-2 font-mono">
+                                                                {userPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input type="number" className="text-right" placeholder="0.00" defaultValue={lineTotal || ''} onBlur={(e) => onLineTotalChange(capitulo.nombre, partida.descripcion, e.target.value)} />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
+                                                                            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{partida.descripcion}" permanentemente.</AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={() => handleDeletePartida(capitulo.nombre, pIndex)}>Eliminar</AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )
+                                                })}
+                                            </TableBody>
                                         </Table>
                                         <div className="flex justify-end bg-secondary/30 px-4 py-2 text-right font-bold">
                                             Total Capítulo: €{(budgetTotals.chapterTotals[capitulo.nombre] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1420,7 +1407,6 @@ export function AiBudgetsSection({
     companies,
     onCreateBudgetFromAi,
     onCreateSummaryBudgetFromAi,
-    onMovePartida,
     onMergeChapters,
     onDeletePartida,
     onDeleteChapter,
@@ -1433,7 +1419,6 @@ export function AiBudgetsSection({
     companies: Company[],
     onCreateBudgetFromAi: (aiBudget: AiBudgetItem, category: 'obra_nueva' | 'reformas' | 'enviados' | 'subcontratas') => void;
     onCreateSummaryBudgetFromAi: (aiBudget: AiBudgetItem) => void;
-    onMovePartida: (budgetId: string, source: any, destination: any) => void;
     onMergeChapters: (budgetId: string, sourceChapterName: string, targetChapterName: string) => void;
     onDeletePartida: (budgetId: string, chapterName: string, partidaIndex: number) => void;
     onDeleteChapter: (budgetId: string, chapterName: string) => void;
@@ -1516,14 +1501,6 @@ export function AiBudgetsSection({
         
         handleLocalBudgetUpdate({ ...budgetToUpdate, breakdown: newBreakdown });
     };
-    
-    const handleDragEnd = (result: DropResult) => {
-        const { source, destination, draggableId } = result;
-        if (!destination) return;
-
-        const budgetId = draggableId.split('---')[0];
-        onMovePartida(budgetId, source, destination);
-    };
 
     return (
       <div className="space-y-6">
@@ -1551,49 +1528,47 @@ export function AiBudgetsSection({
                     printOptions={printingBudget?.printOptions}
                 />
             </div>
-            <DragDropContext onDragEnd={handleDragEnd}>
-                 <Accordion type="single" collapsible className="w-full space-y-4">
-                    {localBudgets.length > 0 ? (
-                        localBudgets.map(budget => (
-                            <AccordionItem value={budget.id} key={budget.id} className="border rounded-md">
-                                <AccordionTrigger className="p-4 hover:no-underline">
-                                     <div className="text-left flex-1">
-                                        <h3 className="font-semibold text-lg">{budget.title || budget.fileName}</h3>
-                                        <CardDescription className="mt-1">
-                                            {budget.clientName || `Analizado el: ${budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}`}
-                                        </CardDescription>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                    <AiBudgetCard
-                                        key={budget.id}
-                                        budget={budget}
-                                        onBudgetUpdate={handleLocalBudgetUpdate}
-                                        onSaveChanges={handleSaveChanges}
-                                        onDelete={onDeleteAiBudget}
-                                        onPrint={handlePrint}
-                                        onMergeClick={setMergingBudget}
-                                        onAddToBudgetClick={setAddingToBudget}
-                                        onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
-                                        onMergeChapters={(source, target) => onMergeChapters(budget.id, source, target)}
-                                        onDeletePartida={(chapterName, partidaIndex) => onDeletePartida(budget.id, chapterName, partidaIndex)}
-                                        onDeleteChapter={(chapterName) => onDeleteChapter(budget.id, chapterName)}
-                                        onAddChapterAtIndex={(chapterName, index) => handleAddChapterLocal(budget.id, chapterName, index)}
-                                        onBulkDelete={(partidaIds) => onBulkDeletePartidas(budget.id, partidaIds)}
-                                        onBulkMove={(partidaIds, targetChapter) => onBulkMovePartidas(budget.id, partidaIds, targetChapter)}
-                                    />
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                No hay presupuestos analizados. Ve a la pestaña "Subir" para empezar.
-                            </p>
-                        </div>
-                    )}
-                 </Accordion>
-            </DragDropContext>
+            <Accordion type="single" collapsible className="w-full space-y-4">
+            {localBudgets.length > 0 ? (
+                localBudgets.map(budget => (
+                    <AccordionItem value={budget.id} key={budget.id} className="border rounded-md">
+                        <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="text-left flex-1">
+                                <h3 className="font-semibold text-lg">{budget.title || budget.fileName}</h3>
+                                <CardDescription className="mt-1">
+                                    {budget.clientName || `Analizado el: ${budget.createdAt?.toDate ? format(budget.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}`}
+                                </CardDescription>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <AiBudgetCard
+                                key={budget.id}
+                                budget={budget}
+                                onBudgetUpdate={handleLocalBudgetUpdate}
+                                onSaveChanges={handleSaveChanges}
+                                onDelete={onDeleteAiBudget}
+                                onPrint={handlePrint}
+                                onMergeClick={setMergingBudget}
+                                onAddToBudgetClick={setAddingToBudget}
+                                onCreateSummaryBudgetFromAi={onCreateSummaryBudgetFromAi}
+                                onMergeChapters={(source, target) => onMergeChapters(budget.id, source, target)}
+                                onDeletePartida={(chapterName, partidaIndex) => onDeletePartida(budget.id, chapterName, partidaIndex)}
+                                onDeleteChapter={(chapterName) => onDeleteChapter(budget.id, chapterName)}
+                                onAddChapterAtIndex={(chapterName, index) => handleAddChapterLocal(budget.id, chapterName, index)}
+                                onBulkDelete={(partidaIds) => onBulkDeletePartidas(budget.id, partidaIds)}
+                                onBulkMove={(partidaIds, targetChapter) => onBulkMovePartidas(budget.id, partidaIds, targetChapter)}
+                            />
+                        </AccordionContent>
+                    </AccordionItem>
+                ))
+            ) : (
+                <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        No hay presupuestos analizados. Ve a la pestaña "Subir" para empezar.
+                    </p>
+                </div>
+            )}
+            </Accordion>
       </div>
     );
 }
