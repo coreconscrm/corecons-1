@@ -993,7 +993,32 @@ function AiBudgetCard({
     }
 
     const handleSave = () => {
-        onSaveChanges(budget);
+        // Sanitize keys before saving
+        const sanitizedTotals: Record<string, Record<string, number>> = {};
+        for (const chapterName in budget.userLineTotals) {
+            const sanitizedChapterName = chapterName.replace(/\./g, '-');
+            sanitizedTotals[sanitizedChapterName] = {};
+            for (const partidaName in budget.userLineTotals[chapterName]) {
+                const sanitizedPartidaName = partidaName.replace(/\./g, '-');
+                sanitizedTotals[sanitizedChapterName][sanitizedPartidaName] = budget.userLineTotals[chapterName][partidaName];
+            }
+        }
+        
+        const sanitizedBreakdown = JSON.parse(JSON.stringify(budget.breakdown));
+        sanitizedBreakdown.capitulos.forEach((cap: any) => {
+            cap.nombre = cap.nombre.replace(/\./g, '-');
+            cap.partidas.forEach((p: any) => {
+                p.descripcion = p.descripcion.replace(/\./g, '-');
+            });
+        });
+
+        const budgetToSave = {
+             ...budget, 
+             breakdown: sanitizedBreakdown,
+             userLineTotals: sanitizedTotals
+        };
+        
+        onSaveChanges(budgetToSave);
         setHasChanges(false);
     }
     
