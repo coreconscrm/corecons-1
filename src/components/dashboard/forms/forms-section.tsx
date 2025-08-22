@@ -211,6 +211,7 @@ function DynamicTableCard({
   const allHeaders = useMemo(() => columnConfig.map(c => c.key), [columnConfig]);
   const visibleHeaders = useMemo(() => columnConfig.filter(c => c.visible && c.key !== 'called'), [columnConfig]);
   const isCalledVisible = useMemo(() => columnConfig.some(c => c.key === 'called' && c.visible), [columnConfig]);
+  const calledColConfig = useMemo(() => columnConfig.find(c => c.key === 'called'), [columnConfig]);
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -270,7 +271,7 @@ function DynamicTableCard({
               <Table>
                 <TableHeader><TableRow>
                     <TableHead>Acciones</TableHead>
-                     {isCalledVisible && <TableHead>{getDisplayName('called')}</TableHead>}
+                     {isCalledVisible && <TableHead>{calledColConfig?.displayName}</TableHead>}
                     {visibleHeaders.map(h => <TableHead key={h.key} className="capitalize">{h.displayName}</TableHead>)}
                 </TableRow></TableHeader>
                 <TableBody>
@@ -506,7 +507,13 @@ export function FormsSection({
      useEffect(() => {
         if (forms.length > 0 && formCols.length > 0 && !formCols.some(c => c.key === 'called')) {
              const newCols = [...formCols];
-             newCols.unshift({ key: 'called', visible: true, displayName: 'Llamado' });
+             // Place 'called' after the first column ('acciones')
+             const calledColumn = { key: 'called', visible: true, displayName: 'Llamado' };
+             if (newCols.length > 0) {
+                 newCols.splice(1, 0, calledColumn);
+             } else {
+                 newCols.push(calledColumn);
+             }
              onFormColsChange(newCols);
         }
     }, [forms, formCols, onFormColsChange]);

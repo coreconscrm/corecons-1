@@ -349,16 +349,27 @@ export default function Page() {
     
     // Initialize column configs if they are empty
     useEffect(() => {
-        if (!user) return;
+        if (!user || isLoading) return;
+
+        let needsUpdate = false;
+        const newData = { ...data };
+
         if (data.contacts.length > 0 && data.contactCols.length === 0) {
             const headers = Object.keys(data.contacts[0]).filter(k => k !== 'id');
-            setData(prev => ({ ...prev, contactCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
+            newData.contactCols = headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
+            needsUpdate = true;
         }
-         if (data.priorityCalls.length > 0 && data.priorityCols.length === 0) {
+
+        if (data.priorityCalls.length > 0 && data.priorityCols.length === 0) {
             const headers = Object.keys(data.priorityCalls[0]).filter(k => k !== 'id');
-            setData(prev => ({ ...prev, priorityCols: headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) })) }));
+            newData.priorityCols = headers.map(h => ({ key: h, visible: true, displayName: getDisplayName(h) }));
+            needsUpdate = true;
         }
-    }, [data.contacts, data.priorityCalls, data.contactCols, data.priorityCols, user]);
+
+        if (needsUpdate) {
+            setData(newData);
+        }
+    }, [data.contacts, data.priorityCalls, user, isLoading]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
