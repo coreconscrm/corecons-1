@@ -333,7 +333,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                 </FormItem>
               )} />
               <FormField control={form.control} name="m2" render={({ field }) => (
-                <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>M²</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? 0}/></FormControl><FormMessage /></FormItem>
               )} />
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -392,7 +392,6 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                     </TableHeader>
                     <TableBody>
                         {fields.map((field, index) => {
-                         const itemTotal = watchedLineItems?.[index]?.unitPrice || 0;
                          const isChapter = watchedLineItems?.[index]?.isChapter;
                         return (
                             <TableRow key={field.id} className={isChapter ? 'bg-secondary/50 font-semibold' : ''}>
@@ -400,7 +399,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                                 <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => <Input {...field} placeholder={isChapter ? "Nombre del capítulo" : "Demolición tabiquería"} value={field.value ?? ''}/>} />
                             </TableCell>
                             <TableCell>
-                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''}/>} />}
+                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0}/>} />}
                             </TableCell>
                             <TableCell>
                                 {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unit`} render={({ field }) => (
@@ -418,7 +417,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
                                 )} />}
                             </TableCell>
                             <TableCell>
-                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} placeholder="0.00" value={field.value ?? ''}/>} />}
+                                {!isChapter && <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => <Input type="number" {...field} placeholder="0.00" value={field.value ?? 0}/>} />}
                             </TableCell>
                             <TableCell>
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
