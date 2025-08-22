@@ -296,7 +296,7 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   const handleSubmit = (values: z.infer<typeof budgetSchema>) => {
     const total = (values.lineItems || []).reduce((sum, item) => {
         if (item.isChapter) return sum;
-        return sum + (item.unitPrice || 0);
+        return sum + (parseFloat(String(item.unitPrice)) || 0);
     }, 0);
     const budgetData = { ...budget, ...values, total };
     onSubmit(budgetData);
@@ -672,7 +672,7 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
                             <TableHead>Unidad</TableHead>
                             <TableHead className="text-right">Precio/Ud.</TableHead>
                             <TableHead className="text-right">Total</TableHead>
-                             {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
+                             {viewingBudget.m2 && viewingBudget.m2 > 0 && (
                                 <TableHead className="text-right">€ / m²</TableHead>
                             )}
                             </TableRow>
@@ -682,11 +682,11 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
                                 if (item.isChapter) {
                                     return (
                                         <TableRow key={index} className="bg-secondary/50 hover:bg-secondary/50">
-                                            <TableCell colSpan={6} className="font-semibold">{item.description}</TableCell>
+                                            <TableCell colSpan={viewingBudget.m2 && viewingBudget.m2 > 0 ? 6 : 5} className="font-semibold">{item.description}</TableCell>
                                         </TableRow>
                                     );
                                 }
-                                const lineTotal = item.unitPrice || 0; // unitPrice is now the total
+                                const lineTotal = item.unitPrice || 0;
                                 const quantity = item.quantity || 0;
                                 const unitPrice = quantity > 0 ? lineTotal / quantity : 0;
                                 const costPerM2 = (viewingBudget.m2 && viewingBudget.m2 > 0) ? lineTotal / viewingBudget.m2 : 0;
@@ -697,13 +697,13 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
                                         <TableCell>{item.unit}</TableCell>
                                         <TableCell className="text-right font-mono">€{unitPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         <TableCell className="text-right font-mono">€{lineTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                        {(viewingBudget.m2 && viewingBudget.m2 > 0) && (
+                                        {viewingBudget.m2 && viewingBudget.m2 > 0 && (
                                             <TableCell className="text-right font-mono">
                                                 €{costPerM2.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </TableCell>
                                         )}
                                     </TableRow>
-                                )
+                                );
                             })}
                         </TableBody>
                     </Table>
@@ -750,3 +750,5 @@ export function BudgetListCard({ title, budgets, clients, companies, onAddBudget
     </Card>
   );
 }
+
+    
