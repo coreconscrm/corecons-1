@@ -502,6 +502,14 @@ export function FormsSection({
         setActiveTab(value);
         localStorage.setItem('formsSection_activeTab', value);
     };
+    
+     useEffect(() => {
+        if (forms.length > 0 && formCols.length > 0 && !formCols.some(c => c.key === 'called')) {
+             const newCols = [...formCols];
+             newCols.unshift({ key: 'called', visible: true, displayName: 'Llamado' });
+             onFormColsChange(newCols);
+        }
+    }, [forms, formCols, onFormColsChange]);
 
     return (
         <div className="w-full space-y-6">
