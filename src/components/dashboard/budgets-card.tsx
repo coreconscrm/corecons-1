@@ -250,8 +250,9 @@ function BudgetForm({ budget, clients, companies, onSubmit, open, onOpenChange, 
   const grandTotal = useMemo(() => {
     if (!watchedLineItems) return 0;
     return watchedLineItems.reduce((total, item) => {
-      if (item.isChapter) return total;
-      return total + (item.unitPrice || 0); // Summing up unitPrice directly as it's the total now
+        if (item.isChapter) return total;
+        const price = parseFloat(String(item.unitPrice)) || 0;
+        return total + price;
     }, 0);
   }, [watchedLineItems]);
 
