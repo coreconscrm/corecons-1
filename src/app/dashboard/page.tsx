@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -23,6 +24,7 @@ import type { Budget, BudgetCategory } from '@/components/dashboard/budgets/budg
 import type { AiBudgetItem } from '@/components/dashboard/ai/ai-section';
 import { getDisplayName, type ColumnConfig } from '@/components/dashboard/forms/forms-section';
 import Papa from 'papaparse';
+import { SeguimientoPrintLayout } from '@/components/dashboard/seguimiento-print-layout';
 
 
 const defaultVisibleTabs = {

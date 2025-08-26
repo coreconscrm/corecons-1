@@ -21,11 +21,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, parse, isValid } from "date-fns";
 import { es } from "date-fns/locale";
-import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen, FolderOpen, Move } from "lucide-react";
+import { UserPlus, MoreHorizontal, Pencil, Trash2, CalendarIcon, Info, Settings, Plus, SquarePen, FolderOpen, Move, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { SeguimientoPrintLayout } from "./seguimiento-print-layout";
 
 const seguimientoSchema = z.object({
   name: z.string().optional(),
@@ -349,6 +350,18 @@ export function SeguimientoListCard({
     const [activeSeguimiento, setActiveSeguimiento] = useState<Seguimiento | undefined>(undefined);
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+    const [printingData, setPrintingData] = useState<{ title: string; seguimientos: Seguimiento[] } | null>(null);
+
+
+    useEffect(() => {
+        if (printingData) {
+            const timer = setTimeout(() => {
+                window.print();
+                setPrintingData(null);
+            }, 250); // Delay to allow state to update and component to render
+            return () => clearTimeout(timer);
+        }
+    }, [printingData]);
 
     const groupedSeguimientos = useMemo(() => {
         const visibleCategories = categories.filter(c => c.visible).map(c => c.name);
@@ -407,9 +420,28 @@ export function SeguimientoListCard({
         return isValid(date) ? format(date, 'dd/MM/yyyy') : 'Fecha inválida';
     };
 
+    const handlePrint = (category?: string) => {
+        if (category) {
+            setPrintingData({
+                title: `Informe de Seguimiento - ${category}`,
+                seguimientos: groupedSeguimientos[category] || [],
+            });
+        } else {
+             setPrintingData({
+                title: 'Informe de Seguimiento - Completo',
+                seguimientos: seguimientos,
+            });
+        }
+    };
 
     return (
         <Card>
+             <div className="printable-area">
+                <SeguimientoPrintLayout 
+                    title={printingData?.title || ""}
+                    seguimientos={printingData?.seguimientos || []}
+                />
+            </div>
             <Dialog open={!!viewingInfo} onOpenChange={() => setViewingInfo(null)}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Información Adicional</DialogTitle></DialogHeader>
@@ -445,9 +477,25 @@ export function SeguimientoListCard({
                     <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline"><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => handlePrint()}>Imprimir Todo</DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>Imprimir Subsección</DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    {Object.keys(groupedSeguimientos).map(cat => (
+                                        <DropdownMenuItem key={cat} onSelect={() => handlePrint(cat)}>{cat}</DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button variant="outline" onClick={() => setIsOptionsOpen(true)}>
                         <Settings className="mr-2 h-4 w-4" />
-                        Configurar Subsecciones
+                        Configurar
                     </Button>
                     <Button onClick={handleAdd}><UserPlus className="mr-2 h-4 w-4" />Añadir Seguimiento</Button>
                 </div>
@@ -545,3 +593,4 @@ export function SeguimientoListCard({
         </Card>
     );
 }
+
