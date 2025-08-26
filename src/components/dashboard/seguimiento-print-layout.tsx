@@ -29,34 +29,34 @@ export function SeguimientoPrintLayout({ title, seguimientos }: { title: string,
             </header>
             
             <section className="mt-8">
-                <table className="w-full text-left table-auto">
+                <table className="w-full text-left table-fixed">
                     <thead className="bg-gray-100 text-gray-600">
                         <tr>
-                            <th className="p-2 font-semibold uppercase text-xs">Nombre</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Teléfono</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Email</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Localización</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Estado</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Por Hacer</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Próx. Llamada</th>
-                            <th className="p-2 font-semibold uppercase text-xs">Información</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Nombre</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Teléfono</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Email</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Localización</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Estado</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '7%' }}>Por Hacer</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '8%' }}>Próx. Llamada</th>
+                            <th className="p-2 font-semibold uppercase text-xs" style={{ width: '50%' }}>Información</th>
                         </tr>
                     </thead>
                     <tbody>
                          {(seguimientos || []).map((s, index) => (
-                            <tr key={s.id} className="border-b border-gray-100">
-                                <td className="p-2 align-top text-xs">{s.name}</td>
-                                <td className="p-2 align-top text-xs">{s.phone}</td>
-                                <td className="p-2 align-top text-xs">{s.email}</td>
-                                <td className="p-2 align-top text-xs">{s.localizacion}</td>
-                                <td className="p-2 align-top text-xs capitalize">{s.estado}</td>
-                                <td className="p-2 align-top text-xs capitalize">{s.porHacer}</td>
-                                <td className="p-2 align-top text-xs">
+                            <tr key={s.id} className="border-b border-gray-100 page-break-inside-avoid">
+                                <td className="p-2 align-top text-xs break-words">{s.name}</td>
+                                <td className="p-2 align-top text-xs break-words">{s.phone}</td>
+                                <td className="p-2 align-top text-xs break-words">{s.email}</td>
+                                <td className="p-2 align-top text-xs break-words">{s.localizacion}</td>
+                                <td className="p-2 align-top text-xs capitalize break-words">{s.estado}</td>
+                                <td className="p-2 align-top text-xs capitalize break-words">{s.porHacer}</td>
+                                <td className="p-2 align-top text-xs break-words">
                                     {s.siguienteLlamada && isValid(parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date()))
                                         ? format(parse(s.siguienteLlamada, 'dd/MM/yyyy', new Date()), 'dd/MM/yy')
                                         : 'N/A'}
                                 </td>
-                                <td className="p-2 align-top text-xs whitespace-pre-wrap">{s.informacion}</td>
+                                <td className="p-2 align-top text-xs whitespace-pre-wrap break-words">{s.informacion}</td>
                             </tr>
                         ))}
                     </tbody>
