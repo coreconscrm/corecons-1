@@ -429,7 +429,7 @@ export function SeguimientoListCard({
         } else {
              setPrintingData({
                 title: 'Informe de Seguimiento - Completo',
-                seguimientos: seguimientos,
+                seguimientos: seguimientos, // Pass the full, unfiltered list
             });
         }
     };
