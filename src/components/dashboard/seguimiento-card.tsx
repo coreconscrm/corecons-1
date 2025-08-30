@@ -27,6 +27,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { SeguimientoPrintLayout } from "./seguimiento-print-layout";
+import { Checkbox } from "../ui/checkbox";
 
 const seguimientoSchema = z.object({
   name: z.string().optional(),
@@ -351,7 +352,7 @@ export function SeguimientoListCard({
     const [viewingInfo, setViewingInfo] = useState<string | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
     const [printingData, setPrintingData] = useState<{ title: string; seguimientos: Seguimiento[] } | null>(null);
-
+    const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (printingData) {
@@ -429,9 +430,43 @@ export function SeguimientoListCard({
         } else {
              setPrintingData({
                 title: 'Informe de Seguimiento - Completo',
-                seguimientos: seguimientos, // Pass the full, unfiltered list
+                seguimientos: seguimientos,
             });
         }
+    };
+
+    const handleSelectRow = (id: string, checked: boolean) => {
+        const newSelectedRows = { ...selectedRows };
+        if (checked) {
+            newSelectedRows[id] = true;
+        } else {
+            delete newSelectedRows[id];
+        }
+        setSelectedRows(newSelectedRows);
+    };
+
+    const handleSelectAllInCategory = (category: string, checked: boolean) => {
+        const newSelectedRows = { ...selectedRows };
+        const categoryItems = groupedSeguimientos[category] || [];
+        categoryItems.forEach(item => {
+            if (checked) {
+                newSelectedRows[item.id] = true;
+            } else {
+                delete newSelectedRows[item.id];
+            }
+        });
+        setSelectedRows(newSelectedRows);
+    };
+    
+    const selectedIds = useMemo(() => Object.keys(selectedRows).filter(id => selectedRows[id]), [selectedRows]);
+    
+    const handlePrintSelected = () => {
+        const selectedItems = seguimientos.filter(s => selectedIds.includes(s.id));
+        setPrintingData({
+            title: 'Informe de Seguimiento - Selección',
+            seguimientos: selectedItems,
+        });
+        setSelectedRows({}); // Clear selection after printing
     };
 
     return (
@@ -477,6 +512,11 @@ export function SeguimientoListCard({
                     <CardDescription>Gestiona nuevos contactos y su proceso inicial.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
+                    {selectedIds.length > 0 && (
+                        <Button variant="destructive" onClick={handlePrintSelected}>
+                            <Printer className="mr-2 h-4 w-4" />Imprimir Selección ({selectedIds.length})
+                        </Button>
+                    )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline"><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
@@ -502,7 +542,9 @@ export function SeguimientoListCard({
             </CardHeader>
             <CardContent>
                 <Accordion type="multiple" className="w-full space-y-4">
-                    {Object.entries(groupedSeguimientos).map(([category, seguimientosInCategory]) => (
+                    {Object.entries(groupedSeguimientos).map(([category, seguimientosInCategory]) => {
+                        const allInCategorySelected = seguimientosInCategory.length > 0 && seguimientosInCategory.every(s => selectedRows[s.id]);
+                        return (
                         <AccordionItem value={category} key={category} className="border rounded-md">
                             <AccordionTrigger className="px-4 py-2 hover:no-underline">
                                  <div className="flex items-center gap-2 font-semibold text-lg">
@@ -515,6 +557,13 @@ export function SeguimientoListCard({
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead className="w-12">
+                                                    <Checkbox
+                                                        checked={allInCategorySelected}
+                                                        onCheckedChange={(checked) => handleSelectAllInCategory(category, !!checked)}
+                                                        aria-label={`Seleccionar todo en ${category}`}
+                                                    />
+                                                </TableHead>
                                                 <TableHead>Acciones</TableHead>
                                                 <TableHead>Estado</TableHead>
                                                 <TableHead>Por Hacer</TableHead>
@@ -528,7 +577,14 @@ export function SeguimientoListCard({
                                         </TableHeader>
                                         <TableBody>
                                         {seguimientosInCategory.length > 0 ? seguimientosInCategory.map((s) => (
-                                            <TableRow key={s.id}>
+                                            <TableRow key={s.id} data-state={selectedRows[s.id] ? "selected" : ""}>
+                                                <TableCell>
+                                                    <Checkbox
+                                                        checked={selectedRows[s.id] || false}
+                                                        onCheckedChange={(checked) => handleSelectRow(s.id, !!checked)}
+                                                        aria-label={`Seleccionar fila ${s.name}`}
+                                                    />
+                                                </TableCell>
                                                 <TableCell>
                                                     <AlertDialog>
                                                         <DropdownMenu>
@@ -577,7 +633,7 @@ export function SeguimientoListCard({
                                             </TableRow>
                                         )) : (
                                             <TableRow>
-                                                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                                                <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                                                     No hay seguimientos en esta subsección.
                                                 </TableCell>
                                             </TableRow>
@@ -587,10 +643,12 @@ export function SeguimientoListCard({
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
-                    ))}
+                        )
+                    })}
                 </Accordion>
             </CardContent>
         </Card>
     );
 }
+
 
