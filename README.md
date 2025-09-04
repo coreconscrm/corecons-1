@@ -1,6 +1,6 @@
-# Firebase Studio
+# CRM - CONSTRUCCION
 
-This is a NextJS starter in Firebase Studio.
+PROYECTO SaaS DE CRM PARA NICHOS DE CONSTRUCCION.
 
-To get started, take a look at src/app/page.tsx.
+Este README.md es donde escribimos la informacion necesaria.
  
