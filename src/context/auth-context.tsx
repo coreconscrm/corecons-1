@@ -2,7 +2,8 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
@@ -27,8 +28,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const register = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const register = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (userCredential.user) {
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        email: userCredential.user.email,
+        uid: userCredential.user.uid
+      });
+    }
+    return userCredential;
   };
 
   const login = (email: string, password: string) => {

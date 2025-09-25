@@ -10,12 +10,12 @@ import { getStorage, type FirebaseStorage } from "firebase/storage";
 // Lo encontrarás en tu consola de Firebase:
 // Configuración del proyecto -> Tus Apps -> Configuración del SDK -> Config
 const firebaseConfig = {
-  apiKey: "AIzaSyCzeGtW-b-CI-_CPjth_fRXbLE62Smio2A",
-  authDomain: "study-hub-dashboard.firebaseapp.com",
-  projectId: "study-hub-dashboard",
-  storageBucket: "study-hub-dashboard.appspot.com",
-  messagingSenderId: "955037422201",
-  appId: "1:955037422201:web:ac9276c258fec58929baa8"
+  apiKey: "AIzaSyByz0OlMmsS9z2ScOPgtDHlLtmnwI64zUI",
+  authDomain: "corecons-1.firebaseapp.com",
+  projectId: "corecons-1",
+  storageBucket: "corecons-1.firebasestorage.app",
+  messagingSenderId: "470077706113",
+  appId: "1:470077706113:web:ab400e4e35ee4c111ba280",
 };
 
 
@@ -29,12 +29,12 @@ let storage: FirebaseStorage;
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = initializeFirestore(app, {}, 'wb-data');
+  db = initializeFirestore(app, {}, 'coreconsddbb');
   storage = getStorage(app);
 } else {
   app = getApp();
   auth = getAuth(app);
-  db = getFirestore(app,'wb-data');
+  db = getFirestore(app,'coreconsddbb');
   storage = getStorage(app);
 }
 
