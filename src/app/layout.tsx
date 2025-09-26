@@ -5,8 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/auth-context";
 
 export const metadata: Metadata = {
-  title: "WinnBuilders CRM",
-  description: "CRM para la gestión de proyectos de construcción de WinnBuilders.",
+  title: "Corecons CRM",
+  description: "CRM para la gestión de proyectos de construcción.",
 };
 
 export default function RootLayout({
